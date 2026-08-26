@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap');
+
+:root{
+  --ink:#0A0D18;
+  --panel:#111528;
+  --panel-2:#161b32;
+  --line: rgba(255,255,255,0.09);
+  --cloud:#F3F5FB;
+  --dim:#8D93B2;
+  --amber:#F5A623;
+  --amber-2:#FFC868;
+  --teal:#22D3A6;
+  --coral:#FF5C77;
+  --violet:#8B7CF6;
+  --shadow: 0 24px 70px -24px rgba(0,0,0,0.65);
+  --ease: cubic-bezier(.22,1,.36,1);
+
+  /* ---- theme tokens (dark = default) ---- */
+  --bg: #0A0D18;
+  --bg-translucent: rgba(10,13,24,0.82);
+  --text: #F3F5FB;
+  --text-dim: #8D93B2;
+  --danger-text: #FF9FB6;
+  --line-03: rgba(255,255,255,0.03);
+  --line-04: rgba(255,255,255,0.04);
+  --line-05: rgba(255,255,255,0.05);
+  --line-06: rgba(255,255,255,0.06);
+  --line-08: rgba(255,255,255,0.08);
+  --line-10: rgba(255,255,255,0.1);
+  --line-12: rgba(255,255,255,0.12);
+  --line-14: rgba(255,255,255,0.14);
+  --line-15: rgba(255,255,255,0.15);
+  /* fixed surfaces that never theme — the digital pass card, always dark like a physical badge */
+  --pass-text: #F3F5FB;
+  --pass-text-dim: #8D93B2;
+  color-scheme: dark;
+}
+
+[data-theme="light"]{
+  --bg: #F6F7FB;
+  --bg-translucent: rgba(246,247,251,0.86);
+  --panel: #FFFFFF;
+  --panel-2: #EEF0F7;
+  --text: #12142B;
+  --text-dim: #5A5F7A;
+  --danger-text: #C81E3A;
+  --line-03: rgba(10,13,36,0.04);
+  --line-04: rgba(10,13,36,0.05);
+  --line-05: rgba(10,13,36,0.06);
+  --line-06: rgba(10,13,36,0.07);
+  --line-08: rgba(10,13,36,0.09);
+  --line-10: rgba(10,13,36,0.11);
+  --line-12: rgba(10,13,36,0.13);
+  --line-14: rgba(10,13,36,0.15);
+  --line-15: rgba(10,13,36,0.16);
+  --shadow: 0 24px 70px -24px rgba(20,25,55,0.18);
+  color-scheme: light;
+}
+
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; overflow-x:hidden; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  transition: background-color .25s var(--ease), color .25s var(--ease);
+  overflow-x:hidden;
+}
+h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
+.font-mono{ font-family:'JetBrains Mono',monospace; }
+
+::selection{ background: var(--teal); color:#04140f; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
+
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:#242a47; border-radius:8px; }
+::-webkit-scrollbar-thumb:hover{ background:#323a63; }
+
+.grain{
+  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.reticle-pulse{ animation: reticlePulse 2.2s var(--ease) infinite; }
+@keyframes reticlePulse{
+  0%{ box-shadow: 0 0 0 0 rgba(34,211,166,0.45); }
+  70%{ box-shadow: 0 0 0 14px rgba(34,211,166,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(34,211,166,0); }
+}
+
+.skeleton{
+  background: linear-gradient(90deg, var(--panel) 25%, var(--panel-2) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: skeletonWave 1.4s ease infinite;
+}
+@keyframes skeletonWave{
+  0%{ background-position: 100% 50%; }
+  100%{ background-position: 0 50%; }
+}
+
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:translateY(0);} }
+.animate-fadeUp{ animation: fadeUp .6s var(--ease) forwards; }

@@ -1,0 +1,331 @@
+import { useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles } from 'lucide-react';
+import BrandMark from '../../components/ui/BrandMark';
+import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
+import PresenceLoader from '../../components/ui/PresenceLoader';
+import { useAuth } from '../../lib/AuthContext';
+import { useToast } from '../../lib/ToastContext';
+import { useLanguage } from '../../lib/LanguageContext';
+
+const DEMO_ACCOUNTS = [
+  { label: 'Attendee demo', email: 'demo@presence.app', password: 'demo1234' },
+  { label: 'Organizer demo', email: 'organizer@presence.app', password: 'organizer1234' },
+  { label: 'Admin demo', email: 'admin@presence.app', password: 'admin1234' },
+];
+
+export default function AuthPage({ mode = 'login' }) {
+  const isLoginRoute = mode === 'login';
+  const [flipped, setFlipped] = useState(isLoginRoute);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, register, loginWithGoogle, user } = useAuth();
+  const { push } = useToast();
+  const { t } = useLanguage();
+
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+
+  // Post-authentication loading — shown for a short, fixed window after a
+  // successful login/register/Google sign-in so the transition into the
+  // dashboard feels intentional rather than an instant, jarring jump.
+  const [postAuth, setPostAuth] = useState(null); // { dest, messages }
+
+  useEffect(() => {
+    if (!postAuth) return;
+    const timer = setTimeout(() => navigate(postAuth.dest, { replace: true }), 1500);
+    return () => clearTimeout(timer);
+  }, [postAuth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGoogleCredential(credential) {
+    setGoogleError('');
+    setGoogleBusy(true);
+    try {
+      const { user: u } = await loginWithGoogle({ credential });
+      push(`Welcome, ${u.name.split(' ')[0]}.`, 'success');
+      const dest = location.state?.from || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
+      setPostAuth({ dest, messages: ['Verifying with Google…', 'Setting up your dashboard…', 'Almost there…'] });
+    } catch (err) {
+      setGoogleError(err.message);
+      setGoogleBusy(false);
+    }
+  }
+
+  useEffect(() => setFlipped(isLoginRoute), [isLoginRoute]);
+  // Only redirect on mount if the visitor is already signed in and lands on
+  // /login or /register directly — deliberately not reactive to `user`
+  // changing from this page's own login/register flow below, which manages
+  // its own timed transition via `postAuth` instead.
+  useEffect(() => {
+    if (user) navigate(user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard', { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const goLogin = () => navigate('/login');
+  const goRegister = () => navigate('/register');
+
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
+  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const { user: u } = await login(loginForm);
+      push(`Welcome back, ${u.name.split(' ')[0]}.`, 'success');
+      const dest = location.state?.from || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
+      setPostAuth({ dest, messages: ['Verifying your credentials…', 'Setting up your dashboard…', 'Almost there…'] });
+    } catch (err) {
+      setLoginError(err.message);
+      setLoginLoading(false);
+    }
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    setRegError('');
+    if (regForm.password.length < 6) {
+      setRegError('Password must be at least 6 characters.');
+      return;
+    }
+    setRegLoading(true);
+    try {
+      const { user: u } = await register(regForm);
+      push(`Account created. Welcome, ${u.name.split(' ')[0]}.`, 'success');
+      setPostAuth({ dest: '/dashboard', messages: ['Creating your account…', 'Generating your digital profile…', 'Almost there…'] });
+    } catch (err) {
+      setRegError(err.message);
+      setRegLoading(false);
+    }
+  }
+
+  function fillDemo(acc) {
+    setLoginForm({ email: acc.email, password: acc.password });
+    if (!isLoginRoute) goLogin();
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+      {/* ambient background, echoes the brand's scan-target motif */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 grain opacity-40" />
+        <div className="absolute w-[420px] h-[420px] rounded-full blur-[90px] opacity-25 -top-24 -left-24" style={{ background: '#22D3A6' }} />
+        <div className="absolute w-[380px] h-[380px] rounded-full blur-[90px] opacity-20 -bottom-24 -right-16" style={{ background: '#8B7CF6' }} />
+        <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
+      </div>
+
+      <Link to="/" className="fixed top-6 left-6 z-20 flex items-center gap-2.5 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
+        <BrandMark size={36} />
+        <span className="font-display font-bold text-white">Presence</span>
+      </Link>
+
+      <div
+        className="w-full max-w-[560px] relative z-10 opacity-0 animate-fadeUp"
+        style={{ perspective: '1600px', animationDelay: '120ms' }}
+      >
+        <div className="relative" style={{ height: flipped ? undefined : undefined }}>
+          <div
+            className="relative w-full transition-transform duration-[750ms]"
+            style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(0deg)' : 'rotateY(180deg)' }}
+          >
+            {/* ---- LOGIN FACE ---- */}
+            <div
+              className="w-full rounded-[22px] border shadow-2xl overflow-hidden flex flex-col sm:flex-row"
+              style={{ backfaceVisibility: 'hidden', borderColor: 'var(--line-10)' }}
+            >
+              <InfoPanel
+                icon={<ScanLine size={26} />}
+                heading={<>Welcome<br />back.</>}
+                copy="Sign in to view your registered events, reopen your QR pass, and check your attendance history."
+                gradient="linear-gradient(150deg, #22D3A6 0%, #8B7CF6 100%)"
+                onClick={goRegister}
+                order="order-1 sm:order-1"
+              />
+              <div className="sm:w-[54%] order-2 sm:order-2 p-8 sm:p-9 flex flex-col justify-center" style={{ background: 'var(--panel)' }}>
+                <div className="sm:hidden flex items-center gap-2.5 mb-5 -mt-2">
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(150deg,#22D3A6,#8B7CF6)' }}><ScanLine size={17} color="#0B0F22" /></span>
+                  <span className="text-sm text-[var(--text-dim)]">Welcome back, sign in to continue.</span>
+                </div>
+                <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_sign_in')}</h3>
+                <p className="text-sm text-[var(--text-dim)] mb-6">{t('auth_sign_in_sub')}</p>
+
+                {loginError && <FormError message={loginError} />}
+
+                <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu"
+                    value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
+                  <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password"
+                    value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
+                  <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label="Sign in" />
+                </form>
+
+                <Divider />
+                {googleError && <FormError message={googleError} />}
+                <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
+                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Signing you in…</p>}
+
+                <div className="mt-5 pt-5 border-t" style={{ borderColor: 'var(--line-08)' }}>
+                  <p className="text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-semibold mb-2 flex items-center gap-1.5">
+                    <Sparkles size={12} /> {t('auth_quick_demo')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {DEMO_ACCOUNTS.map((acc) => (
+                      <button
+                        key={acc.email}
+                        type="button"
+                        onClick={() => fillDemo(acc)}
+                        className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border text-[var(--text-dim)] hover:text-[var(--text)] hover:border-[#22D3A6] transition-colors"
+                        style={{ borderColor: 'var(--line-12)' }}
+                      >
+                        {acc.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-center text-sm text-[var(--text-dim)] mt-5">
+                  {t('auth_new_here')}{' '}
+                  <button type="button" onClick={goRegister} className="font-semibold" style={{ color: '#22D3A6' }}>
+                    {t('auth_create_link')}
+                  </button>
+                </p>
+              </div>
+            </div>
+
+            {/* ---- REGISTER FACE ---- */}
+            <div
+              className="w-full rounded-[22px] border shadow-2xl overflow-hidden flex flex-col sm:flex-row absolute inset-0"
+              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderColor: 'var(--line-10)' }}
+            >
+              <div className="sm:w-[54%] order-2 sm:order-1 p-8 sm:p-9 flex flex-col justify-center" style={{ background: 'var(--panel)' }}>
+                <div className="sm:hidden flex items-center gap-2.5 mb-5 -mt-2">
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(150deg,#F5A623,#FF5C77)' }}><Sparkles size={17} color="#0B0F22" /></span>
+                  <span className="text-sm text-[var(--text-dim)]">Join Presence to RSVP and get your pass.</span>
+                </div>
+                <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_create_account')}</h3>
+                <p className="text-sm text-[var(--text-dim)] mb-6">{t('auth_create_account_sub')}</p>
+
+                {regError && <FormError message={regError} />}
+
+                <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
+                  <Field label={t('auth_full_name')} type="text" autoComplete="name" placeholder="Your name"
+                    value={regForm.name} onChange={(v) => setRegForm((f) => ({ ...f, name: v }))} />
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu"
+                    value={regForm.email} onChange={(v) => setRegForm((f) => ({ ...f, email: v }))} />
+                  <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters"
+                    value={regForm.password} onChange={(v) => setRegForm((f) => ({ ...f, password: v }))} />
+                  <SubmitButton loading={regLoading} icon={<UserPlus size={16} />} label="Create account" />
+                </form>
+
+                <Divider />
+                {googleError && <FormError message={googleError} />}
+                <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
+                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Setting up your account…</p>}
+
+                <p className="text-center text-sm text-[var(--text-dim)] mt-5">
+                  {t('auth_have_account')}{' '}
+                  <button type="button" onClick={goLogin} className="font-semibold" style={{ color: '#22D3A6' }}>
+                    {t('auth_sign_in_link')}
+                  </button>
+                </p>
+              </div>
+              <InfoPanel
+                icon={<Sparkles size={26} />}
+                heading={<>Join<br />Presence</>}
+                copy="Create an account to RSVP to events, generate your digital pass, and check in in seconds at the door."
+                gradient="linear-gradient(150deg, #F5A623 0%, #FF5C77 100%)"
+                onClick={goLogin}
+                order="order-1 sm:order-2"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {postAuth && <PresenceLoader messages={postAuth.messages} cycleMs={520} />}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function InfoPanel({ icon, heading, copy, gradient, onClick, order }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`hidden sm:flex sm:w-[46%] ${order} relative flex-col justify-center text-left p-8 overflow-hidden transition-transform hover:brightness-110`}
+      style={{ background: gradient }}
+    >
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28), transparent 55%)' }} />
+      <div className="relative z-10 text-[#0B0F22]">
+        <span className="inline-flex mb-3.5 opacity-85">{icon}</span>
+        <h2 className="font-display text-[1.7rem] font-extrabold leading-[1.15] mb-3">{heading}</h2>
+        <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,15,34,0.82)' }}>{copy}</p>
+      </div>
+    </button>
+  );
+}
+
+function Field({ label, type, value, onChange, placeholder, autoComplete }) {
+  return (
+    <label className="block">
+      <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">{label}</span>
+      <input
+        type={type}
+        required
+        autoComplete={autoComplete}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-transparent border-0 border-b-2 py-2 text-[15px] text-[var(--text)] outline-none transition-colors placeholder:text-white/30"
+        style={{ borderColor: 'var(--line-12)' }}
+        onFocus={(e) => (e.target.style.borderColor = '#22D3A6')}
+        onBlur={(e) => (e.target.style.borderColor = 'var(--line-12)')}
+      />
+    </label>
+  );
+}
+
+function SubmitButton({ loading, icon, label }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading}
+      className="w-full mt-1.5 py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-70"
+      style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#0B0F22', boxShadow: '0 10px 26px -8px rgba(34,211,166,0.45)' }}
+    >
+      {loading ? (
+        <span className="w-4 h-4 rounded-full border-2 border-[#0B0F22]/30 border-t-[#0B0F22] animate-spin" />
+      ) : (
+        <>{icon}{label}</>
+      )}
+    </button>
+  );
+}
+
+function Divider() {
+  const { t } = useLanguage();
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <span className="h-px flex-1" style={{ background: 'var(--line-10)' }} />
+      <span className="text-[11px] uppercase tracking-wide text-[var(--text-dim)]">{t('auth_or')}</span>
+      <span className="h-px flex-1" style={{ background: 'var(--line-10)' }} />
+    </div>
+  );
+}
+
+function FormError({ message }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] mb-4" style={{ background: 'rgba(255,92,119,0.12)', border: '1px solid rgba(255,92,119,0.3)', color: 'var(--danger-text)' }}>
+      <TriangleAlert size={15} className="shrink-0" /> {message}
+    </div>
+  );
+}
