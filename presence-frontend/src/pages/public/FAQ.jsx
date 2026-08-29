@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
+import { useSEO } from '../../lib/useSEO';
 
 const FAQS = [
   { q: 'How do I register for an event?', a: 'Open the event page and select "RSVP for this event." If you\u2019re not signed in yet, you\u2019ll be asked to create an account first, then registration itself takes under a minute.' },
@@ -15,6 +16,7 @@ const FAQS = [
 
 export default function FAQ() {
   const [open, setOpen] = useState(0);
+  useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.');
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />

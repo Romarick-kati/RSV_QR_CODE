@@ -20,11 +20,30 @@ async function main() {
 
   console.log('Seeding database...');
 
+  const usingDefaultAdminPassword = !config.adminPassword;
+  if (usingDefaultAdminPassword) {
+    console.warn(
+      '\n[seed] WARNING: ADMIN_PASSWORD is not set in .env — falling back to the\n' +
+      '       demo password "admin1234". Set ADMIN_NAME, ADMIN_EMAIL and\n' +
+      '       ADMIN_PASSWORD in .env before deploying anywhere real, then\n' +
+      '       re-run `npm run seed` (or `npm run admin:sync`) to apply it.\n'
+    );
+  }
+
   const passwordHash = await bcrypt.hash('demo1234', 12);
   const organizerHash = await bcrypt.hash('organizer1234', 12);
-  const adminHash = await bcrypt.hash('admin1234', 12);
+  const adminHash = await bcrypt.hash(config.adminPassword || 'admin1234', 12);
 
-  const admin = await upsertUser({ name: 'Dr. Nkeng Fru', email: 'admin@presence.app', passwordHash: adminHash, role: 'ADMIN' });
+  // The admin account's credentials come from .env (ADMIN_NAME/ADMIN_EMAIL/
+  // ADMIN_PASSWORD), not a hard-coded value. upsertUser only sets these on
+  // first insert, so re-running seed after changing .env would silently
+  // keep the old password — explicitly sync it below so editing .env and
+  // re-seeding always "just works".
+  const admin = await upsertUser({ name: config.adminName, email: config.adminEmail, passwordHash: adminHash, role: 'ADMIN' });
+  admin.name = config.adminName;
+  admin.passwordHash = adminHash;
+  await admin.save();
+
   const organizer = await upsertUser({ name: 'Faculty of Engineering', email: 'organizer@presence.app', passwordHash: organizerHash, role: 'ORGANIZER' });
 
   const attendeeNames = ['Aisha Bello', 'Tanwie Divine', 'Grace Mbeki', 'Samuel Okafor', 'Linda Achu', 'Chidi Umeh', 'Fatima Njoya', 'Peter Achumbe'];
@@ -102,7 +121,7 @@ async function main() {
   }
 
   console.log('Seed complete.');
-  console.log('  Admin:      admin@presence.app / admin1234');
+  console.log(`  Admin:      ${config.adminEmail} / ${usingDefaultAdminPassword ? 'admin1234 (default — set ADMIN_PASSWORD in .env!)' : '(your ADMIN_PASSWORD)'}`);
   console.log('  Organizer:  organizer@presence.app / organizer1234');
   console.log('  Attendee:   demo@presence.app / demo1234');
 }

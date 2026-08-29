@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
+import NotificationBell from './NotificationBell';
+import { useAuth } from '../../lib/AuthContext';
 
 export default function AdminShell({ title, subtitle, actions, children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
       <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
@@ -16,7 +19,10 @@ export default function AdminShell({ title, subtitle, actions, children }) {
               {subtitle && <p className="text-xs text-[var(--text-dim)] truncate">{subtitle}</p>}
             </div>
           </div>
-          {actions && <div className="flex items-center gap-2 shrink-0 overflow-x-auto max-w-[55vw] sm:max-w-none">{actions}</div>}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {actions && <div className="flex items-center gap-2 overflow-x-auto max-w-[45vw] sm:max-w-none">{actions}</div>}
+            {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && <NotificationBell />}
+          </div>
         </header>
         <main className="px-4 sm:px-8 py-7 max-w-[1400px]">{children}</main>
       </div>

@@ -1,28 +1,24 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User } from 'lucide-react';
 import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
 import { useAuth } from '../../lib/AuthContext';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
-
-const DEMO_ACCOUNTS = [
-  { label: 'Attendee demo', email: 'demo@presence.app', password: 'demo1234' },
-  { label: 'Organizer demo', email: 'organizer@presence.app', password: 'organizer1234' },
-  { label: 'Admin demo', email: 'admin@presence.app', password: 'admin1234' },
-];
+import { useSEO } from '../../lib/useSEO';
+import { compressImageFile, ImageError } from '../../lib/imageUtils';
 
 export default function AuthPage({ mode = 'login' }) {
   const isLoginRoute = mode === 'login';
   const [flipped, setFlipped] = useState(isLoginRoute);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, register, loginWithGoogle, user } = useAuth();
+  const { login, register, loginWithGoogle, updateAvatar, user } = useAuth();
   const { push } = useToast();
   const { t } = useLanguage();
+  useSEO(isLoginRoute ? 'Sign in' : 'Create account', isLoginRoute ? 'Sign in to Presence to view your events, digital QR passes, and registration history.' : 'Create a free Presence account to RSVP to events and get an instant digital QR pass.');
 
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState('');
@@ -44,7 +40,10 @@ export default function AuthPage({ mode = 'login' }) {
     try {
       const { user: u } = await loginWithGoogle({ credential });
       push(`Welcome, ${u.name.split(' ')[0]}.`, 'success');
-      const dest = location.state?.from || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
+      // Always land on the main dashboard/console first after signing in —
+      // never drop the person straight back into whatever page they came
+      // from, so they get their bearings before navigating further.
+      const dest = u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard';
       setPostAuth({ dest, messages: ['Verifying with Google…', 'Setting up your dashboard…', 'Almost there…'] });
     } catch (err) {
       setGoogleError(err.message);
@@ -72,6 +71,21 @@ export default function AuthPage({ mode = 'login' }) {
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '' });
   const [regError, setRegError] = useState('');
   const [regLoading, setRegLoading] = useState(false);
+  const [regAvatarDataUrl, setRegAvatarDataUrl] = useState(null);
+  const [regAvatarError, setRegAvatarError] = useState('');
+
+  async function handleRegAvatarPick(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setRegAvatarError('');
+    try {
+      const dataUrl = await compressImageFile(file, { maxDim: 320, quality: 0.85, square: true });
+      setRegAvatarDataUrl(dataUrl);
+    } catch (err) {
+      setRegAvatarError(err instanceof ImageError ? err.message : 'Could not process that image.');
+    }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -80,7 +94,8 @@ export default function AuthPage({ mode = 'login' }) {
     try {
       const { user: u } = await login(loginForm);
       push(`Welcome back, ${u.name.split(' ')[0]}.`, 'success');
-      const dest = location.state?.from || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
+      // Same reasoning as the Google sign-in path above — main page first.
+      const dest = u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard';
       setPostAuth({ dest, messages: ['Verifying your credentials…', 'Setting up your dashboard…', 'Almost there…'] });
     } catch (err) {
       setLoginError(err.message);
@@ -98,6 +113,11 @@ export default function AuthPage({ mode = 'login' }) {
     setRegLoading(true);
     try {
       const { user: u } = await register(regForm);
+      if (regAvatarDataUrl) {
+        // Best-effort — a failed avatar upload shouldn't block account
+        // creation, which already succeeded at this point.
+        await updateAvatar(regAvatarDataUrl).catch(() => {});
+      }
       push(`Account created. Welcome, ${u.name.split(' ')[0]}.`, 'success');
       setPostAuth({ dest: '/dashboard', messages: ['Creating your account…', 'Generating your digital profile…', 'Almost there…'] });
     } catch (err) {
@@ -106,13 +126,8 @@ export default function AuthPage({ mode = 'login' }) {
     }
   }
 
-  function fillDemo(acc) {
-    setLoginForm({ email: acc.email, password: acc.password });
-    if (!isLoginRoute) goLogin();
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* ambient background, echoes the brand's scan-target motif */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 grain opacity-40" />
@@ -130,15 +145,20 @@ export default function AuthPage({ mode = 'login' }) {
         className="w-full max-w-[560px] relative z-10 opacity-0 animate-fadeUp"
         style={{ perspective: '1600px', animationDelay: '120ms' }}
       >
-        <div className="relative" style={{ height: flipped ? undefined : undefined }}>
+        <div className="relative">
           <div
-            className="relative w-full transition-transform duration-[750ms]"
+            className="relative w-full grid transition-transform duration-[750ms]"
             style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(0deg)' : 'rotateY(180deg)' }}
           >
-            {/* ---- LOGIN FACE ---- */}
+            {/* ---- LOGIN FACE ----
+                Both faces sit in the same grid cell (gridArea '1 / 1') so
+                this grid row's height auto-sizes to whichever face is
+                taller — instead of the old approach, where the register
+                face was `position: absolute` and got clamped to the login
+                face's (shorter) height, clipping its bottom content. */}
             <div
               className="w-full rounded-[22px] border shadow-2xl overflow-hidden flex flex-col sm:flex-row"
-              style={{ backfaceVisibility: 'hidden', borderColor: 'var(--line-10)' }}
+              style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', borderColor: 'var(--line-10)' }}
             >
               <InfoPanel
                 icon={<ScanLine size={26} />}
@@ -148,9 +168,9 @@ export default function AuthPage({ mode = 'login' }) {
                 onClick={goRegister}
                 order="order-1 sm:order-1"
               />
-              <div className="sm:w-[54%] order-2 sm:order-2 p-8 sm:p-9 flex flex-col justify-center" style={{ background: 'var(--panel)' }}>
+              <div className="sm:w-[54%] order-2 sm:order-2 p-6 sm:p-9 flex flex-col justify-center min-w-0" style={{ background: 'var(--panel)' }}>
                 <div className="sm:hidden flex items-center gap-2.5 mb-5 -mt-2">
-                  <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(150deg,#22D3A6,#8B7CF6)' }}><ScanLine size={17} color="#0B0F22" /></span>
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(150deg,#22D3A6,#8B7CF6)' }}><ScanLine size={17} color="#0B0F22" /></span>
                   <span className="text-sm text-[var(--text-dim)]">Welcome back, sign in to continue.</span>
                 </div>
                 <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_sign_in')}</h3>
@@ -158,37 +178,21 @@ export default function AuthPage({ mode = 'login' }) {
 
                 {loginError && <FormError message={loginError} />}
 
+                {googleError && <FormError message={googleError} />}
+                <div className="mb-1">
+                  <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
+                </div>
+                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Signing you in…</p>}
+
+                <Divider />
+
                 <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu"
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
                     value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
-                  <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password"
+                  <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
                     value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
                   <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label="Sign in" />
                 </form>
-
-                <Divider />
-                {googleError && <FormError message={googleError} />}
-                <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
-                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Signing you in…</p>}
-
-                <div className="mt-5 pt-5 border-t" style={{ borderColor: 'var(--line-08)' }}>
-                  <p className="text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-semibold mb-2 flex items-center gap-1.5">
-                    <Sparkles size={12} /> {t('auth_quick_demo')}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {DEMO_ACCOUNTS.map((acc) => (
-                      <button
-                        key={acc.email}
-                        type="button"
-                        onClick={() => fillDemo(acc)}
-                        className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg border text-[var(--text-dim)] hover:text-[var(--text)] hover:border-[#22D3A6] transition-colors"
-                        style={{ borderColor: 'var(--line-12)' }}
-                      >
-                        {acc.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 <p className="text-center text-sm text-[var(--text-dim)] mt-5">
                   {t('auth_new_here')}{' '}
@@ -201,33 +205,50 @@ export default function AuthPage({ mode = 'login' }) {
 
             {/* ---- REGISTER FACE ---- */}
             <div
-              className="w-full rounded-[22px] border shadow-2xl overflow-hidden flex flex-col sm:flex-row absolute inset-0"
-              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderColor: 'var(--line-10)' }}
+              className="w-full rounded-[22px] border shadow-2xl overflow-hidden flex flex-col sm:flex-row"
+              style={{ gridArea: '1 / 1', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', borderColor: 'var(--line-10)' }}
             >
-              <div className="sm:w-[54%] order-2 sm:order-1 p-8 sm:p-9 flex flex-col justify-center" style={{ background: 'var(--panel)' }}>
+              <div className="sm:w-[54%] order-2 sm:order-1 p-6 sm:p-9 flex flex-col justify-center min-w-0" style={{ background: 'var(--panel)' }}>
                 <div className="sm:hidden flex items-center gap-2.5 mb-5 -mt-2">
-                  <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(150deg,#F5A623,#FF5C77)' }}><Sparkles size={17} color="#0B0F22" /></span>
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(150deg,#F5A623,#FF5C77)' }}><Sparkles size={17} color="#0B0F22" /></span>
                   <span className="text-sm text-[var(--text-dim)]">Join Presence to RSVP and get your pass.</span>
                 </div>
-                <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_create_account')}</h3>
-                <p className="text-sm text-[var(--text-dim)] mb-6">{t('auth_create_account_sub')}</p>
+                <h3 className="font-display text-2xl font-semibold mb-6">{t('auth_create_account')}</h3>
 
                 {regError && <FormError message={regError} />}
 
+                {googleError && <FormError message={googleError} />}
+                <div className="mb-1">
+                  <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
+                </div>
+                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Setting up your account…</p>}
+
+                <Divider />
+
+                <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit max-w-full">
+                  <span className="relative w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 border-dashed overflow-hidden" style={{ borderColor: 'var(--line-14)' }}>
+                    {regAvatarDataUrl ? (
+                      <img src={regAvatarDataUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera size={16} className="text-[var(--text-dim)]" />
+                    )}
+                  </span>
+                  <span className="text-xs text-[var(--text-dim)] min-w-0">
+                    {regAvatarDataUrl ? 'Photo selected — click to change' : 'Add a profile photo (optional)'}
+                  </span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleRegAvatarPick} />
+                </label>
+                {regAvatarError && <p className="text-xs mb-3" style={{ color: 'var(--danger-text)' }}>{regAvatarError}</p>}
+
                 <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
-                  <Field label={t('auth_full_name')} type="text" autoComplete="name" placeholder="Your name"
+                  <Field label={t('auth_full_name')} type="text" autoComplete="name" placeholder="Your name" icon={User}
                     value={regForm.name} onChange={(v) => setRegForm((f) => ({ ...f, name: v }))} />
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu"
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
                     value={regForm.email} onChange={(v) => setRegForm((f) => ({ ...f, email: v }))} />
-                  <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters"
+                  <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters" icon={Lock}
                     value={regForm.password} onChange={(v) => setRegForm((f) => ({ ...f, password: v }))} />
                   <SubmitButton loading={regLoading} icon={<UserPlus size={16} />} label="Create account" />
                 </form>
-
-                <Divider />
-                {googleError && <FormError message={googleError} />}
-                <GoogleSignInButton onCredential={handleGoogleCredential} onError={setGoogleError} />
-                {googleBusy && <p className="text-center text-xs text-[var(--text-dim)] mt-2">Setting up your account…</p>}
 
                 <p className="text-center text-sm text-[var(--text-dim)] mt-5">
                   {t('auth_have_account')}{' '}
@@ -274,22 +295,24 @@ function InfoPanel({ icon, heading, copy, gradient, onClick, order }) {
   );
 }
 
-function Field({ label, type, value, onChange, placeholder, autoComplete }) {
+function Field({ label, type, value, onChange, placeholder, autoComplete, icon: Icon }) {
   return (
     <label className="block">
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">{label}</span>
-      <input
-        type={type}
-        required
-        autoComplete={autoComplete}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-transparent border-0 border-b-2 py-2 text-[15px] text-[var(--text)] outline-none transition-colors placeholder:text-white/30"
-        style={{ borderColor: 'var(--line-12)' }}
-        onFocus={(e) => (e.target.style.borderColor = '#22D3A6')}
-        onBlur={(e) => (e.target.style.borderColor = 'var(--line-12)')}
-      />
+      <span className="flex items-center gap-2.5 border-0 border-b-2 py-2 transition-colors" style={{ borderColor: 'var(--line-12)' }}>
+        {Icon && <Icon size={16} className="text-[var(--text-dim)] shrink-0" />}
+        <input
+          type={type}
+          required
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent border-0 py-0 text-[15px] text-[var(--text)] outline-none placeholder:text-white/30"
+          onFocus={(e) => (e.target.parentElement.style.borderColor = '#22D3A6')}
+          onBlur={(e) => (e.target.parentElement.style.borderColor = 'var(--line-12)')}
+        />
+      </span>
     </label>
   );
 }

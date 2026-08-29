@@ -1,0 +1,34 @@
+# Render "Blueprint" — lets you deploy this backend by connecting your repo
+# at https://dashboard.render.com/blueprints and clicking through once,
+# instead of configuring a Web Service by hand. All values marked sync:
+# false are secrets/URLs you fill in yourself in the Render dashboard after
+# the first deploy (never commit real secrets to this file).
+services:
+  - type: web
+    name: presence-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: MONGODB_URI
+        sync: false # paste your MongoDB Atlas connection string here
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong random value for you
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false # e.g. https://your-app.netlify.app
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false

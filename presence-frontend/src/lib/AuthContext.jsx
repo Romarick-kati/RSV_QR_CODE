@@ -56,8 +56,21 @@ export function AuthProvider({ children }) {
     return next;
   }
 
-  async function updateProfile(name) {
-    const { user } = await authApi.updateMe(name);
+  async function updateProfile(payload) {
+    const { user } = await authApi.updateMe(payload);
+    setSession((s) => (s ? { ...s, user } : s));
+    return user;
+  }
+
+  // avatarUrl is a compressed base64 data URL, or null to remove the photo.
+  async function updateAvatar(avatarUrl) {
+    const { user } = await authApi.updateMe({ avatarUrl });
+    setSession((s) => (s ? { ...s, user } : s));
+    return user;
+  }
+
+  async function applyForOrganizer(payload) {
+    const { user } = await authApi.requestOrganizerAccess(payload);
     setSession((s) => (s ? { ...s, user } : s));
     return user;
   }
@@ -74,7 +87,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user: session?.user || null, token: session?.token || null, initializing, login, register, loginWithGoogle, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user: session?.user || null, token: session?.token || null, initializing, login, register, loginWithGoogle, logout, updateProfile, updateAvatar, applyForOrganizer }}>
       {children}
     </AuthContext.Provider>
   );

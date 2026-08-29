@@ -1,29 +1,39 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Search, Download, UserX, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Search, Download, UserX, CheckCircle2, ArrowLeft, Wallet } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import { eventsApi, attendanceApi, meApi } from '../../lib/api';
 import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../lib/ToastContext';
+import { downloadCsv } from '../../lib/csvExport';
 
 export default function AdminEventAttendees() {
+  useSEO('Attendees', undefined, { noindex: true });
   const { id } = useParams();
   const { push } = useToast();
-  const [eventTitle, setEventTitle] = useState('');
+  const [event, setEvent] = useState(null);
   const [attendees, setAttendees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [busyId, setBusyId] = useState(null);
+  const isPaid = (event?.price || 0) > 0;
 
-  useEffect(() => { load(); }, [id]);
-  function load() {
-    setLoading(true);
+  useEffect(() => {
+    load();
+    // Keep this list live while it's open — a staff member's scan at the
+    // door shows up here within a few seconds, no manual refresh needed.
+    const interval = setInterval(() => load({ silent: true }), 4000);
+    return () => clearInterval(interval);
+  }, [id]);
+  function load({ silent } = {}) {
+    if (!silent) setLoading(true);
     Promise.all([eventsApi.get(id), eventsApi.attendees(id)])
-      .then(([e, a]) => { setEventTitle(e.event.title); setAttendees(a.attendees); })
-      .finally(() => setLoading(false));
+      .then(([e, a]) => { setEvent(e.event); setAttendees(a.attendees); })
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   const filtered = useMemo(() => attendees.filter((a) => {
@@ -44,6 +54,18 @@ export default function AdminEventAttendees() {
       setBusyId(null);
     }
   }
+  async function confirmPayment(regId) {
+    setBusyId(regId);
+    try {
+      await attendanceApi.confirmPayment(regId);
+      push('Payment confirmed — pass will now scan.', 'success');
+      load();
+    } catch (err) {
+      push(err.message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
   async function removeRegistration(regId) {
     setBusyId(regId);
     try {
@@ -57,21 +79,21 @@ export default function AdminEventAttendees() {
     }
   }
   function exportCsv() {
-    const rows = [['Attendee', 'Email', 'Reference', 'Status', 'Checked in']];
-    filtered.forEach((a) => rows.push([a.user?.name, a.user?.email, a.registrationReference, a.status, a.attendance ? formatDateTime(a.attendance.checkedInAt) : 'Not checked in']));
-    const csv = rows.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `${eventTitle.replace(/\s+/g, '-').toLowerCase()}-attendees.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    const headers = ['Attendee', 'Email', 'Reference', 'Status', 'Checked in'];
+    if (isPaid) headers.push('Payment', 'Payment reference');
+    const rows = filtered.map((a) => {
+      const row = [a.user?.name, a.user?.email, a.registrationReference, a.status, a.attendance ? formatDateTime(a.attendance.checkedInAt) : 'Not checked in'];
+      if (isPaid) row.push(a.paymentStatus, a.paymentReference);
+      return row;
+    });
+    downloadCsv(`${(event?.title || 'attendees').replace(/\s+/g, '-').toLowerCase()}-attendees.csv`, headers, rows);
     push('Attendee list exported.', 'success');
   }
 
   return (
     <AdminShell
       title="Attendees"
-      subtitle={eventTitle}
+      subtitle={event?.title}
       actions={
         <>
           <Link to={`/admin/events/${id}`} className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)]"><ArrowLeft size={15} /> Event</Link>
@@ -104,6 +126,7 @@ export default function AdminEventAttendees() {
                 <th className="px-5 py-3 font-semibold">Reference</th>
                 <th className="px-5 py-3 font-semibold">Registered</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
+                {isPaid && <th className="px-5 py-3 font-semibold">Payment</th>}
                 <th className="px-5 py-3 font-semibold"></th>
               </tr>
             </thead>
@@ -117,6 +140,20 @@ export default function AdminEventAttendees() {
                   <td className="px-5 py-3.5 font-mono text-xs text-[var(--text-dim)]">{a.registrationReference}</td>
                   <td className="px-5 py-3.5 text-[var(--text-dim)]">{formatDateTime(a.createdAt)}</td>
                   <td className="px-5 py-3.5"><Badge status={a.attendance ? 'checked-in' : 'pending'} /></td>
+                  {isPaid && (
+                    <td className="px-5 py-3.5">
+                      {a.paymentStatus === 'confirmed' ? (
+                        <span className="text-xs font-semibold" style={{ color: '#22D3A6' }}>Confirmed</span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-[var(--text-dim)]" title="Transaction reference the attendee submitted">{a.paymentReference || '—'}</span>
+                          <button disabled={busyId === a.id} onClick={() => confirmPayment(a.id)} className="text-[#F5A623] font-semibold text-xs inline-flex items-center gap-1 disabled:opacity-50">
+                            <Wallet size={12} /> Confirm
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  )}
                   <td className="px-5 py-3.5 text-right whitespace-nowrap">
                     {!a.attendance && (
                       <button disabled={busyId === a.id} onClick={() => markAttendance(a.id)} className="text-[#22D3A6] font-semibold text-xs mr-3 inline-flex items-center gap-1 disabled:opacity-50"><CheckCircle2 size={13} /> Mark present</button>

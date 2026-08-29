@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
@@ -9,6 +9,7 @@ import { useLanguage } from '../../lib/LanguageContext';
 export default function PublicNav() {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -18,6 +19,22 @@ export default function PublicNav() {
     { to: '/about', label: t('nav_about') },
     { to: '/faq', label: t('nav_faq') },
   ];
+
+  // Closes the dropdown on an actual outside click, instead of the previous
+  // onBlur+setTimeout approach — that raced against the click on "Sign
+  // out"/"My dashboard" itself: blur fires the instant those buttons are
+  // pressed, and if the browser was even slightly slow to register the
+  // click before the timeout fired, the menu (and the button under the
+  // cursor) vanished before the click completed, so sign-out silently did
+  // nothing. Listening for a real click outside has no such race.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md border-b" style={{ background: 'var(--bg-translucent)', borderColor: 'var(--line-08)' }}>
@@ -44,10 +61,9 @@ export default function PublicNav() {
         <div className="hidden md:flex items-center gap-3">
           <PreferencesToggle />
           {user ? (
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
                 className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border hover:bg-white/5 transition-colors"
                 style={{ borderColor: 'var(--line-10)' }}
               >
@@ -62,13 +78,13 @@ export default function PublicNav() {
                 <ChevronDown size={14} className="text-[var(--text-dim)]" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-xl border shadow-2xl overflow-hidden" style={{ background: 'var(--panel)', borderColor: 'var(--line-10)' }}>
-                  <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5">
+                <div className="absolute right-0 mt-2 w-52 rounded-xl border shadow-2xl overflow-hidden z-50" style={{ background: 'var(--panel)', borderColor: 'var(--line-10)' }}>
+                  <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5">
                     {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? <ShieldCheck size={15} /> : <LayoutDashboard size={15} />}
                     {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
                   </Link>
                   <button
-                    onClick={() => { logout(); navigate('/'); }}
+                    onClick={() => { setMenuOpen(false); logout(); navigate('/'); }}
                     className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#FF5C77] hover:bg-white/5 border-t"
                     style={{ borderColor: 'var(--line-08)' }}
                   >

@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ImageIcon, Sparkles, Upload, X } from 'lucide-react';
 import { CATEGORIES } from '../../lib/constants';
 import { toDateInputValue } from '../../lib/utils';
+import { compressImageFile, ImageError } from '../../lib/imageUtils';
+import { getSmartEventPhoto, suggestEventPhoto } from '../../lib/eventPhoto';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
-  venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft',
+  venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
+  price: 0, momoNumber: '',
 };
 
 export default function EventForm({ initial, onSubmit, submitLabel = 'Save event' }) {
@@ -13,12 +17,79 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     ...initial,
     date: initial?.date ? toDateInputValue(initial.date) : '',
     registrationDeadline: initial?.registrationDeadline ? toDateInputValue(initial.registrationDeadline) : '',
+    momoNumber: initial?.momoNumber || '',
+    price: initial?.price ?? 0,
   }));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
+  // Cover photo: 'manual' once the admin uploads their own image, so the
+  // auto-suggest effect below stops overwriting it. Starts 'auto' for a new
+  // event, or null for an existing one that already has a saved image.
+  const [imageSource, setImageSource] = useState(initial?.image ? null : 'auto');
+  const [suggesting, setSuggesting] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef(null);
+  const suggestTimer = useRef(null);
+
   function set(k, v) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  // "Like an AI automatically doing it" — as the organizer types an event
+  // name (and hasn't uploaded their own photo), quietly suggest a matching
+  // cover photo in the background, debounced so it doesn't fire on every
+  // keystroke.
+  useEffect(() => {
+    if (imageSource !== 'auto') return;
+    if (!form.title.trim()) return;
+    clearTimeout(suggestTimer.current);
+    suggestTimer.current = setTimeout(() => {
+      suggestEventPhoto(form.title, form.category).then((url) => {
+        setForm((f) => (imageSourceIsStillAuto() ? { ...f, image: url } : f));
+      }).catch(() => {});
+    }, 700);
+    return () => clearTimeout(suggestTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.title, form.category, imageSource]);
+
+  // Guards against a slow suggestion landing after the admin has since
+  // uploaded their own photo (closure-safe read of the latest state).
+  function imageSourceIsStillAuto() {
+    return imageSource === 'auto';
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImageError('');
+    try {
+      const dataUrl = await compressImageFile(file, { maxDim: 1200, quality: 0.82 });
+      setForm((f) => ({ ...f, image: dataUrl }));
+      setImageSource('manual');
+    } catch (err) {
+      setImageError(err instanceof ImageError ? err.message : 'Could not process that image.');
+    }
+  }
+
+  async function handleAutoSuggest() {
+    setImageError('');
+    setSuggesting(true);
+    try {
+      const url = await suggestEventPhoto(form.title, form.category);
+      setForm((f) => ({ ...f, image: url }));
+      setImageSource('auto');
+    } catch {
+      setImageError('Could not suggest a photo right now.');
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  function handleRemoveImage() {
+    setForm((f) => ({ ...f, image: '' }));
+    setImageSource(null);
   }
 
   function validate() {
@@ -33,6 +104,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
       e.registrationDeadline = 'Deadline must be on or before the event date.';
     }
     if (form.startTime >= form.endTime) e.endTime = 'End time must be after start time.';
+    if (Number(form.price) > 0 && !form.momoNumber.trim()) e.momoNumber = 'A Mobile Money number is required for a paid event.';
     return e;
   }
 
@@ -43,7 +115,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     if (Object.keys(errs).length > 0) return;
     setSaving(true);
     await new Promise((r) => setTimeout(r, 450));
-    onSubmit({ ...form, capacity: Number(form.capacity), longDescription: form.longDescription || form.description });
+    onSubmit({ ...form, capacity: Number(form.capacity), price: Number(form.price) || 0, longDescription: form.longDescription || form.description });
     setSaving(false);
   }
 
@@ -58,6 +130,42 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
         </Field>
         <Field label="Full description">
           <textarea value={form.longDescription} onChange={(e) => set('longDescription', e.target.value)} rows={4} placeholder="Full details shown on the event page." className="input resize-none" />
+        </Field>
+
+        <Field label="Cover photo">
+          <div className="flex gap-4 items-start">
+            <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 border relative" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
+              <img src={getSmartEventPhoto(form)} alt="" className="w-full h-full object-cover" />
+              {suggesting && (
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-2">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5" style={{ borderColor: 'var(--line-12)' }}>
+                  <Upload size={13} /> Upload photo
+                </button>
+                <button type="button" onClick={handleAutoSuggest} disabled={suggesting} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-60" style={{ background: 'rgba(139,124,246,0.14)', color: '#8B7CF6' }}>
+                  <Sparkles size={13} /> {suggesting ? 'Suggesting…' : 'Auto-suggest from name'}
+                </button>
+                {form.image && (
+                  <button type="button" onClick={handleRemoveImage} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5 text-[var(--text-dim)]" style={{ borderColor: 'var(--line-12)' }}>
+                    <X size={13} /> Remove
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-dim)] mt-2 flex items-start gap-1.5">
+                <ImageIcon size={13} className="shrink-0 mt-0.5" />
+                {imageSource === 'auto' && form.image
+                  ? "Auto-picked from the event name — upload your own to override it."
+                  : 'Upload your own image, or let it auto-match a photo to the event name as you type.'}
+              </p>
+              {imageError && <p className="text-xs mt-1.5" style={{ color: 'var(--danger-text)' }}>{imageError}</p>}
+            </div>
+          </div>
         </Field>
 
         <div className="grid sm:grid-cols-2 gap-5">
@@ -100,6 +208,21 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
             <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
           </Field>
         </div>
+
+        <div className="grid sm:grid-cols-2 gap-5">
+          <Field label="Ticket price (0 = free)">
+            <input type="number" min={0} step="50" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
+          </Field>
+          <Field label="Mobile Money number (if paid)" error={errors.momoNumber}>
+            <input value={form.momoNumber} onChange={(e) => set('momoNumber', e.target.value)} placeholder="e.g. 6XX XXX XXX" disabled={!Number(form.price)} className="input disabled:opacity-50" />
+          </Field>
+        </div>
+        {Number(form.price) > 0 && (
+          <p className="text-xs -mt-2 text-[var(--text-dim)] leading-relaxed">
+            Attendees will be asked to send this amount to that Mobile Money number and submit the transaction reference at RSVP.
+            Their pass won't scan at the door until you confirm that payment from the attendee list.
+          </p>
+        )}
       </div>
 
       <div className="rounded-2xl border p-6 h-fit flex flex-col gap-4" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, MapPin, Users, Mail, ArrowLeft, TriangleAlert, CheckCircle2,
-  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette,
+  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Wallet, Copy,
 } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
@@ -12,8 +12,10 @@ import { useAuth } from '../../lib/AuthContext';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import { eventsApi, meApi, ApiError } from '../../lib/api';
-import { EVENT_TINTS, EVENT_PHOTOS } from '../../lib/constants';
+import { EVENT_TINTS } from '../../lib/constants';
+import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { formatDateLong, formatTime, isEventPast } from '../../lib/utils';
+import { useSEO } from '../../lib/useSEO';
 
 const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
 
@@ -29,6 +31,10 @@ export default function EventDetail() {
   const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [myRegistrationId, setMyRegistrationId] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentReference, setPaymentReference] = useState('');
+
+  useSEO(event?.title, event?.description);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,16 +95,27 @@ export default function EventDetail() {
   const past = isEventPast(event);
   const deadlinePassed = new Date(event.registrationDeadline) < new Date();
   const full = remaining <= 0;
+  const isPaid = (event.price || 0) > 0;
 
   async function handleRsvp() {
     if (!user) {
       navigate('/login', { state: { from: `/events/${event.id}` } });
       return;
     }
+    if (isPaid && !showPayment) {
+      // First click on a paid event just opens the payment panel instead
+      // of registering right away — the reference is required server-side.
+      setShowPayment(true);
+      return;
+    }
+    if (isPaid && !paymentReference.trim()) {
+      push('Enter the Mobile Money transaction reference to continue.', 'error');
+      return;
+    }
     setSubmitting(true);
     try {
-      const { registration } = await eventsApi.rsvp(event.id);
-      push('Registration confirmed, your pass is ready.', 'success');
+      const { registration } = await eventsApi.rsvp(event.id, isPaid ? { paymentReference: paymentReference.trim() } : undefined);
+      push(isPaid ? 'Registered — your pass is ready. It unlocks for check-in once the organizer confirms your payment.' : 'Registration confirmed, your pass is ready.', 'success');
       navigate(`/qr-pass/${registration.id}`);
     } catch (err) {
       push(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.', 'error');
@@ -106,19 +123,20 @@ export default function EventDetail() {
     }
   }
 
-  let ctaLabel = t('event_rsvp');
+  let ctaLabel = isPaid ? `Pay & register — ${event.price} FCFA` : t('event_rsvp');
   let ctaDisabled = false;
   if (past) { ctaLabel = t('event_ended'); ctaDisabled = true; }
   else if (myRegistrationId) { ctaLabel = t('event_registered'); }
   else if (deadlinePassed) { ctaLabel = t('event_registration_closed'); ctaDisabled = true; }
   else if (full) { ctaLabel = t('event_fully_booked'); ctaDisabled = true; }
+  else if (showPayment) { ctaLabel = 'Confirm registration'; }
 
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen overflow-x-hidden">
       <PublicNav />
 
       <div className="relative h-64 sm:h-80 flex items-end overflow-hidden">
-        <img src={EVENT_PHOTOS[event.category]} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={getSmartEventPhoto(event, '1600/900')} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
         <div className="max-w-5xl mx-auto px-5 sm:px-8 w-full pb-8 relative z-10">
           <Link to="/events" className="inline-flex items-center gap-1.5 text-white/85 text-sm font-medium mb-4 hover:text-white">
@@ -160,6 +178,35 @@ export default function EventDetail() {
           {myRegistrationId && (
             <div className="flex items-center gap-2 text-sm font-medium rounded-lg px-3 py-2.5 mb-3" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
               <CheckCircle2 size={16} /> {t('event_registered_banner')}
+            </div>
+          )}
+
+          {isPaid && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && (
+            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(245,166,35,0.35)', background: 'rgba(245,166,35,0.08)' }}>
+              <p className="text-xs font-semibold flex items-center gap-1.5 mb-2" style={{ color: '#F5A623' }}>
+                <Wallet size={14} /> Pay with Mobile Money
+              </p>
+              <p className="text-xs text-[var(--text-dim)] leading-relaxed mb-2">
+                Send <strong className="text-[var(--text)]">{event.price} FCFA</strong> to{' '}
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard?.writeText(event.momoNumber || ''); push('Number copied.', 'info'); }}
+                  className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--text)] underline decoration-dotted"
+                >
+                  {event.momoNumber || 'the organizer'} <Copy size={11} />
+                </button>{' '}
+                via MTN/Orange Money, then enter the transaction reference from the confirmation SMS below.
+              </p>
+              <input
+                value={paymentReference}
+                onChange={(e) => setPaymentReference(e.target.value)}
+                placeholder="e.g. MP240811.1234.A56789"
+                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                style={{ borderColor: 'var(--line-12)', background: 'var(--bg)' }}
+              />
+              <p className="text-[11px] text-[var(--text-dim)] mt-1.5">
+                Your seat is held immediately — the organizer confirms payment before your pass will scan at the door.
+              </p>
             </div>
           )}
 

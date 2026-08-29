@@ -3,7 +3,13 @@
 // instead — the function names below intentionally mirror that old module
 // so the diff, page by page, is small and easy to review.
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+// The backend now runs as a Netlify Function on this same site (see
+// netlify/functions/api.js), so a relative "/api" always resolves
+// correctly — no separate backend URL to configure, and no CORS to worry
+// about, since it's the same origin as the frontend itself. VITE_API_URL
+// is still supported as an override, for anyone running the backend as a
+// separate standalone server instead (see presence-backend/README.md).
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const STORAGE_KEY = 'presence_session';
 
 export class ApiError extends Error {
@@ -36,14 +42,33 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new ApiError('Could not reach the server. Is the API running?', 0);
+    throw new ApiError('Could not reach the server. Check your connection and try again.', 0);
   }
 
   let data = null;
-  try { data = await res.json(); } catch { /* e.g. 204 No Content */ }
+  let rawText = null;
+  try {
+    // Read once as text, then parse — so on failure we still have the raw
+    // body to build a useful error message from instead of losing it.
+    rawText = await res.text();
+    data = rawText ? JSON.parse(rawText) : null;
+  } catch { /* not JSON — e.g. a 204, or the server/function returned HTML */ }
 
   if (!res.ok) {
-    throw new ApiError(data?.message || 'Something went wrong. Please try again.', res.status, data?.details);
+    if (data?.message || data?.errorMessage) {
+      throw new ApiError(data.message || data.errorMessage, res.status, data?.details);
+    }
+    // The server responded, but not with JSON — almost always means the
+    // API route itself is unreachable or misconfigured (wrong redirect,
+    // function not deployed, cold-start timeout, etc.), not a normal
+    // validation error. Surface the status code so it's diagnosable
+    // instead of a silent, meaningless "something went wrong".
+    const hint = res.status === 404
+      ? 'The API endpoint could not be found. Check that the backend is deployed and VITE_API_URL / Netlify redirects are set up correctly.'
+      : res.status >= 500
+        ? 'The server encountered an error. Check the backend/Netlify function logs for details.'
+        : `Request failed (HTTP ${res.status}).`;
+    throw new ApiError(hint, res.status);
   }
   return data;
 }
@@ -62,7 +87,8 @@ export const authApi = {
   register: (name, email, password) => client.post('/auth/register', { name, email, password }, { auth: false }),
   google: (credential) => client.post('/auth/google', { credential }, { auth: false }),
   me: () => client.get('/auth/me'),
-  updateMe: (name) => client.patch('/auth/me', { name }),
+  updateMe: (payload) => client.patch('/auth/me', payload),
+  requestOrganizerAccess: (payload) => client.post('/auth/me/organizer-request', payload),
 };
 
 // ---------- Events ----------
@@ -79,7 +105,7 @@ export const eventsApi = {
   statistics: (id) => client.get(`/events/${id}/statistics`),
   attendees: (id) => client.get(`/events/${id}/attendees`),
   attendance: (id) => client.get(`/events/${id}/attendance`),
-  rsvp: (id) => client.post(`/events/${id}/rsvp`),
+  rsvp: (id, body) => client.post(`/events/${id}/rsvp`, body),
 };
 
 // ---------- My registrations (attendee) ----------
@@ -93,13 +119,23 @@ export const meApi = {
 export const attendanceApi = {
   checkIn: (token) => client.post('/attendance/check-in', { token }),
   manualCheckIn: (registrationId) => client.post(`/attendance/manual/${registrationId}`),
+  confirmPayment: (registrationId) => client.post(`/attendance/confirm-payment/${registrationId}`),
 };
 
 // ---------- Admin ----------
 export const adminApi = {
   dashboard: () => client.get('/admin/dashboard'),
-  users: () => client.get('/admin/users'),
+  users: (search) => client.get(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  createUser: (data) => client.post('/admin/users', data),
+  updateUser: (id, data) => client.patch(`/admin/users/${id}`, data),
+  deleteUser: (id) => client.del(`/admin/users/${id}`),
   registrations: (eventId) => client.get(`/admin/registrations${eventId ? `?eventId=${eventId}` : ''}`),
+  notifications: () => client.get('/admin/notifications'),
+  markNotificationRead: (id) => client.patch(`/admin/notifications/${id}/read`),
+  markAllNotificationsRead: () => client.patch('/admin/notifications/read-all'),
+  organizerRequests: () => client.get('/admin/organizer-requests'),
+  approveOrganizerRequest: (id) => client.post(`/admin/organizer-requests/${id}/approve`),
+  rejectOrganizerRequest: (id) => client.post(`/admin/organizer-requests/${id}/reject`),
 };
 
 export default client;

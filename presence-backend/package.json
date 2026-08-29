@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node scripts/seed.js",
+    "admin:sync": "node scripts/syncAdmin.js",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [],
@@ -23,8 +24,7 @@
     "google-auth-library": "^11.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.4",
-    "morgan": "^1.11.0",
-    "serverless-http": "^4.0.0"
+    "morgan": "^1.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

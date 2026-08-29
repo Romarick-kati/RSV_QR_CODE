@@ -1,6 +1,7 @@
 import { ShieldCheck, ScanLine, BarChart3, Users } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
+import { useSEO } from '../../lib/useSEO';
 
 const PILLARS = [
   { icon: Users, title: 'For attendees', copy: 'Register for an event once, receive a digital pass instantly, and reuse it every time you check in.' },
@@ -10,6 +11,7 @@ const PILLARS = [
 ];
 
 export default function About() {
+  useSEO('About', 'Presence replaces paper sign-in sheets with online RSVPs, digital QR passes, and one verified scan at check-in.');
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />

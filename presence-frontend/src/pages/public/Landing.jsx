@@ -12,6 +12,7 @@ import { eventsApi } from '../../lib/api';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../lib/LanguageContext';
 import AnimatedNumber from '../../components/ui/AnimatedNumber';
+import { useSEO } from '../../lib/useSEO';
 
 const STEPS = [
   { icon: ClipboardList, title: 'Organizer publishes the event', copy: 'Set the date, venue, and capacity. The event goes live on the public site instantly.' },
@@ -38,6 +39,7 @@ export default function Landing() {
   const [stats, setStats] = useState({ totalEvents: 0, totalRegistrations: 0, totalCapacity: 0 });
   const [openFaq, setOpenFaq] = useState(0);
   const { t } = useLanguage();
+  useSEO(null, 'RSVP to campus and corporate events online, get a digital QR pass, and check in with one verified scan at the door — no more paper sign-in sheets.');
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +62,21 @@ export default function Landing() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
+          {/* Blurred photo backdrop. Heavily blurred + dimmed, so it reads
+              as soft ambient light behind the text rather than a sharp
+              image — which also means a small, cheap source image looks
+              identical to a huge one here, so this stays fast: no
+              lazy-loading (it's above the fold) but a modest 1200px source
+              keeps the download small, and the blur/scrim do the rest. */}
+          <img
+            src="https://picsum.photos/seed/presence-hero/1200/900"
+            alt=""
+            aria-hidden="true"
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40"
+          />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, var(--bg) 0%, rgba(10,13,24,0.55) 45%, var(--bg) 100%)' }} />
           <div className="absolute inset-0 grain opacity-30" />
           <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-20 -top-40 -left-32" style={{ background: '#22D3A6' }} />
           <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-15 top-10 right-0" style={{ background: '#8B7CF6' }} />

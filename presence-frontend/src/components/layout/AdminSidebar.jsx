@@ -1,5 +1,5 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, FileBarChart, LogOut, X, Globe } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, FileBarChart, Users, LogOut, X, Globe } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
 import { useAuth } from '../../lib/AuthContext';
@@ -14,6 +14,10 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
     { to: '/admin', label: t('admin_dashboard'), icon: LayoutDashboard, end: true },
     { to: '/admin/events', label: t('admin_events'), icon: CalendarDays },
     { to: '/admin/reports', label: t('admin_reports'), icon: FileBarChart },
+    // User management touches accounts and roles directly, so it's kept to
+    // ADMIN only — an organizer managing events shouldn't also be able to
+    // change who has admin access.
+    ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', label: t('admin_users'), icon: Users }] : []),
   ];
 
   const content = (

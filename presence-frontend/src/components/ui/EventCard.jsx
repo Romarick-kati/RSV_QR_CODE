@@ -7,7 +7,8 @@ import {
   faChalkboardUser, faBullseye, faMasksTheater, faCalendarDays, faLocationDot, faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { formatDate, formatTime, isEventPast } from '../../lib/utils';
-import { EVENT_TINTS, EVENT_PHOTOS } from '../../lib/constants';
+import { EVENT_TINTS } from '../../lib/constants';
+import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { useLanguage } from '../../lib/LanguageContext';
 
 const CATEGORY_ICON = {
@@ -33,7 +34,7 @@ export default function EventCard({ event, index = 0 }) {
       <div className="relative h-40 overflow-hidden">
         {!loaded && <div className="absolute inset-0 skeleton" />}
         <motion.img
-          src={EVENT_PHOTOS[event.category]}
+          src={getSmartEventPhoto(event)}
           alt=""
           onLoad={() => setLoaded(true)}
           className="absolute inset-0 w-full h-full object-cover"

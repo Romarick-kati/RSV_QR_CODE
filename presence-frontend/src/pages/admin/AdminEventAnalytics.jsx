@@ -3,10 +3,12 @@ import { Navigate, useParams, Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { ArrowLeft, Users, ScanLine, Percent, Gauge } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import StatCard from '../../components/ui/StatCard';
 import { eventsApi } from '../../lib/api';
 
 export default function AdminEventAnalytics() {
+  useSEO('Event Analytics', undefined, { noindex: true });
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [stats, setStats] = useState(null);

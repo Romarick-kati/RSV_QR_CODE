@@ -8,10 +8,12 @@ import { meApi } from '../../lib/api';
 import { formatDate, formatTime, isEventPast } from '../../lib/utils';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useSEO } from '../../lib/useSEO';
 
 export default function MyEvents() {
   const { push } = useToast();
   const { t } = useLanguage();
+  useSEO('My Events', undefined, { noindex: true });
   const [tab, setTab] = useState('upcoming');
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);

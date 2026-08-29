@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { CalendarDays, Users, ScanLine, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import StatCard from '../../components/ui/StatCard';
 import Badge from '../../components/ui/Badge';
 import { adminApi, eventsApi } from '../../lib/api';
 import { formatDateTime, formatDate } from '../../lib/utils';
 
 export default function AdminDashboard() {
+  useSEO('Organizer Console', undefined, { noindex: true });
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [regs, setRegs] = useState([]);
@@ -16,15 +18,21 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([adminApi.dashboard(), eventsApi.listAdmin(), adminApi.registrations()])
-      .then(([d, e, r]) => {
-        if (cancelled) return;
-        setStats(d);
-        setEvents(e.events);
-        setRegs(r.registrations);
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    function load({ silent } = {}) {
+      Promise.all([adminApi.dashboard(), eventsApi.listAdmin(), adminApi.registrations()])
+        .then(([d, e, r]) => {
+          if (cancelled) return;
+          setStats(d);
+          setEvents(e.events);
+          setRegs(r.registrations);
+        })
+        .finally(() => { if (!cancelled && !silent) setLoading(false); });
+    }
+    load();
+    // Keep the console live — check-ins happening at any event's scanner
+    // right now update the numbers here within a few seconds.
+    const interval = setInterval(() => load({ silent: true }), 5000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   const recentRegs = [...regs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);

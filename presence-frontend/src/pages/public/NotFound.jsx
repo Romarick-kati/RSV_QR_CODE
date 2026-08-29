@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { CompassIcon } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
+import { useSEO } from '../../lib/useSEO';
 
 export default function NotFound() {
+  useSEO('Page not found', undefined, { noindex: true });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />

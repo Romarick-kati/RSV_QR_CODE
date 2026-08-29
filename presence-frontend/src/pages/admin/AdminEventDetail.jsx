@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link, Navigate, NavLink } from 'react-router-dom';
 import { Users, ScanLine, BarChart3, ExternalLink } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import EventForm from '../../components/admin/EventForm';
+import EventShareLink from '../../components/admin/EventShareLink';
 import Badge from '../../components/ui/Badge';
 import { eventsApi } from '../../lib/api';
 import { useToast } from '../../lib/ToastContext';
 
 export default function AdminEventDetail() {
+  useSEO('Manage Event', undefined, { noindex: true });
   const { id } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
@@ -22,7 +25,13 @@ export default function AdminEventDetail() {
       .then(([e, s]) => { if (!cancelled) { setEvent(e.event); setStats(s); } })
       .catch(() => { if (!cancelled) setNotFound(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+
+    // Keep the Registered/Checked-in numbers live while this page is open,
+    // so check-ins happening at the scanner right now show up here too.
+    const interval = setInterval(() => {
+      eventsApi.statistics(id).then((s) => { if (!cancelled) setStats(s); }).catch(() => {});
+    }, 4000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [id]);
 
   if (notFound) return <Navigate to="/admin/events" replace />;
@@ -57,6 +66,8 @@ export default function AdminEventDetail() {
         </>
       }
     >
+      <EventShareLink eventId={event.id} />
+
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
         <MiniStat label="Registered" value={`${stats.registered}/${event.capacity}`} />
         <MiniStat label="Checked in" value={stats.checkedIn} />

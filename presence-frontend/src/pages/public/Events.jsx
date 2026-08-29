@@ -8,9 +8,11 @@ import { CATEGORIES } from '../../lib/constants';
 import { eventsApi } from '../../lib/api';
 import { isEventPast } from '../../lib/utils';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useSEO } from '../../lib/useSEO';
 
 export default function Events() {
   const { t } = useLanguage();
+  useSEO('Browse Events', 'Browse upcoming technology conferences, workshops, seminars, and career fairs. RSVP online and get your QR pass instantly.');
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

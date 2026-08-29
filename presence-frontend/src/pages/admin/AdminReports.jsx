@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search, Download, FileBarChart } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import { adminApi, eventsApi } from '../../lib/api';
@@ -8,6 +9,7 @@ import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../lib/ToastContext';
 
 export default function AdminReports() {
+  useSEO('Reports', undefined, { noindex: true });
   const { push } = useToast();
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);

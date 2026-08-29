@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Calendar, Clock, MapPin, Download, ArrowLeft, CheckCircle2, TriangleAlert } from 'lucide-react';
+import { Calendar, Clock, MapPin, Download, ArrowLeft, CheckCircle2, TriangleAlert, CalendarPlus, ScanLine } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import BrandMark from '../../components/ui/BrandMark';
 import { useLanguage } from '../../lib/LanguageContext';
 import { meApi } from '../../lib/api';
-import { formatDateLong, formatTime, formatDateTime } from '../../lib/utils';
+import { useSEO } from '../../lib/useSEO';
+import { formatDateLong, formatTime, formatDateTime, downloadIcsForEvent } from '../../lib/utils';
+import { buildCheckinUrl } from '../../lib/checkinUrl';
 
 export default function QrPass() {
   const { id } = useParams();
   const { t } = useLanguage();
+  useSEO('Your QR Pass', undefined, { noindex: true });
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +32,10 @@ export default function QrPass() {
 
   function handlePrint() {
     window.print();
+  }
+
+  function handleAddToCalendar() {
+    downloadIcsForEvent(registration.event);
   }
 
   return (
@@ -69,7 +76,7 @@ export default function QrPass() {
             </div>
 
             <div className="mx-7 mb-3 rounded-2xl p-6 flex flex-col items-center gap-4" style={{ background: '#fff' }}>
-              <QRCodeSVG value={registration.attendanceToken} size={188} bgColor="#ffffff" fgColor="#0A0D18" level="M" />
+              <QRCodeSVG value={buildCheckinUrl(registration.attendanceToken)} size={188} bgColor="#ffffff" fgColor="#0A0D18" level="M" />
               <p className="font-mono text-xs tracking-wide text-[#0A0D18]/60">{registration.registrationReference}</p>
             </div>
 
@@ -91,13 +98,34 @@ export default function QrPass() {
             )}
           </div>
 
-          <button
-            onClick={handlePrint}
-            className="w-full mt-5 flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-xl border hover:bg-white/5 transition-colors text-[var(--text)]"
-            style={{ borderColor: 'var(--line-14)' }}
-          >
-            <Download size={15} /> {t('pass_save_print')}
-          </button>
+          {!registration.attendance && (
+            <div className="mt-5 rounded-2xl border p-5 flex items-start gap-3" style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'rgba(34,211,166,0.08)' }}>
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(34,211,166,0.16)' }}>
+                <ScanLine size={17} style={{ color: '#22D3A6' }} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text)] mb-0.5">{t('pass_howto_title')}</p>
+                <p className="text-xs text-[var(--text-dim)] leading-relaxed">{t('pass_howto_desc')}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <button
+              onClick={handleAddToCalendar}
+              className="flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-xl border hover:bg-white/5 transition-colors text-[var(--text)]"
+              style={{ borderColor: 'var(--line-14)' }}
+            >
+              <CalendarPlus size={15} /> {t('pass_add_to_calendar')}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-xl border hover:bg-white/5 transition-colors text-[var(--text)]"
+              style={{ borderColor: 'var(--line-14)' }}
+            >
+              <Download size={15} /> {t('pass_save_print')}
+            </button>
+          </div>
           <p className="text-center text-xs text-[var(--text-dim)] mt-4">
             {t('pass_disclaimer')}
           </p>

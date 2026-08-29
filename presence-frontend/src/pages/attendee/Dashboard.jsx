@@ -8,13 +8,15 @@ import Badge from '../../components/ui/Badge';
 import { useAuth } from '../../lib/AuthContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import { meApi } from '../../lib/api';
-import { formatDate, isEventPast } from '../../lib/utils';
+import { formatDate, isEventPast, daysUntil } from '../../lib/utils';
+import { useSEO } from '../../lib/useSEO';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
+  useSEO('Dashboard', undefined, { noindex: true });
 
   useEffect(() => {
     let cancelled = false;
@@ -26,9 +28,30 @@ export default function Dashboard() {
 
   const upcoming = regs.filter((r) => r.event && !isEventPast(r.event)).sort((a, b) => String(a.event.date).localeCompare(String(b.event.date)));
   const checkedIn = regs.filter((r) => r.attendance);
+  const nextUp = upcoming[0];
 
   return (
     <AttendeeShell title={t('dash_welcome', { name: user.name.split(' ')[0] })} subtitle={t('dash_subtitle')}>
+      {!loading && nextUp && (
+        <Link
+          to={`/qr-pass/${nextUp.id}`}
+          className="flex items-center justify-between gap-4 rounded-2xl border p-5 mb-6 transition-colors hover:border-[#22D3A6]"
+          style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'linear-gradient(120deg, rgba(34,211,166,0.10), rgba(139,124,246,0.08))' }}
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#22D3A6' }}>{t('dash_next_up')}</p>
+            <p className="font-display font-semibold text-[var(--text)] truncate">{nextUp.event.title}</p>
+            <p className="text-sm text-[var(--text-dim)] mt-0.5">
+              {daysUntil(nextUp.event) === 0 ? t('dash_days_today') : daysUntil(nextUp.event) === 1 ? t('dash_days_tomorrow') : t('dash_days_in', { days: daysUntil(nextUp.event) })}
+              {' '}&middot; {formatDate(nextUp.event.date)} &middot; {nextUp.event.venue}
+            </p>
+          </div>
+          <span className="shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}>
+            {t('dash_view_pass')} <ArrowRight size={14} />
+          </span>
+        </Link>
+      )}
+
       {loading ? (
         <div className="grid sm:grid-cols-3 gap-4 mb-8">
           {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 rounded-2xl skeleton" />)}

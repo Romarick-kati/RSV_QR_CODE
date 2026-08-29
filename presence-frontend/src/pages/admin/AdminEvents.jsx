@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, CalendarX, Users, ScanLine, BarChart3, Pencil, Trash2 } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
+import { useSEO } from '../../lib/useSEO';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import ConfirmModal from '../../components/ui/ConfirmModal';
@@ -12,6 +13,7 @@ import { useToast } from '../../lib/ToastContext';
 const STATUS_FILTERS = ['All', 'published', 'draft', 'completed', 'cancelled'];
 
 export default function AdminEvents() {
+  useSEO('Manage Events', undefined, { noindex: true });
   const { push } = useToast();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);

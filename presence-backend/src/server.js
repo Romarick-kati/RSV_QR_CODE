@@ -1,19 +1,36 @@
 import { createApp } from './app.js';
-import { config } from './config/env.js';
-import { connectDB } from './config/db.js';
-import serverless from 'serverless-http';
+import { config, assertRequiredEnv } from './config/env.js';
+import { connectDB, mongoose } from './config/db.js';
+
+try {
+  assertRequiredEnv();
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error(`[config] ${err.message}`);
+  process.exit(1);
+}
 
 const app = createApp();
 
-// This middleware ensures you connect to MongoDB on every serverless invocation
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
+async function start() {
+  await connectDB();
 
-// Export the serverless handler for Netlify
-export const handler = serverless(app);
+  const server = app.listen(config.port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Presence API listening on http://localhost:${config.port} (${config.nodeEnv})`);
+  });
+
+  async function shutdown(signal) {
+    // eslint-disable-next-line no-console
+    console.log(`${signal} received, shutting down...`);
+    server.close(async () => {
+      await mongoose.disconnect();
+      process.exit(0);
+    });
+  }
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+}
+
+start();
