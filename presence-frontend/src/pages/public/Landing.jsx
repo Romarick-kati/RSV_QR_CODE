@@ -62,24 +62,18 @@ export default function Landing() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          {/* Blurred photo backdrop. Heavily blurred + dimmed, so it reads
-              as soft ambient light behind the text rather than a sharp
-              image — which also means a small, cheap source image looks
-              identical to a huge one here, so this stays fast: no
-              lazy-loading (it's above the fold) but a modest 1200px source
-              keeps the download small, and the blur/scrim do the rest. */}
-          <img
-            src="https://picsum.photos/seed/presence-hero/1200/900"
-            alt=""
-            aria-hidden="true"
-            fetchPriority="high"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40"
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, var(--bg) 0%, rgba(10,13,24,0.55) 45%, var(--bg) 100%)' }} />
-          <div className="absolute inset-0 grain opacity-30" />
-          <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-20 -top-40 -left-32" style={{ background: '#22D3A6' }} />
-          <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-15 top-10 right-0" style={{ background: '#8B7CF6' }} />
+          {/* Ambient color glow only — no photo backdrop. This used to
+              layer a random blurred stock photo under a gradient that
+              faded to a hardcoded dark navy in the middle
+              (rgba(10,13,24,...)), which looked fine in dark mode (where
+              that navy matches the background) but showed up as a muddy
+              grey/brown smear in light mode, since it never adapted to the
+              light theme's white background. Matches the clean
+              blobs-on-var(--bg) treatment already used on the sign-in
+              page, which reads correctly in both themes. */}
+          <div className="absolute inset-0 grain opacity-20" />
+          <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-[0.14] -top-40 -left-32" style={{ background: '#22D3A6' }} />
+          <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-[0.11] top-10 right-0" style={{ background: '#8B7CF6' }} />
         </div>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 pb-24 relative z-10 grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
           <div>

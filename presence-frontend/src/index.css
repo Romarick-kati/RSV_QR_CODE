@@ -39,10 +39,14 @@
 }
 
 [data-theme="light"]{
-  --bg: #F6F7FB;
-  --bg-translucent: rgba(246,247,251,0.86);
+  /* Brightened to a plain, clean white (was a slightly hazy light-gray
+     #F6F7FB) — panels are now a hair off-white so cards still read as
+     distinct surfaces against the page background, instead of everything
+     blending into one flat white. */
+  --bg: #FFFFFF;
+  --bg-translucent: rgba(255,255,255,0.88);
   --panel: #FFFFFF;
-  --panel-2: #EEF0F7;
+  --panel-2: #F3F5FA;
   --text: #12142B;
   --text-dim: #5A5F7A;
   --danger-text: #C81E3A;

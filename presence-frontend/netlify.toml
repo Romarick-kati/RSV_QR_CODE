@@ -1,5 +1,11 @@
 [build]
-  command = "npm run build"
+  # --include=dev forces devDependencies (vite, tailwind, postcss — all
+  # needed to actually build the site) to install even though Netlify's
+  # production build context sets NODE_ENV=production, which makes a plain
+  # `npm install` skip devDependencies entirely. Without this flag the
+  # build fails with "vite: not found" even though vite is correctly
+  # listed in package.json — npm just never installed it.
+  command = "npm install --include=dev && npm run build"
   publish = "dist"
   functions = "netlify/functions"
 

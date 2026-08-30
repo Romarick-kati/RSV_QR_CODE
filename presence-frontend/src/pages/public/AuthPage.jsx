@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User } from 'lucide-react';
+import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus } from 'lucide-react';
 import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
@@ -130,10 +130,10 @@ export default function AuthPage({ mode = 'login' }) {
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* ambient background, echoes the brand's scan-target motif */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 grain opacity-40" />
-        <div className="absolute w-[420px] h-[420px] rounded-full blur-[90px] opacity-25 -top-24 -left-24" style={{ background: '#22D3A6' }} />
-        <div className="absolute w-[380px] h-[380px] rounded-full blur-[90px] opacity-20 -bottom-24 -right-16" style={{ background: '#8B7CF6' }} />
-        <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
+        <div className="absolute inset-0 grain opacity-20" />
+        <div className="absolute w-[420px] h-[420px] rounded-full blur-[90px] opacity-[0.14] -top-24 -left-24" style={{ background: '#22D3A6' }} />
+        <div className="absolute w-[380px] h-[380px] rounded-full blur-[90px] opacity-[0.12] -bottom-24 -right-16" style={{ background: '#8B7CF6' }} />
+        <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-[0.08] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
       </div>
 
       <Link to="/" className="fixed top-6 left-6 z-20 flex items-center gap-2.5 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
@@ -225,16 +225,30 @@ export default function AuthPage({ mode = 'login' }) {
 
                 <Divider />
 
-                <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit max-w-full">
-                  <span className="relative w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 border-dashed overflow-hidden" style={{ borderColor: 'var(--line-14)' }}>
+                <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit max-w-full group">
+                  {/* Bigger, filled (not just a thin dashed outline) circle
+                      with a small camera badge overlapping its corner — the
+                      same "tap here to add a photo" pattern used by most
+                      apps, so it reads as an upload control at a glance
+                      instead of a plain dashed circle that's easy to miss. */}
+                  <span
+                    className="relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 transition-colors group-hover:border-[#22D3A6]"
+                    style={{ borderColor: 'var(--line-14)', background: regAvatarDataUrl ? 'transparent' : 'rgba(34,211,166,0.10)' }}
+                  >
                     {regAvatarDataUrl ? (
                       <img src={regAvatarDataUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera size={16} className="text-[var(--text-dim)]" />
+                      <Camera size={20} style={{ color: '#22D3A6' }} />
                     )}
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                      style={{ background: '#22D3A6', borderColor: 'var(--panel)' }}
+                    >
+                      <Plus size={11} strokeWidth={3} color="#04140f" />
+                    </span>
                   </span>
                   <span className="text-xs text-[var(--text-dim)] min-w-0">
-                    {regAvatarDataUrl ? 'Photo selected — click to change' : 'Add a profile photo (optional)'}
+                    {regAvatarDataUrl ? 'Photo selected — tap to change' : <>Tap to add a<br />profile photo (optional)</>}
                   </span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleRegAvatarPick} />
                 </label>
