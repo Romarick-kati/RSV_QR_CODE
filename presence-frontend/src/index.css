@@ -114,6 +114,37 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
 @keyframes scanFlashFade{ 0%{ opacity:0.55; } 100%{ opacity:0; } }
 .animate-fadeUp{ animation: fadeUp .6s var(--ease) forwards; }
 
+/* --- General-purpose motion utilities, used across nav, buttons, cards --- */
+
+/* Gentle lift + shadow on hover, snap-back on press — for cards, links,
+   nav items, anything clickable that should feel tactile. */
+.hover-lift{
+  transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+}
+.hover-lift:hover{ transform: translateY(-2px); }
+.hover-lift:active{ transform: translateY(0) scale(0.98); transition-duration: .1s; }
+
+/* Slightly stronger version for primary CTA buttons. */
+.btn-pop{
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), filter .18s var(--ease);
+}
+.btn-pop:hover{ transform: translateY(-2px) scale(1.015); filter: brightness(1.06); }
+.btn-pop:active{ transform: translateY(0) scale(0.97); transition-duration: .1s; }
+
+/* Icons/badges that should breathe a little to draw the eye without being
+   distracting — used sparingly (logo mark, live indicators). */
+@keyframes softFloat{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-3px); } }
+.animate-softFloat{ animation: softFloat 3.4s ease-in-out infinite; }
+
+/* Subtle continuous sheen sweeping across an element — used on the hero
+   logo/badge for a bit of "alive" polish without looping too fast. */
+@keyframes sheen{ 0%{ background-position: -150% 0; } 100%{ background-position: 250% 0; } }
+.animate-sheen{
+  background-image: linear-gradient(110deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+  background-size: 250% 100%;
+  animation: sheen 3.2s ease-in-out infinite;
+}
+
 /* Shared text input/textarea/select style — used by EventForm and any
    other form that wants the standard dark-panel field look without
    repeating the same long inline style object everywhere. */

@@ -135,7 +135,15 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
         <Field label="Cover photo">
           <div className="flex gap-4 items-start">
             <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 border relative" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
-              <img src={getSmartEventPhoto(form)} alt="" className="w-full h-full object-cover" />
+              <img
+                src={getSmartEventPhoto(form)}
+                alt=""
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const fallback = getSmartEventPhoto({ ...form, image: null });
+                  if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                }}
+              />
               {suggesting && (
                 <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
                   <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />

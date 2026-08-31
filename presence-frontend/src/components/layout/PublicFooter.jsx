@@ -51,9 +51,9 @@ function YouTubeIcon(props) {
 // already wired up and needs no further changes.
 const SOCIAL_LINKS = [
   { label: 'WhatsApp', icon: MessageCircle, href: `https://wa.me/${CONTACT_PHONE.replace('+', '')}`, color: '#25D366' },
-  { label: 'Facebook', icon: FacebookIcon, href: 'https://facebook.com/Romarick-Kati', color: '#1877F2' },
-  { label: 'Instagram', icon: InstagramIcon, href: 'https://instagram.com/Romarick-Kati', color: '#E1306C' },
-  { label: 'LinkedIn', icon: LinkedInIcon, href: 'https://www.linkedin.com/in/Romarick-Kati', color: '#0A66C2' },
+  { label: 'Facebook', icon: FacebookIcon, href: 'https://www.facebook.com/ndiromarick.kati.1', color: '#1877F2' },
+  { label: 'Instagram', icon: InstagramIcon, href: 'https://www.instagram.com/ndiromarick?igsi=MWJicHgybXQ1eXY5aQ==', color: '#E1306C' },
+  { label: 'LinkedIn', icon: LinkedInIcon, href: 'https://www.linkedin.com/in/ndi-romarick-kati-0421a1320?utm_source=share_via&utm_content=profile&utm_medium=member_android', color: '#0A66C2' },
   { label: 'X (Twitter)', icon: XIcon, href: 'https://x.com/Romarick-Kati', color: '#e7e9ea' },
   { label: 'YouTube', icon: YouTubeIcon, href: 'https://youtube.com/@Romarick-Kati', color: '#FF0000' },
 ];
@@ -123,7 +123,7 @@ export default function PublicFooter() {
         <span className="hidden sm:inline">&middot;</span>
         <span>
           {t('footer_built_by')}{' '}
-          <a href="https://kati-guidotti.netlify.app" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-[#22D3A6]">
+          <a href="https://kati-guidotti.netlify.app" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-[#22D3A6]">
             Ndi Romarick Kati
           </a>
         </span>

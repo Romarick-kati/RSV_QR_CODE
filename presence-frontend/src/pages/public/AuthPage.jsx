@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus } from 'lucide-react';
+import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus, ImagePlus } from 'lucide-react';
 import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
@@ -73,6 +73,9 @@ export default function AuthPage({ mode = 'login' }) {
   const [regLoading, setRegLoading] = useState(false);
   const [regAvatarDataUrl, setRegAvatarDataUrl] = useState(null);
   const [regAvatarError, setRegAvatarError] = useState('');
+  const [regAvatarMenuOpen, setRegAvatarMenuOpen] = useState(false);
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   async function handleRegAvatarPick(e) {
     const file = e.target.files?.[0];
@@ -225,33 +228,71 @@ export default function AuthPage({ mode = 'login' }) {
 
                 <Divider />
 
-                <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit max-w-full group">
+                <div className="relative mb-4 w-fit max-w-full">
                   {/* Bigger, filled (not just a thin dashed outline) circle
                       with a small camera badge overlapping its corner — the
                       same "tap here to add a photo" pattern used by most
                       apps, so it reads as an upload control at a glance
                       instead of a plain dashed circle that's easy to miss. */}
-                  <span
-                    className="relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 transition-colors group-hover:border-[#22D3A6]"
-                    style={{ borderColor: 'var(--line-14)', background: regAvatarDataUrl ? 'transparent' : 'rgba(34,211,166,0.10)' }}
+                  <button
+                    type="button"
+                    onClick={() => setRegAvatarMenuOpen((v) => !v)}
+                    className="flex items-center gap-3 cursor-pointer group"
                   >
-                    {regAvatarDataUrl ? (
-                      <img src={regAvatarDataUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera size={20} style={{ color: '#22D3A6' }} />
-                    )}
                     <span
-                      className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2"
-                      style={{ background: '#22D3A6', borderColor: 'var(--panel)' }}
+                      className="relative w-14 h-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 transition-colors group-hover:border-[#22D3A6]"
+                      style={{ borderColor: 'var(--line-14)', background: regAvatarDataUrl ? 'transparent' : 'rgba(34,211,166,0.10)' }}
                     >
-                      <Plus size={11} strokeWidth={3} color="#04140f" />
+                      {regAvatarDataUrl ? (
+                        <img src={regAvatarDataUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera size={20} style={{ color: '#22D3A6' }} />
+                      )}
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                        style={{ background: '#22D3A6', borderColor: 'var(--panel)' }}
+                      >
+                        <Plus size={11} strokeWidth={3} color="#04140f" />
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-xs text-[var(--text-dim)] min-w-0">
-                    {regAvatarDataUrl ? 'Photo selected — tap to change' : <>Tap to add a<br />profile photo (optional)</>}
-                  </span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleRegAvatarPick} />
-                </label>
+                    <span className="text-xs text-[var(--text-dim)] min-w-0 text-left">
+                      {regAvatarDataUrl ? 'Photo selected — tap to change' : <>Tap to add a<br />profile photo (optional)</>}
+                    </span>
+                  </button>
+
+                  {regAvatarMenuOpen && (
+                    <>
+                      {/* Backdrop to close the menu on outside tap */}
+                      <div className="fixed inset-0 z-10" onClick={() => setRegAvatarMenuOpen(false)} />
+                      <div
+                        className="absolute z-20 top-full left-0 mt-2 w-48 rounded-xl border overflow-hidden shadow-lg"
+                        style={{ borderColor: 'var(--line-12)', background: 'var(--panel)' }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => { setRegAvatarMenuOpen(false); cameraInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium text-left hover:bg-white/5"
+                        >
+                          <Camera size={15} style={{ color: '#22D3A6' }} /> Take photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setRegAvatarMenuOpen(false); galleryInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium text-left hover:bg-white/5 border-t"
+                          style={{ borderColor: 'var(--line-08)' }}
+                        >
+                          <ImagePlus size={15} style={{ color: '#22D3A6' }} /> Choose from gallery
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Two hidden inputs: one forces the camera directly via
+                      the `capture` attribute (supported on mobile browsers),
+                      the other opens the normal photo library / file picker. */}
+                  <input ref={cameraInputRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handleRegAvatarPick} />
+                  <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleRegAvatarPick} />
+                </div>
                 {regAvatarError && <p className="text-xs mb-3" style={{ color: 'var(--danger-text)' }}>{regAvatarError}</p>}
 
                 <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>

@@ -37,6 +37,14 @@ export default function EventCard({ event, index = 0 }) {
           src={getSmartEventPhoto(event)}
           alt=""
           onLoad={() => setLoaded(true)}
+          onError={(e) => {
+            // An uploaded/Unsplash image URL can go dead (deleted, expired,
+            // network blip) — fall back to the local gradient placeholder
+            // instead of leaving the card stuck on the skeleton forever.
+            const fallback = getSmartEventPhoto({ ...event, image: null });
+            if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+            setLoaded(true);
+          }}
           className="absolute inset-0 w-full h-full object-cover"
           initial={{ scale: 1.08, opacity: 0 }}
           animate={{ scale: 1, opacity: loaded ? 1 : 0 }}

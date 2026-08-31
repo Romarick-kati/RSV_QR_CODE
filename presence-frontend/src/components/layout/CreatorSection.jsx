@@ -41,11 +41,11 @@ export default function CreatorSection() {
           />
           <div className="text-center sm:text-left flex-1">
             <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>{t('footer_built_by')}</span>
-            <h2 className="font-display text-2xl font-semibold mt-1 mb-1.5" itemProp="name" style={{ color: 'var(--pass-text)' }}>Ndi Romarick Kati</h2>
+            <h2 className="font-display text-2xl font-bold mt-1 mb-1.5" itemProp="name" style={{ color: 'var(--pass-text)' }}>Ndi Romarick Kati</h2>
             <p className="text-sm leading-relaxed max-w-xl mb-5" itemProp="description" style={{ color: 'var(--pass-text-dim)' }}>
               A full-stack developer working across the MERN stack: MongoDB, Express, React and Node.js.
-              Presence is a final-year Computer Engineering project, built from the React frontend
-              through to the Express and PostgreSQL backend.
+              Presence was built end-to-end — from the React frontend through to the Express and
+              PostgreSQL backend.
             </p>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2.5">
               {LINKS.map((l, i) => (

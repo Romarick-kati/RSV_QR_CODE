@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
@@ -39,21 +40,32 @@ export default function PublicNav() {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md border-b" style={{ background: 'var(--bg-translucent)', borderColor: 'var(--line-08)' }}>
       <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <BrandMark size={32} />
-          <span className="font-display font-bold text-lg tracking-tight">Presence</span>
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <motion.span
+            whileHover={{ scale: 1.08, rotate: -4 }}
+            whileTap={{ scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+          >
+            <BrandMark size={32} animated />
+          </motion.span>
+          <span className="font-display font-bold text-lg tracking-tight transition-colors group-hover:text-[#22D3A6]">Presence</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
           {LINKS.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'text-[var(--text)] bg-white/5' : 'text-[var(--text-dim)] hover:text-[var(--text)]'}`
-              }
-            >
-              {l.label}
+            <NavLink key={l.to} to={l.to} className="relative px-4 py-2.5 rounded-lg text-[15px] font-semibold">
+              {({ isActive }) => (
+                <>
+                  <span className="relative z-10 transition-colors" style={{ color: isActive ? 'var(--text)' : 'var(--text-dim)' }}>{l.label}</span>
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-active-pill"
+                      className="absolute inset-0 rounded-lg bg-white/5"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -98,7 +110,7 @@ export default function PublicNav() {
               <Link to="/login" className="text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)] px-3 py-2 transition-colors">{t('nav_sign_in')}</Link>
               <Link
                 to="/register"
-                className="text-sm font-semibold px-4 py-2 rounded-lg transition-transform hover:-translate-y-0.5"
+                className="btn-pop text-sm font-semibold px-4 py-2 rounded-lg"
                 style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}
               >
                 {t('nav_get_started')}

@@ -21,7 +21,7 @@ export const translations = {
     footer_create_account: 'Create account',
     footer_contact: 'Contact',
     footer_built_by: 'Built by',
-    footer_rights: 'Final-year project, Computer Engineering.',
+    footer_rights: 'All rights reserved.',
 
     hero_badge: 'Registration & QR attendance, in one place',
     hero_title_1: 'Every RSVP.',
@@ -191,7 +191,7 @@ export const translations = {
     footer_create_account: 'Créer un compte',
     footer_contact: 'Contact',
     footer_built_by: 'Créé par',
-    footer_rights: 'Projet de fin d\u2019études, Génie Informatique.',
+    footer_rights: 'Tous droits réservés.',
 
     hero_badge: 'Inscription et présence par QR code, en un seul endroit',
     hero_title_1: 'Chaque inscription.',

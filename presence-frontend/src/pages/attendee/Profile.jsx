@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { User, Mail, Phone, Shield, Camera, Trash2, Briefcase, Clock } from 'lucide-react';
+import { User, Mail, Phone, Shield, Camera, Trash2, Briefcase, Clock, ImagePlus } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
 import { useAuth } from '../../lib/AuthContext';
 import { useToast } from '../../lib/ToastContext';
@@ -19,7 +19,9 @@ export default function Profile() {
   const [regCount, setRegCount] = useState(null);
   const [attendedCount, setAttendedCount] = useState(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   useEffect(() => {
     meApi.myEvents().then(({ registrations }) => {
@@ -109,7 +111,7 @@ export default function Profile() {
               )}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setAvatarMenuOpen((v) => !v)}
                 disabled={avatarBusy}
                 title="Change profile photo"
                 className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2"
@@ -117,6 +119,32 @@ export default function Profile() {
               >
                 <Camera size={12} />
               </button>
+              {avatarMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setAvatarMenuOpen(false)} />
+                  <div
+                    className="absolute z-20 top-full left-0 mt-2 w-44 rounded-xl border overflow-hidden shadow-lg"
+                    style={{ borderColor: 'var(--line-12)', background: 'var(--panel)' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setAvatarMenuOpen(false); cameraInputRef.current?.click(); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-left hover:bg-white/5"
+                    >
+                      <Camera size={14} style={{ color: '#22D3A6' }} /> Take photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAvatarMenuOpen(false); fileInputRef.current?.click(); }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-left hover:bg-white/5 border-t"
+                      style={{ borderColor: 'var(--line-08)' }}
+                    >
+                      <ImagePlus size={14} style={{ color: '#22D3A6' }} /> Choose from gallery
+                    </button>
+                  </div>
+                </>
+              )}
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handleAvatarChange} />
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
             <div>

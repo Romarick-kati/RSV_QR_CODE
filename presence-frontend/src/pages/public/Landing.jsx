@@ -97,10 +97,10 @@ export default function Landing() {
               {t('hero_subtitle')}
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="flex flex-wrap items-center gap-3">
-              <Link to="/events" className="inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl transition-transform hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+              <Link to="/events" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
                 {t('hero_browse')} <ArrowRight size={16} />
               </Link>
-              <Link to="/register" className="inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl border hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--line-14)' }}>
+              <Link to="/register" className="hover-lift inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl border hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--line-14)' }}>
                 {t('hero_create_account')}
               </Link>
             </motion.div>
@@ -256,7 +256,7 @@ export default function Landing() {
           <div className="relative z-10">
             <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>Ready to replace the sign-in sheet?</h2>
             <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>Create an account, RSVP to an event, and see your digital pass generate in seconds.</p>
-            <Link to="/register" className="inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+            <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
               Get started <ArrowRight size={16} />
             </Link>
           </div>
