@@ -34,6 +34,16 @@ function combineDateAndTime(date, hhmm) {
   return new Date(Date.UTC(y, mo, day, h || 0, m || 0, 0, 0) - EVENT_TZ_OFFSET_MINUTES * 60 * 1000);
 }
 
+// A deadline of "2026-08-31" is stored as 2026-08-31T00:00:00Z — the very
+// first instant of that day, not the end of it. Compared directly against
+// "now", a deadline set to "today" reads as already-passed for all but the
+// first hour after WAT midnight. This returns the true end of that
+// calendar day in event-local time (23:59:59.999 WAT), which is what an
+// organizer actually means by "deadline: today".
+export function endOfDayInEventTimezone(date) {
+  return new Date(combineDateAndTime(date, '23:59').getTime() + 59 * 1000 + 999);
+}
+
 /** @returns {{ start: Date, end: Date }} */
 export function getCheckInWindow(event) {
   const start = new Date(combineDateAndTime(event.date, event.startTime).getTime() - EARLY_WINDOW_MS);

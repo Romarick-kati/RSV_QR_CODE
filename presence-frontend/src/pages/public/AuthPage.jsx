@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus, ImagePlus } from 'lucide-react';
+import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus, ImagePlus, Eye, EyeOff } from 'lucide-react';
 import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
@@ -351,13 +351,15 @@ function InfoPanel({ icon, heading, copy, gradient, onClick, order }) {
 }
 
 function Field({ label, type, value, onChange, placeholder, autoComplete, icon: Icon }) {
+  const [reveal, setReveal] = useState(false);
+  const isPassword = type === 'password';
   return (
     <label className="block">
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">{label}</span>
       <span className="flex items-center gap-2.5 border-0 border-b-2 py-2 transition-colors" style={{ borderColor: 'var(--line-12)' }}>
         {Icon && <Icon size={16} className="text-[var(--text-dim)] shrink-0" />}
         <input
-          type={type}
+          type={isPassword && reveal ? 'text' : type}
           required
           autoComplete={autoComplete}
           placeholder={placeholder}
@@ -367,6 +369,17 @@ function Field({ label, type, value, onChange, placeholder, autoComplete, icon: 
           onFocus={(e) => (e.target.parentElement.style.borderColor = '#22D3A6')}
           onBlur={(e) => (e.target.parentElement.style.borderColor = 'var(--line-12)')}
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setReveal((v) => !v)}
+            tabIndex={-1}
+            className="shrink-0 text-[var(--text-dim)] hover:text-[var(--text)] transition-colors"
+            aria-label={reveal ? 'Hide password' : 'Show password'}
+          >
+            {reveal ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
       </span>
     </label>
   );

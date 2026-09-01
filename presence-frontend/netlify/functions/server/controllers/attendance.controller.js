@@ -4,7 +4,7 @@ import Event from '../models/Event.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { assertEventAccess } from '../utils/authz.js';
-import { isWithinCheckInWindow } from '../utils/checkInWindow.js';
+import { isWithinCheckInWindow, getCheckInWindow } from '../utils/checkInWindow.js';
 
 // This is the single most important endpoint in the system: the QR code
 // only ever carries `token` — never attendee data — so this handler is the
@@ -41,6 +41,22 @@ export const checkIn = asyncHandler(async (req, res) => {
   assertEventAccess(req.user, registration.event);
 
   if (!isWithinCheckInWindow(registration.event)) {
+    // Temporary diagnostic — the math on this window has been verified
+    // correct in isolation, so if a scan is still rejected outside the
+    // expected window, this log line shows exactly what the server
+    // computed vs what "now" was, instead of guessing from the outside.
+    // Safe to remove once check-in window rejections are confirmed fixed.
+    const { start, end } = getCheckInWindow(registration.event);
+    console.log('[checkin-window-debug]', {
+      eventId: registration.event.id,
+      eventTitle: registration.event.title,
+      storedDate: registration.event.date,
+      storedStartTime: registration.event.startTime,
+      storedEndTime: registration.event.endTime,
+      computedWindowStart: start.toISOString(),
+      computedWindowEnd: end.toISOString(),
+      serverNow: new Date().toISOString(),
+    });
     return res.status(200).json({
       result: 'invalid',
       message: 'This pass is outside its check-in window (opens 2h before the event, closes 3h after).',

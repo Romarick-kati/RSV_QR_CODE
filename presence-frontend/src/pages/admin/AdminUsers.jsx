@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search, UserPlus, Pencil, Trash2, X, Users as UsersIcon, Briefcase, Check } from 'lucide-react';
+import { Search, UserPlus, Pencil, Trash2, X, Users as UsersIcon, Briefcase, Check, Eye, EyeOff } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
 import EmptyState from '../../components/ui/EmptyState';
 import ConfirmModal from '../../components/ui/ConfirmModal';
@@ -42,6 +42,7 @@ export default function AdminUsers() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null = creating, else the user object being edited
   const [form, setForm] = useState(EMPTY_FORM);
+  const [pwReveal, setPwReveal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -286,7 +287,18 @@ export default function AdminUsers() {
                   )}
                 </Field>
                 <Field label={editing ? 'New password (leave blank to keep current)' : 'Password'} error={formErrors.password}>
-                  <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} placeholder={editing ? '••••••••' : undefined} className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#22D3A6]" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }} />
+                  <span className="flex items-center gap-2 rounded-lg border px-3.5 py-0" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
+                    <input
+                      type={pwReveal ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                      placeholder={editing ? '••••••••' : undefined}
+                      className="w-full border-0 bg-transparent py-2.5 text-sm text-[var(--text)] outline-none"
+                    />
+                    <button type="button" tabIndex={-1} onClick={() => setPwReveal((v) => !v)} className="shrink-0 text-[var(--text-dim)] hover:text-[var(--text)]">
+                      {pwReveal ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </span>
                 </Field>
               </div>
 

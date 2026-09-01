@@ -1,5 +1,6 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, FileBarChart, Users, LogOut, X, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
 import { useAuth } from '../../lib/AuthContext';
@@ -22,36 +23,53 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
 
   const content = (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-5 h-16 border-b" style={{ borderColor: 'var(--line-08)' }}>
-        <Link to="/admin" className="flex items-center gap-2.5">
-          <BrandMark size={30} />
-          <span className="font-display font-bold text-base">Presence</span>
+      <div className="flex items-center justify-between px-5 h-[72px] border-b" style={{ borderColor: 'var(--line-08)' }}>
+        <Link to="/admin" className="flex items-center gap-2.5 group">
+          <motion.span whileHover={{ scale: 1.08, rotate: -4 }} whileTap={{ scale: 0.94 }} transition={{ type: 'spring', stiffness: 300, damping: 15 }}>
+            <BrandMark size={32} animated />
+          </motion.span>
+          <span className="font-display font-bold text-lg transition-colors group-hover:text-[#22D3A6]">Presence</span>
         </Link>
-        <button onClick={onClose} className="md:hidden text-[var(--text-dim)]"><X size={20} /></button>
+        <button onClick={onClose} className="md:hidden text-[var(--text-dim)]"><X size={22} /></button>
       </div>
 
-      <nav className="flex-1 px-3 py-5 flex flex-col gap-1">
-        <span className="px-3 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-semibold mb-1.5">{t('nav_organizer_console')}</span>
-        {LINKS.map((l) => (
-          <NavLink
+      <nav className="flex-1 px-3 py-5 flex flex-col gap-1.5">
+        <span className="px-3.5 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-bold mb-1.5">{t('nav_organizer_console')}</span>
+        {LINKS.map((l, i) => (
+          <motion.div
             key={l.to}
-            to={l.to}
-            end={l.end}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive ? 'text-[var(--text)]' : 'text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5'
-              }`
-            }
-            style={({ isActive }) => (isActive ? { background: 'rgba(34,211,166,0.12)', color: '#22D3A6' } : {})}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
-            <l.icon size={17} /> {l.label}
-          </NavLink>
+            <NavLink
+              to={l.to}
+              end={l.end}
+              onClick={onClose}
+              className="relative flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold"
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.span
+                      layoutId="admin-nav-active-pill"
+                      className="absolute inset-0 rounded-lg"
+                      style={{ background: 'rgba(34,211,166,0.12)' }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-3 transition-colors" style={{ color: isActive ? '#22D3A6' : 'var(--text-dim)' }}>
+                    <l.icon size={18} /> {l.label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          </motion.div>
         ))}
 
-        <div className="mt-6 px-3 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-semibold mb-1.5">Shortcuts</div>
-        <Link to="/events" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
-          <Globe size={17} /> {t('nav_view_public_site')}
+        <div className="mt-6 px-3.5 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-bold mb-1.5">Shortcuts</div>
+        <Link to="/events" className="hover-lift flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
+          <Globe size={18} /> {t('nav_view_public_site')}
         </Link>
       </nav>
 
@@ -74,7 +92,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
         </div>
         <button
           onClick={() => { logout(); navigate('/'); }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#FF5C77] hover:bg-white/5"
+          className="hover-lift w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#FF5C77] hover:bg-white/5"
         >
           <LogOut size={17} /> {t('nav_sign_out')}
         </button>
@@ -87,14 +105,31 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
       <aside className="hidden md:flex md:w-64 shrink-0 border-r fixed top-0 bottom-0 left-0 z-30" style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}>
         {content}
       </aside>
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-          <aside className="absolute top-0 bottom-0 left-0 w-72 border-r" style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}>
-            {content}
-          </aside>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 md:hidden"
+            initial="closed"
+            animate="open"
+            exit="closed"
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/60"
+              variants={{ open: { opacity: 1 }, closed: { opacity: 0 } }}
+              transition={{ duration: 0.25 }}
+              onClick={onClose}
+            />
+            <motion.aside
+              className="absolute top-0 bottom-0 left-0 w-72 border-r"
+              style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}
+              variants={{ open: { x: 0 }, closed: { x: '-100%' } }}
+              transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            >
+              {content}
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

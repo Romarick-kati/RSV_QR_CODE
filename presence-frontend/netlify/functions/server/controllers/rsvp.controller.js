@@ -5,6 +5,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { generateReference, generateAttendanceToken } from '../utils/tokens.js';
 import { assertEventAccess } from '../utils/authz.js';
+import { endOfDayInEventTimezone } from '../utils/checkInWindow.js';
 import { sendSms } from '../utils/sms.js';
 
 export const rsvpToEvent = asyncHandler(async (req, res) => {
@@ -14,7 +15,13 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
   const event = await Event.findById(eventId);
   if (!event) throw ApiError.notFound('Event not found.');
   if (event.status !== 'published') throw ApiError.badRequest('This event is not open for registration.');
-  if (new Date(event.registrationDeadline) < new Date()) throw ApiError.badRequest('Registration for this event has closed.');
+  // registrationDeadline is stored as a plain date (midnight UTC of that
+  // calendar day) — comparing it directly against "now" would make a
+  // deadline of "today" expire at 1am Douala time, not at the end of the
+  // day like an organizer setting "today" as the deadline actually means.
+  if (endOfDayInEventTimezone(event.registrationDeadline) < new Date()) {
+    throw ApiError.badRequest('Registration for this event has closed.');
+  }
 
   // Paid events (event.price > 0) use a manual Mobile Money confirmation:
   // the attendee sends money out-of-band and submits the reference here;

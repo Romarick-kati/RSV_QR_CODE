@@ -8,11 +8,10 @@ function getInitialTheme() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
   } catch { /* localStorage unavailable */ }
-  // Default to the brighter light theme for first-time visitors — only
-  // switch to dark if the OS explicitly requests it.
-  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
+  // Always default to light mode for first-time visitors, regardless of the
+  // device/OS color-scheme preference. Anyone who wants dark mode can still
+  // switch to it via the toggle — their choice is remembered from then on
+  // via localStorage above.
   return 'light';
 }
 
