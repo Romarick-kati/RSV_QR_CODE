@@ -9,6 +9,31 @@ import { LanguageProvider } from './lib/LanguageContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PresenceLoader from './components/ui/PresenceLoader';
 import WhatsAppFloat from './components/ui/WhatsAppFloat';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+
+// Wraps React.lazy() so a failed chunk fetch — the classic "click a link,
+// page goes blank" bug that shows up right after a new deploy, when the
+// browser still has an old page open and tries to fetch a JS chunk
+// filename that no longer exists on the server — recovers with a single
+// automatic reload instead of crashing to a blank screen. sessionStorage
+// guards against a reload loop if the failure isn't actually a stale
+// chunk (e.g. a real network outage).
+function lazyWithRetry(importer) {
+  return lazy(async () => {
+    try {
+      return await importer();
+    } catch (err) {
+      const key = 'presence_reloaded_for_chunk_error';
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+        // Never resolves — the reload above takes over before this matters.
+        return new Promise(() => {});
+      }
+      throw err;
+    }
+  });
+}
 
 // Landing is the one page kept as a normal, eager import — it's what a
 // first-time visitor's browser has to download and render before anything
@@ -21,31 +46,31 @@ import WhatsAppFloat from './components/ui/WhatsAppFloat';
 // browsing events needs to download at all).
 import Landing from './pages/public/Landing';
 
-const Events = lazy(() => import('./pages/public/Events'));
-const Discover = lazy(() => import('./pages/public/Discover'));
-const EventDetail = lazy(() => import('./pages/public/EventDetail'));
-const About = lazy(() => import('./pages/public/About'));
-const FAQ = lazy(() => import('./pages/public/FAQ'));
-const AuthPage = lazy(() => import('./pages/public/AuthPage'));
-const CheckinLanding = lazy(() => import('./pages/public/CheckinLanding'));
+const Events = lazyWithRetry(() => import('./pages/public/Events'));
+const Discover = lazyWithRetry(() => import('./pages/public/Discover'));
+const EventDetail = lazyWithRetry(() => import('./pages/public/EventDetail'));
+const About = lazyWithRetry(() => import('./pages/public/About'));
+const FAQ = lazyWithRetry(() => import('./pages/public/FAQ'));
+const AuthPage = lazyWithRetry(() => import('./pages/public/AuthPage'));
+const CheckinLanding = lazyWithRetry(() => import('./pages/public/CheckinLanding'));
 
-const Dashboard = lazy(() => import('./pages/attendee/Dashboard'));
-const MyEvents = lazy(() => import('./pages/attendee/MyEvents'));
-const Profile = lazy(() => import('./pages/attendee/Profile'));
-const QrPass = lazy(() => import('./pages/attendee/QrPass'));
-const Settings = lazy(() => import('./pages/shared/Settings'));
+const Dashboard = lazyWithRetry(() => import('./pages/attendee/Dashboard'));
+const MyEvents = lazyWithRetry(() => import('./pages/attendee/MyEvents'));
+const Profile = lazyWithRetry(() => import('./pages/attendee/Profile'));
+const QrPass = lazyWithRetry(() => import('./pages/attendee/QrPass'));
+const Settings = lazyWithRetry(() => import('./pages/shared/Settings'));
 
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'));
-const AdminEventCreate = lazy(() => import('./pages/admin/AdminEventCreate'));
-const AdminEventDetail = lazy(() => import('./pages/admin/AdminEventDetail'));
-const AdminEventAttendees = lazy(() => import('./pages/admin/AdminEventAttendees'));
-const AdminScanner = lazy(() => import('./pages/admin/AdminScanner'));
-const AdminEventAnalytics = lazy(() => import('./pages/admin/AdminEventAnalytics'));
-const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
-const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/admin/AdminDashboard'));
+const AdminEvents = lazyWithRetry(() => import('./pages/admin/AdminEvents'));
+const AdminEventCreate = lazyWithRetry(() => import('./pages/admin/AdminEventCreate'));
+const AdminEventDetail = lazyWithRetry(() => import('./pages/admin/AdminEventDetail'));
+const AdminEventAttendees = lazyWithRetry(() => import('./pages/admin/AdminEventAttendees'));
+const AdminScanner = lazyWithRetry(() => import('./pages/admin/AdminScanner'));
+const AdminEventAnalytics = lazyWithRetry(() => import('./pages/admin/AdminEventAnalytics'));
+const AdminReports = lazyWithRetry(() => import('./pages/admin/AdminReports'));
+const AdminUsers = lazyWithRetry(() => import('./pages/admin/AdminUsers'));
 
-const NotFound = lazy(() => import('./pages/public/NotFound'));
+const NotFound = lazyWithRetry(() => import('./pages/public/NotFound'));
 
 const pageVariants = {
   initial: { opacity: 0, y: 18, scale: 0.99 },
@@ -142,20 +167,29 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // A page that renders at all means the currently-loaded chunks are
+    // good — clear the reload guard so a genuinely new stale-chunk error
+    // later (after the *next* deploy) is still allowed one auto-reload.
+    try { sessionStorage.removeItem('presence_reloaded_for_chunk_error'); } catch { /* ignore */ }
+  }, []);
+
   return (
-    <ThemeProvider>
-      <AccentProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <BrowserRouter>
-              <AnimatedRoutes />
-              <WhatsAppFloat />
-            </BrowserRouter>
-          </ToastProvider>
-        </AuthProvider>
-      </LanguageProvider>
-      </AccentProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AccentProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <BrowserRouter>
+                <AnimatedRoutes />
+                <WhatsAppFloat />
+              </BrowserRouter>
+            </ToastProvider>
+          </AuthProvider>
+        </LanguageProvider>
+        </AccentProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

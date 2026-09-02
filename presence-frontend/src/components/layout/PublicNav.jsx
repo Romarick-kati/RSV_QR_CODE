@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck, Settings as SettingsIcon, CircleHelp } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
 import { useAuth } from '../../lib/AuthContext';
@@ -74,41 +74,51 @@ export default function PublicNav() {
         <div className="hidden md:flex items-center gap-3">
           <PreferencesToggle />
           {user ? (
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border hover:bg-white/5 transition-colors"
-                style={{ borderColor: 'var(--line-10)' }}
+            <>
+              <Link
+                to="/settings"
+                aria-label={t('nav_settings')}
+                title={t('nav_settings')}
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5 transition-colors"
               >
-                <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')
-                  )}
-                </span>
-                <span className="text-sm font-medium text-[var(--text)] max-w-[120px] truncate">{user.name.split(' ')[0]}</span>
-                <ChevronDown size={14} className="text-[var(--text-dim)]" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-xl border shadow-2xl overflow-hidden z-50" style={{ background: 'var(--panel)', borderColor: 'var(--line-10)' }}>
-                  <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5">
-                    {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? <ShieldCheck size={15} /> : <LayoutDashboard size={15} />}
-                    {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
-                  </Link>
-                  <Link to="/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5 border-t" style={{ borderColor: 'var(--line-08)' }}>
-                    <SettingsIcon size={15} /> {t('nav_settings')}
-                  </Link>
-                  <button
-                    onClick={() => { setMenuOpen(false); logout(); navigate('/'); }}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#FF5C77] hover:bg-white/5 border-t"
-                    style={{ borderColor: 'var(--line-08)' }}
-                  >
-                    <LogOut size={15} /> {t('nav_sign_out')}
-                  </button>
-                </div>
-              )}
-            </div>
+                <SettingsIcon size={18} />
+              </Link>
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border hover:bg-white/5 transition-colors"
+                  style={{ borderColor: 'var(--line-10)' }}
+                >
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-[var(--text)] max-w-[120px] truncate">{user.name.split(' ')[0]}</span>
+                  <ChevronDown size={14} className="text-[var(--text-dim)]" />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 rounded-xl border shadow-2xl overflow-hidden z-50" style={{ background: 'var(--panel)', borderColor: 'var(--line-10)' }}>
+                    <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5">
+                      {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? <ShieldCheck size={15} /> : <LayoutDashboard size={15} />}
+                      {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
+                    </Link>
+                    <Link to="/faq" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5 border-t" style={{ borderColor: 'var(--line-08)' }}>
+                      <CircleHelp size={15} /> {t('nav_faq')}
+                    </Link>
+                    <button
+                      onClick={() => { setMenuOpen(false); logout(); navigate('/'); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-[#FF5C77] hover:bg-white/5 border-t"
+                      style={{ borderColor: 'var(--line-08)' }}
+                    >
+                      <LogOut size={15} /> {t('nav_sign_out')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <>
               <Link to="/login" className="text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)] px-3 py-2 transition-colors">{t('nav_sign_in')}</Link>
@@ -144,6 +154,9 @@ export default function PublicNav() {
             <>
               <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text)] hover:bg-white/5">
                 {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
+              </Link>
+              <Link to="/settings" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text)] hover:bg-white/5">
+                <SettingsIcon size={15} /> {t('nav_settings')}
               </Link>
               <button onClick={() => { logout(); navigate('/'); setOpen(false); }} className="text-left px-3 py-2.5 rounded-lg text-sm font-medium text-[#FF5C77] hover:bg-white/5">
                 {t('nav_sign_out')}

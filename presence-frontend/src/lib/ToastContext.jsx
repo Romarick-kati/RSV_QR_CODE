@@ -4,7 +4,12 @@ import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 const ICONS = { success: CheckCircle2, error: XCircle, info: Info };
-const COLORS = { success: '#22D3A6', error: '#FF5C77', info: '#8B7CF6' };
+// Error and info stay fixed semantic colors (red = bad, purple = neutral),
+// but "success" is the app's own brand color — it needs to track whichever
+// accent the visitor picked in Settings → Appearance instead of being
+// hardcoded to teal, or a success toast looks wrong/inconsistent as soon
+// as someone picks any accent other than the default.
+const COLORS = { success: 'var(--accent)', error: '#FF5C77', info: '#8B7CF6' };
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -32,7 +37,7 @@ export function ToastProvider({ children }) {
                 exit={{ opacity: 0, x: 40 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 className="flex items-start gap-3 rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-md"
-                style={{ background: 'rgba(17,21,40,0.92)', borderColor: 'var(--line-10)' }}
+                style={{ background: 'var(--bg-translucent)', borderColor: 'var(--line-10)' }}
               >
                 <Icon size={18} style={{ color: COLORS[t.type], flexShrink: 0, marginTop: 2 }} />
                 <p className="text-sm text-[var(--text)] leading-snug flex-1">{t.message}</p>
