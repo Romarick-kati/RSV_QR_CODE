@@ -23,8 +23,8 @@ export default function BrandMark({ size = 34, animated = false }) {
       <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
         <defs>
           <linearGradient id={gradId} x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#22D3A6" />
-            <stop offset="1" stopColor="#8B7CF6" />
+            <stop offset="0" stopColor="var(--accent)" />
+            <stop offset="1" stopColor="var(--accent-2)" />
           </linearGradient>
           <radialGradient id={glossId} cx="34%" cy="26%" r="55%">
             <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.55" />

@@ -52,6 +52,17 @@ export default function QrPass() {
         <div className="max-w-md mx-auto h-[420px] rounded-[26px] skeleton" />
       ) : error || !registration ? (
         <EmptyState icon={TriangleAlert} title={t('pass_not_found_title')} description={error || t('pass_not_found_desc')} />
+      ) : registration.status === 'waitlisted' ? (
+        <div className="max-w-md mx-auto rounded-[26px] border p-8 text-center" style={{ borderColor: 'rgba(139,124,246,0.35)', background: 'rgba(139,124,246,0.06)' }}>
+          <span className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(139,124,246,0.16)' }}>
+            <ScanLine size={22} style={{ color: '#8B7CF6' }} />
+          </span>
+          <h2 className="font-display text-lg font-bold mb-2">You're on the waitlist</h2>
+          <p className="text-sm text-[var(--text-dim)] mb-1">{registration.event.title}</p>
+          <p className="text-xs text-[var(--text-dim)] leading-relaxed mt-3">
+            There's no pass to show yet — this event is full. If a spot opens up, you'll be confirmed automatically and a scannable pass will appear here.
+          </p>
+        </div>
       ) : (
         <div className="max-w-md mx-auto">
           {/* This card is intentionally always dark, like a physical event

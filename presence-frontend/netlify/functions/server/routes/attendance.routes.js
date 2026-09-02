@@ -11,5 +11,6 @@ const router = Router();
 router.post('/check-in', requireAuth, requireRole('ADMIN', 'ORGANIZER'), checkInLimiter, attendanceController.checkIn);
 router.post('/manual/:registrationId', requireAuth, requireRole('ADMIN', 'ORGANIZER'), rsvpController.manualCheckIn);
 router.post('/confirm-payment/:registrationId', requireAuth, requireRole('ADMIN', 'ORGANIZER'), rsvpController.confirmPayment);
+router.post('/promote-waitlist/:registrationId', requireAuth, requireRole('ADMIN', 'ORGANIZER'), rsvpController.promoteFromWaitlist);
 
 export default router;

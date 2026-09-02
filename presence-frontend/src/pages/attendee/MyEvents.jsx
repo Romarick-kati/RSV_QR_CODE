@@ -81,17 +81,21 @@ export default function MyEvents() {
                 <p className="text-xs text-[var(--text-dim)] font-mono mt-1">{r.registrationReference}</p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <Badge status={r.attendance ? 'checked-in' : 'confirmed'} />
-                <Link to={`/qr-pass/${r.id}`} className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-lg" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
-                  <QrCode size={14} /> {t('myevents_pass')}
-                </Link>
+                <Badge status={r.status === 'waitlisted' ? 'waitlisted' : (r.attendance ? 'checked-in' : 'confirmed')} />
+                {r.status === 'waitlisted' ? (
+                  <span className="text-xs text-[var(--text-dim)]">Confirms automatically if a spot opens</span>
+                ) : (
+                  <Link to={`/qr-pass/${r.id}`} className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-lg" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
+                    <QrCode size={14} /> {t('myevents_pass')}
+                  </Link>
+                )}
                 {tab === 'upcoming' && !r.attendance && (
                   <button
                     onClick={() => handleCancel(r.id)}
                     disabled={cancellingId === r.id}
                     className="flex items-center gap-1 text-xs font-semibold px-2.5 py-2 rounded-lg text-[#FF5C77] hover:bg-white/5 disabled:opacity-60"
                   >
-                    <X size={13} /> {cancellingId === r.id ? t('myevents_cancelling') : t('myevents_cancel')}
+                    <X size={13} /> {cancellingId === r.id ? t('myevents_cancelling') : (r.status === 'waitlisted' ? 'Leave waitlist' : t('myevents_cancel'))}
                   </button>
                 )}
               </div>

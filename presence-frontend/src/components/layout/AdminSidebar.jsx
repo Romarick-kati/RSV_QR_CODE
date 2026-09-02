@@ -1,5 +1,5 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, FileBarChart, Users, LogOut, X, Globe } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, FileBarChart, Users, LogOut, X, Globe, Settings as SettingsIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
@@ -28,7 +28,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
           <motion.span whileHover={{ scale: 1.08, rotate: -4 }} whileTap={{ scale: 0.94 }} transition={{ type: 'spring', stiffness: 300, damping: 15 }}>
             <BrandMark size={32} animated />
           </motion.span>
-          <span className="font-display font-bold text-lg transition-colors group-hover:text-[#22D3A6]">Presence</span>
+          <span className="font-display font-bold text-lg transition-colors group-hover:text-[var(--accent)]">Presence</span>
         </Link>
         <button onClick={onClose} className="md:hidden text-[var(--text-dim)]"><X size={22} /></button>
       </div>
@@ -54,11 +54,11 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
                     <motion.span
                       layoutId="admin-nav-active-pill"
                       className="absolute inset-0 rounded-lg"
-                      style={{ background: 'rgba(34,211,166,0.12)' }}
+                      style={{ background: 'rgba(var(--accent-rgb),0.12)' }}
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                   )}
-                  <span className="relative z-10 flex items-center gap-3 transition-colors" style={{ color: isActive ? '#22D3A6' : 'var(--text-dim)' }}>
+                  <span className="relative z-10 flex items-center gap-3 transition-colors" style={{ color: isActive ? 'var(--accent)' : 'var(--text-dim)' }}>
                     <l.icon size={18} /> {l.label}
                   </span>
                 </>
@@ -71,6 +71,9 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
         <Link to="/events" className="hover-lift flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
           <Globe size={18} /> {t('nav_view_public_site')}
         </Link>
+        <Link to="/settings" className="hover-lift flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
+          <SettingsIcon size={18} /> {t('nav_settings')}
+        </Link>
       </nav>
 
       <div className="p-3 border-t" style={{ borderColor: 'var(--line-08)' }}>
@@ -78,7 +81,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
           <PreferencesToggle />
         </div>
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1" style={{ background: 'var(--line-04)' }}>
-          <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg,#F5A623,#FF5C77)', color: '#04140f' }}>
+          <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg,#F5A623,#FF5C77)', color: 'var(--accent-ink)' }}>
             {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (

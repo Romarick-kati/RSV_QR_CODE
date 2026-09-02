@@ -17,6 +17,16 @@
   --shadow: 0 24px 70px -24px rgba(0,0,0,0.65);
   --ease: cubic-bezier(.22,1,.36,1);
 
+  /* User-selectable accent (Settings → Appearance). Everything that used to
+     hardcode #22D3A6/#8B7CF6 directly should reference these two instead,
+     so picking a new color on the Settings page updates it everywhere at
+     once. AccentContext.jsx sets these on <html> at runtime; the values
+     below are just the pre-JS/first-paint default (teal → violet). */
+  --accent: #22D3A6;
+  --accent-2: #8B7CF6;
+  --accent-rgb: 34,211,166;
+  --accent-ink: #04140f; /* readable text color to put ON TOP of --accent */
+
   /* ---- theme tokens (dark = default) ---- */
   --bg: #0A0D18;
   --bg-translucent: rgba(10,13,24,0.82);
@@ -160,5 +170,5 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
   transition: border-color .15s var(--ease);
 }
 .input::placeholder{ color: var(--text-dim); }
-.input:focus{ border-color:#22D3A6; }
+.input:focus{ border-color:var(--accent); }
 .input:disabled{ opacity:0.6; cursor:not-allowed; }

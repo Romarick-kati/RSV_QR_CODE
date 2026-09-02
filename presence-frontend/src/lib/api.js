@@ -112,6 +112,7 @@ export const eventsApi = {
 export const meApi = {
   myEvents: () => client.get('/users/me/events'),
   registration: (registrationId) => client.get(`/users/me/registrations/${registrationId}`),
+  paymentStatus: (registrationId) => client.get(`/users/me/registrations/${registrationId}/payment-status`),
   cancelRegistration: (registrationId) => client.del(`/users/me/registrations/${registrationId}`),
 };
 
@@ -120,6 +121,7 @@ export const attendanceApi = {
   checkIn: (token) => client.post('/attendance/check-in', { token }),
   manualCheckIn: (registrationId) => client.post(`/attendance/manual/${registrationId}`),
   confirmPayment: (registrationId) => client.post(`/attendance/confirm-payment/${registrationId}`),
+  promoteFromWaitlist: (registrationId) => client.post(`/attendance/promote-waitlist/${registrationId}`),
 };
 
 // ---------- Admin ----------

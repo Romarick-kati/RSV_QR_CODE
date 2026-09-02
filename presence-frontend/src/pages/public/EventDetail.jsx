@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, MapPin, Users, Mail, ArrowLeft, TriangleAlert, CheckCircle2,
-  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Wallet, Copy,
+  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Wallet,
 } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
@@ -14,7 +14,7 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { eventsApi, meApi, ApiError } from '../../lib/api';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
-import { formatDateLong, formatTime, isEventPast } from '../../lib/utils';
+import { formatDateLong, formatTime, isEventPast, isRegistrationDeadlinePassed } from '../../lib/utils';
 import { useSEO } from '../../lib/useSEO';
 
 const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
@@ -31,8 +31,13 @@ export default function EventDetail() {
   const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [myRegistrationId, setMyRegistrationId] = useState(null);
+  const [myWaitlistInfo, setMyWaitlistInfo] = useState(null); // { id, position } | null
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentReference, setPaymentReference] = useState('');
+  const [phone, setPhone] = useState('');
+  // 'idle' | 'awaiting-pin' | 'confirmed' | 'failed'
+  const [paymentState, setPaymentState] = useState('idle');
+  const [pendingRegistrationId, setPendingRegistrationId] = useState(null);
+  const [justWaitlisted, setJustWaitlisted] = useState(null); // position number, or null
 
   useSEO(event?.title, event?.description);
 
@@ -56,6 +61,8 @@ export default function EventDetail() {
       if (cancelled) return;
       const match = registrations.find((r) => r.eventId === id && r.status === 'confirmed');
       setMyRegistrationId(match?.id || null);
+      const waiting = registrations.find((r) => r.eventId === id && r.status === 'waitlisted');
+      setMyWaitlistInfo(waiting ? { id: waiting.id } : null);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [user, id]);
@@ -93,7 +100,7 @@ export default function EventDetail() {
   const Icon = ICONS[event.category] || Cpu;
   const remaining = event.remaining ?? Math.max(event.capacity - (event.registered || 0), 0);
   const past = isEventPast(event);
-  const deadlinePassed = new Date(event.registrationDeadline) < new Date();
+  const deadlinePassed = isRegistrationDeadlinePassed(event);
   const full = remaining <= 0;
   const isPaid = (event.price || 0) > 0;
 
@@ -103,31 +110,81 @@ export default function EventDetail() {
       return;
     }
     if (isPaid && !showPayment) {
-      // First click on a paid event just opens the payment panel instead
-      // of registering right away — the reference is required server-side.
+      // First click on a paid event just opens the phone-number panel
+      // instead of charging right away.
       setShowPayment(true);
       return;
     }
-    if (isPaid && !paymentReference.trim()) {
-      push('Enter the Mobile Money transaction reference to continue.', 'error');
+    if (isPaid && !phone.trim()) {
+      push('Enter the Mobile Money phone number to continue.', 'error');
       return;
     }
     setSubmitting(true);
     try {
-      const { registration } = await eventsApi.rsvp(event.id, isPaid ? { paymentReference: paymentReference.trim() } : undefined);
-      push(isPaid ? 'Registered — your pass is ready. It unlocks for check-in once the organizer confirms your payment.' : 'Registration confirmed, your pass is ready.', 'success');
-      navigate(`/qr-pass/${registration.id}`);
+      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, isPaid ? { phone: phone.trim() } : undefined);
+      if (waitlisted) {
+        setJustWaitlisted(waitlistPosition);
+        setMyWaitlistInfo({ id: registration.id });
+        setSubmitting(false);
+        return;
+      }
+      if (isPaid && payment) {
+        // A real PIN-approval prompt is now on the attendee's phone —
+        // don't navigate away yet, poll until CamPay confirms it.
+        setPendingRegistrationId(registration.id);
+        setPaymentState('awaiting-pin');
+        setSubmitting(false);
+      } else {
+        push('Registration confirmed, your pass is ready.', 'success');
+        navigate(`/qr-pass/${registration.id}`);
+      }
     } catch (err) {
       push(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.', 'error');
       setSubmitting(false);
     }
   }
 
+  // Polls the real CamPay-verified payment status every 3s while the
+  // attendee is looking at the "check your phone" screen. Stops on a
+  // definitive outcome or after ~2 minutes (CamPay prompts typically time
+  // out well before that if never approved).
+  useEffect(() => {
+    if (paymentState !== 'awaiting-pin' || !pendingRegistrationId) return;
+    let cancelled = false;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const { paymentStatus } = await meApi.paymentStatus(pendingRegistrationId);
+        if (cancelled) return;
+        if (paymentStatus === 'confirmed') {
+          clearInterval(interval);
+          setPaymentState('confirmed');
+          push('Payment confirmed — your pass is ready.', 'success');
+          navigate(`/qr-pass/${pendingRegistrationId}`);
+        } else if (paymentStatus === 'failed') {
+          clearInterval(interval);
+          setPaymentState('failed');
+        } else if (attempts >= 40) {
+          clearInterval(interval);
+          setPaymentState('failed');
+        }
+      } catch {
+        // Transient network error — just try again on the next tick.
+      }
+    }, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [paymentState, pendingRegistrationId, navigate, push]);
+
+  const waitlistable = full && !isPaid; // paid waitlist unsupported, see rsvp.controller.js
   let ctaLabel = isPaid ? `Pay & register — ${event.price} FCFA` : t('event_rsvp');
   let ctaDisabled = false;
   if (past) { ctaLabel = t('event_ended'); ctaDisabled = true; }
   else if (myRegistrationId) { ctaLabel = t('event_registered'); }
+  else if (myWaitlistInfo) { ctaLabel = "You're on the waitlist"; ctaDisabled = true; }
+  else if (justWaitlisted) { ctaLabel = "You're on the waitlist"; ctaDisabled = true; }
   else if (deadlinePassed) { ctaLabel = t('event_registration_closed'); ctaDisabled = true; }
+  else if (full && waitlistable) { ctaLabel = 'Join the waitlist'; }
   else if (full) { ctaLabel = t('event_fully_booked'); ctaDisabled = true; }
   else if (showPayment) { ctaLabel = 'Confirm registration'; }
 
@@ -181,42 +238,72 @@ export default function EventDetail() {
             </div>
           )}
 
-          {isPaid && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && (
+          {(myWaitlistInfo || justWaitlisted) && !myRegistrationId && (
+            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(139,124,246,0.35)', background: 'rgba(139,124,246,0.08)' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: '#8B7CF6' }}>
+                You're on the waitlist{justWaitlisted ? ` — #${justWaitlisted}` : ''}
+              </p>
+              <p className="text-xs text-[var(--text-dim)]">
+                We'll automatically confirm your spot the moment someone cancels — no need to check back, you'll just see it appear in "My Events".
+              </p>
+            </div>
+          )}
+
+          {isPaid && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && paymentState === 'idle' && (
             <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(245,166,35,0.35)', background: 'rgba(245,166,35,0.08)' }}>
               <p className="text-xs font-semibold flex items-center gap-1.5 mb-2" style={{ color: '#F5A623' }}>
                 <Wallet size={14} /> Pay with Mobile Money
               </p>
               <p className="text-xs text-[var(--text-dim)] leading-relaxed mb-2">
-                Send <strong className="text-[var(--text)]">{event.price} FCFA</strong> to{' '}
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard?.writeText(event.momoNumber || ''); push('Number copied.', 'info'); }}
-                  className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--text)] underline decoration-dotted"
-                >
-                  {event.momoNumber || 'the organizer'} <Copy size={11} />
-                </button>{' '}
-                via MTN/Orange Money, then enter the transaction reference from the confirmation SMS below.
+                You'll pay <strong className="text-[var(--text)]">{event.price} FCFA</strong> via MTN or Orange Money. Enter your number below — you'll get a prompt on your phone to approve with your PIN.
               </p>
               <input
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="e.g. MP240811.1234.A56789"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                type="tel"
+                inputMode="tel"
+                placeholder="e.g. 677 12 34 56"
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
                 style={{ borderColor: 'var(--line-12)', background: 'var(--bg)' }}
               />
               <p className="text-[11px] text-[var(--text-dim)] mt-1.5">
-                Your seat is held immediately — the organizer confirms payment before your pass will scan at the door.
+                Your pass unlocks the moment the payment is confirmed — usually within a few seconds of approving on your phone.
               </p>
+            </div>
+          )}
+
+          {isPaid && paymentState === 'awaiting-pin' && (
+            <div className="rounded-xl border p-4 mb-3 text-center" style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'rgba(var(--accent-rgb),0.08)' }}>
+              <span className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin mb-3" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+              <p className="text-sm font-semibold mb-1">Check your phone</p>
+              <p className="text-xs text-[var(--text-dim)] leading-relaxed">
+                Approve the payment prompt on <span className="font-mono text-[var(--text)]">{phone}</span> with your Mobile Money PIN. This updates automatically once confirmed.
+              </p>
+            </div>
+          )}
+
+          {isPaid && paymentState === 'failed' && (
+            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(255,92,119,0.35)', background: 'rgba(255,92,119,0.08)' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: '#FF5C77' }}>Payment didn't go through</p>
+              <p className="text-xs text-[var(--text-dim)] mb-3">It may have timed out or been declined. You can try again.</p>
+              <button
+                type="button"
+                onClick={() => { setPaymentState('idle'); setPendingRegistrationId(null); }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+              >
+                Try again
+              </button>
             </div>
           )}
 
           <button
             onClick={myRegistrationId ? () => navigate(`/qr-pass/${myRegistrationId}`) : handleRsvp}
-            disabled={myRegistrationId ? false : (ctaDisabled || submitting)}
+            disabled={myRegistrationId ? false : (ctaDisabled || submitting || paymentState === 'awaiting-pin')}
             className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
             style={ctaDisabled && !myRegistrationId
               ? { background: 'var(--line-08)', color: 'var(--text-dim)' }
-              : { background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}
+              : { background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}
           >
             {submitting ? <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" /> : (myRegistrationId ? t('event_view_pass') : ctaLabel)}
           </button>

@@ -12,20 +12,6 @@ export const EVENT_GRADIENTS = {
   Cultural: 'from-[#3d1c1c] via-[#5c2a1f] to-[#F5A623]',
 };
 
-// Real photography, one stable seed per category, from Lorem Picsum — a
-// free, no-key, no-rate-limit photo service, so these links keep working
-// wherever this project is deployed. Swap any of these for your own event
-// photos later by just changing the URL; nothing else needs to change.
-export const EVENT_PHOTOS = {
-  Technology: 'https://picsum.photos/seed/presence-technology/900/600',
-  Academic: 'https://picsum.photos/seed/presence-academic/900/600',
-  Corporate: 'https://picsum.photos/seed/presence-corporate/900/600',
-  Workshop: 'https://picsum.photos/seed/presence-workshop/900/600',
-  Seminar: 'https://picsum.photos/seed/presence-seminar/900/600',
-  Career: 'https://picsum.photos/seed/presence-career/900/600',
-  Cultural: 'https://picsum.photos/seed/presence-cultural/900/600',
-};
-
 // Semi-transparent category tint painted over each photo so the category
 // label and title stay readable regardless of the photo underneath.
 export const EVENT_TINTS = {

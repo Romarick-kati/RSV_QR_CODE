@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, CalendarX } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
@@ -13,11 +14,15 @@ import { useSEO } from '../../lib/useSEO';
 export default function Events() {
   const { t } = useLanguage();
   useSEO('Browse Events', 'Browse upcoming technology conferences, workshops, seminars, and career fairs. RSVP online and get your QR pass instantly.');
+  const [searchParams] = useSearchParams();
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
-  const [category, setCategory] = useState('All');
+  // Seeded from the URL (?category=Technology) so links from the Discover
+  // page land with the right filter already applied, instead of dumping
+  // the visitor on an unfiltered list they have to re-filter themselves.
+  const [category, setCategory] = useState(() => searchParams.get('category') || 'All');
   const [timeframe, setTimeframe] = useState('upcoming');
   const [sort, setSort] = useState('date-asc');
 

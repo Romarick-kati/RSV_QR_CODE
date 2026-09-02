@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Search, Download, UserX, CheckCircle2, ArrowLeft, Wallet } from 'lucide-react';
+import { Search, Download, UserX, CheckCircle2, ArrowLeft, Wallet, ArrowUpCircle } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
 import { useSEO } from '../../lib/useSEO';
 import Badge from '../../components/ui/Badge';
@@ -38,9 +38,10 @@ export default function AdminEventAttendees() {
 
   const filtered = useMemo(() => attendees.filter((a) => {
     const matchesQ = !q || a.user?.name.toLowerCase().includes(q.toLowerCase()) || a.user?.email.toLowerCase().includes(q.toLowerCase()) || a.registrationReference.toLowerCase().includes(q.toLowerCase());
-    const matchesFilter = filter === 'all' || (filter === 'checked-in' ? a.attendance : !a.attendance);
+    const matchesFilter = filter === 'all' || (filter === 'checked-in' ? a.attendance : filter === 'waitlisted' ? a.status === 'waitlisted' : (!a.attendance && a.status !== 'waitlisted'));
     return matchesQ && matchesFilter;
   }), [attendees, q, filter]);
+  const waitlistedCount = attendees.filter((a) => a.status === 'waitlisted').length;
 
   async function markAttendance(regId) {
     setBusyId(regId);
@@ -59,6 +60,18 @@ export default function AdminEventAttendees() {
     try {
       await attendanceApi.confirmPayment(regId);
       push('Payment confirmed — pass will now scan.', 'success');
+      load();
+    } catch (err) {
+      push(err.message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+  async function promote(regId) {
+    setBusyId(regId);
+    try {
+      await attendanceApi.promoteFromWaitlist(regId);
+      push('Promoted off the waitlist — they now have a confirmed pass.', 'success');
       load();
     } catch (err) {
       push(err.message, 'error');
@@ -107,8 +120,8 @@ export default function AdminEventAttendees() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, email, or reference…" className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm text-[var(--text)] outline-none" style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }} />
         </div>
         <div className="flex gap-2">
-          {[['all', 'All'], ['checked-in', 'Checked in'], ['pending', 'Not checked in']].map(([v, l]) => (
-            <button key={v} onClick={() => setFilter(v)} className="text-[13px] font-medium px-3.5 py-1.5 rounded-full border" style={filter === v ? { background: '#22D3A6', color: '#04140f', borderColor: '#22D3A6' } : { color: 'var(--text-dim)', borderColor: 'var(--line-12)' }}>{l}</button>
+          {[['all', 'All'], ['checked-in', 'Checked in'], ['pending', 'Not checked in'], ['waitlisted', `Waitlist${waitlistedCount ? ` (${waitlistedCount})` : ''}`]].map(([v, l]) => (
+            <button key={v} onClick={() => setFilter(v)} className="text-[13px] font-medium px-3.5 py-1.5 rounded-full border" style={filter === v ? { background: 'var(--accent)', color: 'var(--accent-ink)', borderColor: 'var(--accent)' } : { color: 'var(--text-dim)', borderColor: 'var(--line-12)' }}>{l}</button>
           ))}
         </div>
       </div>
@@ -139,7 +152,7 @@ export default function AdminEventAttendees() {
                   </td>
                   <td className="px-5 py-3.5 font-mono text-xs text-[var(--text-dim)]">{a.registrationReference}</td>
                   <td className="px-5 py-3.5 text-[var(--text-dim)]">{formatDateTime(a.createdAt)}</td>
-                  <td className="px-5 py-3.5"><Badge status={a.attendance ? 'checked-in' : 'pending'} /></td>
+                  <td className="px-5 py-3.5"><Badge status={a.status === 'waitlisted' ? 'waitlisted' : (a.attendance ? 'checked-in' : 'pending')} /></td>
                   {isPaid && (
                     <td className="px-5 py-3.5">
                       {a.paymentStatus === 'confirmed' ? (
@@ -155,10 +168,14 @@ export default function AdminEventAttendees() {
                     </td>
                   )}
                   <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                    {!a.attendance && (
+                    {a.status === 'waitlisted' ? (
+                      <button disabled={busyId === a.id} onClick={() => promote(a.id)} className="font-semibold text-xs mr-3 inline-flex items-center gap-1 disabled:opacity-50" style={{ color: 'var(--accent)' }}>
+                        <ArrowUpCircle size={13} /> Promote
+                      </button>
+                    ) : !a.attendance && (
                       <button disabled={busyId === a.id} onClick={() => markAttendance(a.id)} className="text-[#22D3A6] font-semibold text-xs mr-3 inline-flex items-center gap-1 disabled:opacity-50"><CheckCircle2 size={13} /> Mark present</button>
                     )}
-                    <button disabled={busyId === a.id} onClick={() => removeRegistration(a.id)} className="text-[#FF5C77] font-semibold text-xs disabled:opacity-50">Remove</button>
+                    <button disabled={busyId === a.id} onClick={() => removeRegistration(a.id)} className="text-[#FF5C77] font-semibold text-xs disabled:opacity-50">{a.status === 'waitlisted' ? 'Remove from waitlist' : 'Remove'}</button>
                   </td>
                 </tr>
               ))}

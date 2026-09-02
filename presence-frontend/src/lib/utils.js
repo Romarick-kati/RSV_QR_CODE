@@ -26,6 +26,28 @@ export function formatDateTime(iso) {
 export function isEventPast(event) {
   return toDateOnly(event.date) < new Date(new Date().toDateString());
 }
+// A registration deadline of "today" should mean "open until the end of
+// today in Douala time", not "open until midnight UTC" (~1am Douala) — see
+// the matching backend fix in netlify/functions/server/utils/checkInWindow.js
+// (endOfDayInEventTimezone). Comparing the raw deadline string against
+// `new Date()` directly, like the old code did, would show "Registration
+// closed" in the UI for most of a same-day deadline even though the
+// (already-fixed) backend would actually accept the request — so this has
+// to mirror that fix exactly, or the button just lies about being closed.
+const EVENT_TZ_OFFSET_MINUTES = 60; // WAT = UTC+1, no daylight saving
+export function isRegistrationDeadlinePassed(event) {
+  if (!event?.registrationDeadline) return false;
+  // Parse the date-only string as UTC directly (same as the backend's
+  // `new Date("2026-08-31")` behavior), rather than reusing toDateOnly()
+  // above — that helper appends a bare "T00:00:00" with no "Z", which
+  // JavaScript parses as the *visitor's local* midnight, not UTC. For a
+  // visitor east of UTC (e.g. Asia), that shifts the calendar day back by
+  // one before we even get to the WAT-offset math below.
+  const dateOnly = String(event.registrationDeadline).slice(0, 10);
+  const d = new Date(dateOnly);
+  const endOfDayUtc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999) - EVENT_TZ_OFFSET_MINUTES * 60000);
+  return endOfDayUtc < new Date();
+}
 export function daysUntil(event) {
   const target = toDateOnly(event.date);
   const today = new Date(new Date().toDateString());

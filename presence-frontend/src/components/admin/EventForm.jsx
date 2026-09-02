@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImageIcon, Sparkles, Upload, X } from 'lucide-react';
+import { ImageIcon, Sparkles, Upload, X, Grid3x3 } from 'lucide-react';
 import { CATEGORIES } from '../../lib/constants';
 import { toDateInputValue } from '../../lib/utils';
 import { compressImageFile, ImageError } from '../../lib/imageUtils';
 import { getSmartEventPhoto, suggestEventPhoto } from '../../lib/eventPhoto';
+import PhotoGalleryPicker from './PhotoGalleryPicker';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
@@ -29,6 +30,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
   const [imageSource, setImageSource] = useState(initial?.image ? null : 'auto');
   const [suggesting, setSuggesting] = useState(false);
   const [imageError, setImageError] = useState('');
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const fileInputRef = useRef(null);
   const suggestTimer = useRef(null);
 
@@ -90,6 +92,12 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
   function handleRemoveImage() {
     setForm((f) => ({ ...f, image: '' }));
     setImageSource(null);
+  }
+
+  function handleGallerySelect(url) {
+    setForm((f) => ({ ...f, image: url }));
+    setImageSource('manual'); // stop auto-suggest from overwriting a deliberate pick
+    setGalleryOpen(false);
   }
 
   function validate() {
@@ -158,6 +166,9 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
                 </button>
                 <button type="button" onClick={handleAutoSuggest} disabled={suggesting} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-60" style={{ background: 'rgba(139,124,246,0.14)', color: '#8B7CF6' }}>
                   <Sparkles size={13} /> {suggesting ? 'Suggesting…' : 'Auto-suggest from name'}
+                </button>
+                <button type="button" onClick={() => setGalleryOpen(true)} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5" style={{ borderColor: 'var(--line-12)' }}>
+                  <Grid3x3 size={13} /> Browse photos
                 </button>
                 {form.image && (
                   <button type="button" onClick={handleRemoveImage} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5 text-[var(--text-dim)]" style={{ borderColor: 'var(--line-12)' }}>
@@ -245,12 +256,19 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
           Draft events are only visible in this dashboard. Publishing makes the event immediately visible on the
           public site and opens it for registration.
         </p>
-        <button disabled={saving} className="w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-70" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+        <button disabled={saving} className="btn-pop w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-70" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
           {saving ? 'Saving…' : submitLabel}
         </button>
       </div>
 
-      <style>{`.input{width:100%;background:var(--bg);border:1px solid var(--line-10);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);outline:none;} .input:focus{border-color:#22D3A6;}`}</style>
+      <PhotoGalleryPicker
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onSelect={handleGallerySelect}
+        initialTheme={{ Technology: 'tech', Academic: 'academic', Corporate: 'corporate', Workshop: 'workshop', Seminar: 'seminar', Career: 'career', Cultural: 'cultural' }[form.category]}
+      />
+
+      <style>{`.input{width:100%;background:var(--bg);border:1px solid var(--line-10);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);outline:none;} .input:focus{border-color:var(--accent);}`}</style>
     </form>
   );
 }

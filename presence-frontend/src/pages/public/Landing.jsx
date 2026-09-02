@@ -72,15 +72,15 @@ export default function Landing() {
               blobs-on-var(--bg) treatment already used on the sign-in
               page, which reads correctly in both themes. */}
           <div className="absolute inset-0 grain opacity-20" />
-          <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-[0.14] -top-40 -left-32" style={{ background: '#22D3A6' }} />
-          <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-[0.11] top-10 right-0" style={{ background: '#8B7CF6' }} />
+          <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-[0.14] -top-40 -left-32" style={{ background: 'var(--accent)' }} />
+          <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-[0.11] top-10 right-0" style={{ background: 'var(--accent-2)' }} />
         </div>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 pb-24 relative z-10 grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
           <div>
             <motion.span
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full mb-6"
-              style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}
+              style={{ background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }}
             >
               <ScanLine size={13} /> {t('hero_badge')}
             </motion.span>
@@ -88,7 +88,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.08 }}
               className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] mb-6"
             >
-              {t('hero_title_1')}<br />{t('hero_title_2')}<br /><span style={{ color: '#22D3A6' }}>{t('hero_title_3')}</span>
+              {t('hero_title_1')}<br />{t('hero_title_2')}<br /><span style={{ color: 'var(--accent)' }}>{t('hero_title_3')}</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.16 }}
@@ -97,7 +97,7 @@ export default function Landing() {
               {t('hero_subtitle')}
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="flex flex-wrap items-center gap-3">
-              <Link to="/events" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+              <Link to="/events" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
                 {t('hero_browse')} <ArrowRight size={16} />
               </Link>
               <Link to="/register" className="hover-lift inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl border hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--line-14)' }}>
@@ -118,7 +118,7 @@ export default function Landing() {
               <div className="p-6 pb-0">
                 <div className="flex items-center justify-between mb-5">
                   <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_title')}</span>
-                  <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(34,211,166,0.14)', color: '#22D3A6' }}>{t('badge_confirmed')}</span>
+                  <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}>{t('badge_confirmed')}</span>
                 </div>
                 <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>University Technology &amp; Innovation Conference</h3>
                 <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Great Hall &middot; Main Campus</p>
@@ -137,8 +137,8 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 w-14 h-14 rounded-2xl flex items-center justify-center reticle-pulse" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)' }}>
-              <ScanLine size={22} color="#04140f" />
+            <div className="absolute -bottom-4 -right-4 w-14 h-14 rounded-2xl flex items-center justify-center reticle-pulse" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>
+              <ScanLine size={22} color="var(--accent-ink)" />
             </div>
           </motion.div>
         </div>
@@ -151,8 +151,8 @@ export default function Landing() {
           {STEPS.map((s, i) => (
             <div key={s.title} className="relative rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
               <span className="font-mono text-xs text-[var(--text-dim)]">0{i + 1}</span>
-              <span className="w-11 h-11 rounded-xl flex items-center justify-center my-4" style={{ background: 'rgba(34,211,166,0.12)' }}>
-                <s.icon size={20} style={{ color: '#22D3A6' }} />
+              <span className="w-11 h-11 rounded-xl flex items-center justify-center my-4" style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
+                <s.icon size={20} style={{ color: 'var(--accent)' }} />
               </span>
               <h3 className="font-display text-base font-semibold mb-2">{s.title}</h3>
               <p className="text-sm text-[var(--text-dim)] leading-relaxed">{s.copy}</p>
@@ -168,7 +168,7 @@ export default function Landing() {
           {FEATURES.map((f) => (
             <div key={f.title} className="flex gap-4 rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
               <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(139,124,246,0.14)' }}>
-                <f.icon size={20} style={{ color: '#8B7CF6' }} />
+                <f.icon size={20} style={{ color: 'var(--accent-2)' }} />
               </span>
               <div>
                 <h3 className="font-display text-base font-semibold mb-1.5">{f.title}</h3>
@@ -201,7 +201,7 @@ export default function Landing() {
                 transition={{ duration: 0.5 }}
                 className="max-w-md"
               >
-                <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#22D3A6' }}>On the ground</span>
+                <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>On the ground</span>
                 <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white mt-2 mb-3">Built for the actual door, not a demo</h2>
                 <p className="text-sm text-white/75 leading-relaxed">Every screen in Presence was designed around one moment: someone arriving at an event and needing to get in fast.</p>
               </motion.div>
@@ -214,7 +214,7 @@ export default function Landing() {
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
         <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
           <SectionHeading eyebrow="Discover" title="Upcoming events" />
-          <Link to="/events" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: '#22D3A6' }}>
+          <Link to="/events" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
             View all events <ArrowRight size={14} />
           </Link>
         </div>
@@ -252,11 +252,11 @@ export default function Landing() {
       {/* CTA */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-24">
         <div className="rounded-[28px] border p-12 text-center relative overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(34,211,166,0.14), transparent 60%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb),0.14), transparent 60%)' }} />
           <div className="relative z-10">
             <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>Ready to replace the sign-in sheet?</h2>
             <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>Create an account, RSVP to an event, and see your digital pass generate in seconds.</p>
-            <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+            <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
               Get started <ArrowRight size={16} />
             </Link>
           </div>
@@ -291,8 +291,8 @@ function Stat({ label, value }) {
 function BigStat({ icon: Icon, label, value }) {
   return (
     <div className="flex items-center gap-3.5">
-      <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,211,166,0.12)' }}>
-        <Icon size={18} style={{ color: '#22D3A6' }} />
+      <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
+        <Icon size={18} style={{ color: 'var(--accent)' }} />
       </span>
       <div>
         <p className="font-display text-xl font-semibold text-[var(--text)] leading-tight">

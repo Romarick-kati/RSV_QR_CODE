@@ -7,6 +7,7 @@ import { generateReference, generateAttendanceToken } from '../utils/tokens.js';
 import { assertEventAccess } from '../utils/authz.js';
 import { endOfDayInEventTimezone } from '../utils/checkInWindow.js';
 import { sendSms } from '../utils/sms.js';
+import * as campay from '../utils/campay.js';
 
 export const rsvpToEvent = asyncHandler(async (req, res) => {
   const eventId = req.params.id;
@@ -23,38 +24,74 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('Registration for this event has closed.');
   }
 
-  // Paid events (event.price > 0) use a manual Mobile Money confirmation:
-  // the attendee sends money out-of-band and submits the reference here;
-  // the organizer confirms it later from the attendee list. The seat is
-  // held immediately either way — it just can't be scanned in until
-  // payment is confirmed (see attendance.controller.js).
+  // Paid events (event.price > 0) go through a REAL CamPay Mobile Money
+  // charge: the attendee gives their phone number, CamPay sends a
+  // PIN-approval prompt to that phone, and the seat only becomes usable
+  // once CamPay itself confirms the transaction succeeded (verified via
+  // getTransactionStatus() in checkPaymentStatus()/campayWebhook() below —
+  // never by trusting anything the client claims). Requires
+  // CAMPAY_PERMANENT_TOKEN to be set in the environment.
   const isPaid = event.price > 0;
-  if (isPaid && !req.body.paymentReference?.trim()) {
-    throw ApiError.badRequest('A Mobile Money transaction reference is required for this paid event.');
+  if (isPaid && !req.body.phone?.trim()) {
+    throw ApiError.badRequest('A Mobile Money phone number is required for this paid event.');
   }
 
   const existing = await Registration.findOne({ user: userId, event: eventId });
-  if (existing && existing.status === 'confirmed') {
-    throw ApiError.conflict('You are already registered for this event.');
+  if (existing && ['confirmed', 'waitlisted'].includes(existing.status) && existing.paymentStatus !== 'failed') {
+    throw ApiError.conflict(existing.status === 'waitlisted' ? 'You are already on the waitlist for this event.' : 'You are already registered for this event.');
   }
 
   const confirmedCount = await Registration.countDocuments({ event: eventId, status: 'confirmed' });
-  if (confirmedCount >= event.capacity) {
+  const isFull = confirmedCount >= event.capacity;
+
+  // Waitlist only supports free events for now. A paid waitlist needs
+  // "authorize now, capture later" — CamPay's collect API charges
+  // immediately, so someone waitlisted for a paid event who never gets a
+  // seat would need an automatic refund flow we don't have yet. Rather
+  // than risk charging someone for a seat that never materializes, paid
+  // events just stay hard-capped at capacity for now.
+  if (isFull && isPaid) {
     throw ApiError.badRequest('This event has reached full capacity.');
   }
 
+  const registrationReference = generateReference();
+
+  let campayResult = null;
+  if (isPaid) {
+    // Do the real money-moving call BEFORE writing anything to the
+    // database — if CamPay rejects the phone number or the request
+    // outright, nothing gets created and the attendee just retries.
+    try {
+      campayResult = await campay.initiateCollect({
+        amount: event.price,
+        phone: req.body.phone,
+        description: event.title,
+        externalReference: registrationReference,
+      });
+    } catch (err) {
+      throw ApiError.badRequest(err.message || 'Could not start the Mobile Money payment. Check the phone number and try again.');
+    }
+  }
+
   const paymentFields = isPaid
-    ? { paymentStatus: 'pending', paymentReference: req.body.paymentReference.trim() }
-    : { paymentStatus: 'not_required', paymentReference: null };
+    ? {
+        paymentStatus: 'pending',
+        paymentReference: null,
+        paymentGatewayReference: campayResult.reference,
+        paymentPhone: campay.normalizeCameroonPhone(req.body.phone),
+      }
+    : { paymentStatus: 'not_required', paymentReference: null, paymentGatewayReference: null, paymentPhone: null };
+
+  const registrationStatus = isFull ? 'waitlisted' : 'confirmed';
 
   let registration;
   try {
     if (existing) {
-      // A [user, event] unique index means a cancelled registration can't
-      // just be re-inserted — reactivate the same record with a fresh
-      // reference/token instead, so re-RSVPing after cancelling works.
-      existing.status = 'confirmed';
-      existing.registrationReference = generateReference();
+      // A [user, event] unique index means a cancelled (or failed-payment)
+      // registration can't just be re-inserted — reactivate the same
+      // record with a fresh reference/token instead, so retrying works.
+      existing.status = registrationStatus;
+      existing.registrationReference = registrationReference;
       existing.attendanceToken = generateAttendanceToken();
       Object.assign(existing, paymentFields);
       registration = await existing.save();
@@ -62,9 +99,9 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
       registration = await Registration.create({
         user: userId,
         event: eventId,
-        registrationReference: generateReference(),
+        registrationReference,
         attendanceToken: generateAttendanceToken(),
-        status: 'confirmed',
+        status: registrationStatus,
         ...paymentFields,
       });
     }
@@ -73,7 +110,23 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
     throw err;
   }
 
-  res.status(201).json({ registration });
+  if (isFull) {
+    // 1-indexed position in the queue — how many people were already
+    // waiting ahead of this one (created earlier, still waitlisted).
+    const position = await Registration.countDocuments({
+      event: eventId,
+      status: 'waitlisted',
+      createdAt: { $lt: registration.createdAt },
+    }) + 1;
+    return res.status(201).json({ registration, waitlisted: true, waitlistPosition: position });
+  }
+
+  res.status(201).json({
+    registration,
+    // The frontend uses this to show "check your phone for the PIN
+    // prompt" and to know what to poll while waiting for confirmation.
+    payment: isPaid ? { reference: campayResult.reference, ussdCode: campayResult.ussd_code, operator: campayResult.operator } : null,
+  });
 
   // Best-effort — never blocks or fails the RSVP response above. No-ops
   // quietly if the attendee has no phone on file or SMS isn't configured
@@ -84,9 +137,70 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
   ).catch(() => {});
 });
 
-// Organizer confirms a manually-paid Mobile Money registration after
-// checking their own MoMo account for the matching transaction reference.
-// Until this happens, the pass exists but won't pass check-in.
+// Polled by the frontend after rsvpToEvent() while a CamPay Mobile Money
+// prompt is pending on the attendee's phone. Always re-verifies with
+// CamPay directly (never trusts a stored/cached status) so the result is
+// only ever as fresh and as trustworthy as CamPay's own records.
+export const checkPaymentStatus = asyncHandler(async (req, res) => {
+  const registration = await Registration.findById(req.params.registrationId).populate('event');
+  if (!registration) throw ApiError.notFound('Registration not found.');
+  const isOwner = registration.user.toString() === req.user.id;
+  const isStaff = ['ADMIN', 'ORGANIZER'].includes(req.user.role);
+  if (!isOwner && !isStaff) throw ApiError.forbidden();
+
+  if (registration.paymentStatus !== 'pending' || !registration.paymentGatewayReference) {
+    return res.json({ paymentStatus: registration.paymentStatus });
+  }
+
+  const result = await campay.getTransactionStatus(registration.paymentGatewayReference);
+  if (result.status === 'SUCCESSFUL') {
+    registration.paymentStatus = 'confirmed';
+    await registration.save();
+  } else if (result.status === 'FAILED') {
+    registration.paymentStatus = 'failed';
+    await registration.save();
+  }
+  // else still PENDING — leave as-is, frontend keeps polling.
+
+  res.json({ paymentStatus: registration.paymentStatus, campayStatus: result.status });
+});
+
+// CamPay calls this URL directly (configured in the CamPay dashboard under
+// WEBHOOK → your callback URL) when a transaction's status changes — this
+// is what confirms payment even if the attendee closes the app before the
+// frontend's polling picks it up. The webhook body/query is only ever used
+// to find WHICH transaction to check — the actual status is always
+// re-verified with a direct, authenticated call to CamPay (see
+// utils/campay.js), so a forged or replayed call to this URL can't fake a
+// payment: at worst it triggers a real (harmless) status re-check.
+export const campayWebhook = asyncHandler(async (req, res) => {
+  const reference = req.body?.reference || req.query?.reference;
+  if (!reference) return res.status(200).json({ received: true, note: 'no reference in payload' });
+
+  const registration = await Registration.findOne({ paymentGatewayReference: reference });
+  if (!registration) return res.status(200).json({ received: true, note: 'no matching registration' });
+
+  try {
+    const result = await campay.getTransactionStatus(reference);
+    if (result.status === 'SUCCESSFUL') {
+      registration.paymentStatus = 'confirmed';
+      await registration.save();
+    } else if (result.status === 'FAILED') {
+      registration.paymentStatus = 'failed';
+      await registration.save();
+    }
+  } catch (err) {
+    console.error('[campay-webhook] status re-check failed', err.message);
+  }
+
+  res.status(200).json({ received: true });
+});
+
+// Manual override, kept only as a fallback for edge cases the automated
+// flow can't cover (e.g. CamPay's status API is down, or a rare payment
+// made outside the app that still needs honoring) — NOT the primary path
+// anymore now that CamPay verifies payments for real. Worth keeping
+// restricted to ADMIN/ORGANIZER (see routes/attendance.routes.js).
 export const confirmPayment = asyncHandler(async (req, res) => {
   const registration = await Registration.findById(req.params.registrationId).populate('event');
   if (!registration) throw ApiError.notFound('Registration not found.');
@@ -106,8 +220,22 @@ export const cancelRsvp = asyncHandler(async (req, res) => {
   const isStaff = ['ADMIN', 'ORGANIZER'].includes(req.user.role);
   if (!isOwner && !isStaff) throw ApiError.forbidden();
 
+  const wasConfirmed = registration.status === 'confirmed';
   registration.status = 'cancelled';
   await registration.save();
+
+  // Cancelling a CONFIRMED seat frees up capacity — automatically pull the
+  // longest-waiting person off the waitlist into that seat, rather than
+  // making an organizer do this by hand every time. Cancelling from the
+  // waitlist itself doesn't free a real seat, so nothing to promote there.
+  if (wasConfirmed) {
+    const next = await Registration.findOne({ event: registration.event, status: 'waitlisted' }).sort({ createdAt: 1 });
+    if (next) {
+      next.status = 'confirmed';
+      await next.save();
+    }
+  }
+
   res.json({ message: 'Registration cancelled.' });
 });
 
@@ -124,7 +252,7 @@ export const eventAttendees = asyncHandler(async (req, res) => {
 });
 
 export const myRegistrations = asyncHandler(async (req, res) => {
-  const registrations = await Registration.find({ user: req.user.id, status: 'confirmed' })
+  const registrations = await Registration.find({ user: req.user.id, status: { $in: ['confirmed', 'waitlisted'] } })
     .populate('event')
     .populate('attendance')
     .sort({ createdAt: -1 });
@@ -140,6 +268,22 @@ export const getRegistration = asyncHandler(async (req, res) => {
   const isOwner = registration.user.id === req.user.id;
   const isStaff = ['ADMIN', 'ORGANIZER'].includes(req.user.role);
   if (!isOwner && !isStaff) throw ApiError.forbidden();
+  res.json({ registration });
+});
+
+// Organizer override to pull a specific person off the waitlist (e.g. a
+// VIP, or filling a last-minute cancellation faster than waiting for the
+// automatic FIFO promotion in cancelRsvp() above). Does NOT check capacity
+// — an organizer doing this deliberately is trusted to know why.
+export const promoteFromWaitlist = asyncHandler(async (req, res) => {
+  const registration = await Registration.findById(req.params.registrationId).populate('event');
+  if (!registration) throw ApiError.notFound('Registration not found.');
+  assertEventAccess(req.user, registration.event);
+  if (registration.status !== 'waitlisted') {
+    throw ApiError.badRequest('This registration is not on the waitlist.');
+  }
+  registration.status = 'confirmed';
+  await registration.save();
   res.json({ registration });
 });
 

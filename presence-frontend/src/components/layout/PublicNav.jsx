@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react';
+import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck, Settings as SettingsIcon } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
 import { useAuth } from '../../lib/AuthContext';
@@ -16,6 +16,7 @@ export default function PublicNav() {
   const navigate = useNavigate();
 
   const LINKS = [
+    { to: '/discover', label: t('nav_discover') },
     { to: '/events', label: t('nav_events') },
     { to: '/about', label: t('nav_about') },
     { to: '/faq', label: t('nav_faq') },
@@ -48,7 +49,7 @@ export default function PublicNav() {
           >
             <BrandMark size={32} animated />
           </motion.span>
-          <span className="font-display font-bold text-lg tracking-tight transition-colors group-hover:text-[#22D3A6]">Presence</span>
+          <span className="font-display font-bold text-lg tracking-tight transition-colors group-hover:text-[var(--accent)]">Presence</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -79,7 +80,7 @@ export default function PublicNav() {
                 className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border hover:bg-white/5 transition-colors"
                 style={{ borderColor: 'var(--line-10)' }}
               >
-                <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+                <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -94,6 +95,9 @@ export default function PublicNav() {
                   <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5">
                     {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? <ShieldCheck size={15} /> : <LayoutDashboard size={15} />}
                     {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
+                  </Link>
+                  <Link to="/settings" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm text-[var(--text)] hover:bg-white/5 border-t" style={{ borderColor: 'var(--line-08)' }}>
+                    <SettingsIcon size={15} /> {t('nav_settings')}
                   </Link>
                   <button
                     onClick={() => { setMenuOpen(false); logout(); navigate('/'); }}
@@ -111,7 +115,7 @@ export default function PublicNav() {
               <Link
                 to="/register"
                 className="btn-pop text-sm font-semibold px-4 py-2 rounded-lg"
-                style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}
+                style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}
               >
                 {t('nav_get_started')}
               </Link>
@@ -148,7 +152,7 @@ export default function PublicNav() {
           ) : (
             <>
               <Link to="/login" onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text)] hover:bg-white/5">{t('nav_sign_in')}</Link>
-              <Link to="/register" onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-semibold text-center mt-1" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
+              <Link to="/register" onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-semibold text-center mt-1" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
                 {t('nav_get_started')}
               </Link>
             </>

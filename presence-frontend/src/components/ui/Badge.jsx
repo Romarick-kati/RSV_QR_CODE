@@ -8,6 +8,7 @@ const VARIANTS = {
   confirmed: { bg: 'rgba(34,211,166,0.14)', fg: '#22D3A6', key: 'badge_confirmed' },
   'checked-in': { bg: 'rgba(34,211,166,0.14)', fg: '#22D3A6', key: 'badge_checked_in' },
   pending: { bg: 'rgba(245,166,35,0.14)', fg: '#F5A623', key: 'badge_pending' },
+  waitlisted: { bg: 'rgba(139,124,246,0.14)', fg: '#8B7CF6', key: 'badge_waitlisted' },
 };
 
 export default function Badge({ status, children }) {

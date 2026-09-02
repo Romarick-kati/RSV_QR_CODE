@@ -26,9 +26,14 @@ export default function Dashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const upcoming = regs.filter((r) => r.event && !isEventPast(r.event)).sort((a, b) => String(a.event.date).localeCompare(String(b.event.date)));
+  const upcoming = regs.filter((r) => r.event && !isEventPast(r.event) && r.status !== 'waitlisted').sort((a, b) => String(a.event.date).localeCompare(String(b.event.date)));
+  const waitlisted = regs.filter((r) => r.event && !isEventPast(r.event) && r.status === 'waitlisted');
   const checkedIn = regs.filter((r) => r.attendance);
   const nextUp = upcoming[0];
+  // "Total registrations" should mean confirmed seats, not pending
+  // waitlist entries that might never turn into one — counting both would
+  // overstate this number and confuse the attendee.
+  const confirmedRegsCount = regs.filter((r) => r.status !== 'waitlisted').length;
 
   return (
     <AttendeeShell title={t('dash_welcome', { name: user.name.split(' ')[0] })} subtitle={t('dash_subtitle')}>
@@ -59,9 +64,23 @@ export default function Dashboard() {
       ) : (
         <div className="grid sm:grid-cols-3 gap-4 mb-8">
           <StatCard label={t('dash_upcoming_events')} value={upcoming.length} icon={CalendarCheck} accent="#22D3A6" />
-          <StatCard label={t('dash_total_registrations')} value={regs.length} icon={QrCode} accent="#8B7CF6" />
+          <StatCard label={t('dash_total_registrations')} value={confirmedRegsCount} icon={QrCode} accent="#8B7CF6" />
           <StatCard label={t('dash_events_attended')} value={checkedIn.length} icon={History} accent="#F5A623" />
         </div>
+      )}
+
+      {!loading && waitlisted.length > 0 && (
+        <Link
+          to="/my-events"
+          className="hover-lift flex items-center justify-between gap-4 rounded-2xl border p-4 mb-6"
+          style={{ borderColor: 'rgba(139,124,246,0.35)', background: 'rgba(139,124,246,0.08)' }}
+        >
+          <p className="text-sm font-medium">
+            <span className="font-semibold" style={{ color: '#8B7CF6' }}>{waitlisted.length}</span>{' '}
+            {waitlisted.length === 1 ? 'event' : 'events'} you're waitlisted for — we'll confirm automatically if a spot opens.
+          </p>
+          <ArrowRight size={16} className="shrink-0" style={{ color: '#8B7CF6' }} />
+        </Link>
       )}
 
       <div className="flex items-center justify-between mb-4">

@@ -9,6 +9,7 @@ export default function AttendeeShell({ title, subtitle, actions, children }) {
     { to: '/dashboard', label: t('tab_overview'), end: true },
     { to: '/my-events', label: t('tab_my_events') },
     { to: '/profile', label: t('tab_profile') },
+    { to: '/settings', label: t('nav_settings') },
   ];
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
@@ -36,7 +37,7 @@ export default function AttendeeShell({ title, subtitle, actions, children }) {
                       <motion.span
                         layoutId="attendee-tab-active-pill"
                         className="absolute inset-0 rounded-lg"
-                        style={{ background: '#22D3A6' }}
+                        style={{ background: 'var(--accent)' }}
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
                     )}

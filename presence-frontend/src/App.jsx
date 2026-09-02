@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider } from './lib/AuthContext';
 import { ToastProvider } from './lib/ToastContext';
 import { ThemeProvider } from './lib/ThemeContext';
+import { AccentProvider } from './lib/AccentContext';
 import { LanguageProvider } from './lib/LanguageContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PresenceLoader from './components/ui/PresenceLoader';
@@ -21,6 +22,7 @@ import WhatsAppFloat from './components/ui/WhatsAppFloat';
 import Landing from './pages/public/Landing';
 
 const Events = lazy(() => import('./pages/public/Events'));
+const Discover = lazy(() => import('./pages/public/Discover'));
 const EventDetail = lazy(() => import('./pages/public/EventDetail'));
 const About = lazy(() => import('./pages/public/About'));
 const FAQ = lazy(() => import('./pages/public/FAQ'));
@@ -31,6 +33,7 @@ const Dashboard = lazy(() => import('./pages/attendee/Dashboard'));
 const MyEvents = lazy(() => import('./pages/attendee/MyEvents'));
 const Profile = lazy(() => import('./pages/attendee/Profile'));
 const QrPass = lazy(() => import('./pages/attendee/QrPass'));
+const Settings = lazy(() => import('./pages/shared/Settings'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminEvents = lazy(() => import('./pages/admin/AdminEvents'));
@@ -103,6 +106,7 @@ function AnimatedRoutes() {
             {/* Public */}
             <Route path="/" element={<Landing />} />
             <Route path="/events" element={<Suspense fallback={<PresenceLoader />}><Events /></Suspense>} />
+            <Route path="/discover" element={<Suspense fallback={<PresenceLoader />}><Discover /></Suspense>} />
             <Route path="/events/:id" element={<Suspense fallback={<PresenceLoader />}><EventDetail /></Suspense>} />
             <Route path="/about" element={<Suspense fallback={<PresenceLoader />}><About /></Suspense>} />
             <Route path="/faq" element={<Suspense fallback={<PresenceLoader />}><FAQ /></Suspense>} />
@@ -116,6 +120,7 @@ function AnimatedRoutes() {
             <Route path="/my-events/:id" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><MyEvents /></Suspense></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><Profile /></Suspense></ProtectedRoute>} />
             <Route path="/qr-pass/:id" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><QrPass /></Suspense></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><Settings /></Suspense></ProtectedRoute>} />
 
             {/* Organizer / Admin (protected + role gated) */}
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminDashboard /></Suspense></ProtectedRoute>} />
@@ -139,6 +144,7 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <ThemeProvider>
+      <AccentProvider>
       <LanguageProvider>
         <AuthProvider>
           <ToastProvider>
@@ -149,6 +155,7 @@ export default function App() {
           </ToastProvider>
         </AuthProvider>
       </LanguageProvider>
+      </AccentProvider>
     </ThemeProvider>
   );
 }

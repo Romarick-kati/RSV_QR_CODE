@@ -13,24 +13,50 @@
 // entirely optional. Without a key, or if the fetch fails/is blocked, the
 // app quietly falls back to the local gradient system below.
 
-const THEMES = [
-  { key: 'hackathon', match: ['hackathon', 'hack-a-thon', 'coding challenge', 'devfest'] },
-  { key: 'tech', match: ['tech', 'technology', 'software', 'ai', 'coding', 'developer', 'innovation', 'startup', 'robotics', 'engineering'] },
-  { key: 'workshop', match: ['workshop', 'bootcamp', 'training', 'masterclass', 'hands-on'] },
-  { key: 'conference', match: ['conference', 'summit', 'symposium', 'convention'] },
-  { key: 'academic', match: ['lecture', 'academic', 'graduation', 'convocation', 'thesis', 'research', 'university', 'faculty'] },
-  { key: 'career', match: ['career', 'job fair', 'internship', 'recruit', 'hiring'] },
-  { key: 'corporate', match: ['corporate', 'business', 'networking', 'meeting', 'leadership'] },
-  { key: 'cultural', match: ['cultural', 'festival', 'heritage', 'traditional', 'exhibition'] },
-  { key: 'music', match: ['concert', 'music', 'band', 'live performance', 'gig'] },
-  { key: 'sports', match: ['sports', 'tournament', 'match', 'athletics', 'football', 'basketball'] },
-  { key: 'party', match: ['party', 'celebration', 'gala', 'anniversary', 'ceremony'] },
-  { key: 'wedding', match: ['wedding', 'bridal'] },
-  { key: 'health', match: ['health', 'medical', 'wellness', 'clinic', 'hospital'] },
-  { key: 'food', match: ['food', 'cuisine', 'culinary', 'cooking', 'tasting'] },
-  { key: 'art', match: ['art', 'design', 'creative', 'gallery', 'photography'] },
-  { key: 'seminar', match: ['seminar', 'panel', 'talk', 'discussion'] },
+// Labeled catalog for the "Browse photos" gallery picker in EventForm —
+// each theme groups under a human-facing label + icon name (a lucide-react
+// icon name, resolved in the component) so the picker can show tabs like
+// "Tech", "Food", "Academic" instead of raw theme keys.
+export const THEME_CATALOG = [
+  { key: 'tech', label: 'Tech', icon: 'Cpu' },
+  { key: 'hackathon', label: 'Hackathon', icon: 'Code2' },
+  { key: 'workshop', label: 'Workshop', icon: 'Wrench' },
+  { key: 'conference', label: 'Conference', icon: 'Presentation' },
+  { key: 'academic', label: 'Academic', icon: 'GraduationCap' },
+  { key: 'career', label: 'Career', icon: 'Target' },
+  { key: 'corporate', label: 'Corporate', icon: 'Briefcase' },
+  { key: 'cultural', label: 'Cultural', icon: 'Palette' },
+  { key: 'music', label: 'Music', icon: 'Music' },
+  { key: 'sports', label: 'Sports', icon: 'Trophy' },
+  { key: 'party', label: 'Party', icon: 'PartyPopper' },
+  { key: 'wedding', label: 'Wedding', icon: 'Heart' },
+  { key: 'health', label: 'Health', icon: 'HeartPulse' },
+  { key: 'food', label: 'Food', icon: 'UtensilsCrossed' },
+  { key: 'art', label: 'Art & Design', icon: 'Paintbrush' },
+  { key: 'seminar', label: 'Seminar', icon: 'Mic' },
 ];
+
+const THEMES = THEME_CATALOG.map(({ key }) => ({
+  key,
+  match: {
+    hackathon: ['hackathon', 'hack-a-thon', 'coding challenge', 'devfest'],
+    tech: ['tech', 'technology', 'software', 'ai', 'coding', 'developer', 'innovation', 'startup', 'robotics', 'engineering'],
+    workshop: ['workshop', 'bootcamp', 'training', 'masterclass', 'hands-on'],
+    conference: ['conference', 'summit', 'symposium', 'convention'],
+    academic: ['lecture', 'academic', 'graduation', 'convocation', 'thesis', 'research', 'university', 'faculty'],
+    career: ['career', 'job fair', 'internship', 'recruit', 'hiring'],
+    corporate: ['corporate', 'business', 'networking', 'meeting', 'leadership'],
+    cultural: ['cultural', 'festival', 'heritage', 'traditional', 'exhibition'],
+    music: ['concert', 'music', 'band', 'live performance', 'gig'],
+    sports: ['sports', 'tournament', 'match', 'athletics', 'football', 'basketball'],
+    party: ['party', 'celebration', 'gala', 'anniversary', 'ceremony'],
+    wedding: ['wedding', 'bridal'],
+    health: ['health', 'medical', 'wellness', 'clinic', 'hospital'],
+    food: ['food', 'cuisine', 'culinary', 'cooking', 'tasting'],
+    art: ['art', 'design', 'creative', 'gallery', 'photography'],
+    seminar: ['seminar', 'panel', 'talk', 'discussion'],
+  }[key] || [],
+}));
 
 // Two-color gradient per theme, echoing the same palette used for the
 // category tint overlays (EVENT_TINTS in lib/constants.js) so the
@@ -59,31 +85,50 @@ function detectTheme(title = '', category = '') {
   return CATEGORY_FALLBACK_THEME[category] || 'tech';
 }
 
-// Deterministic pseudo-random offset (0-1) from a string, purely to vary
-// the diagonal-line pattern's position per theme so placeholders don't
-// all look identical — not used for anything security-sensitive.
+// Deterministic pseudo-random 0-1 float from a string — used to vary
+// pattern angle/style/hue per variant so a theme's 8 gallery options look
+// meaningfully different from each other, not just re-tints of one image.
 function hashUnit(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
   return (h % 1000) / 1000;
 }
 
-function localPlaceholderUrl(theme, w = 900, h = 600) {
-  const [c1, c2] = THEME_GRADIENTS[theme] || THEME_GRADIENTS.tech;
-  const offset = hashUnit(theme);
-  const angle = 24 + Math.round(offset * 20); // 24-44deg, varies per theme
+function shiftHue([hex1, hex2], degrees) {
+  // Cheap hue rotation via CSS filter isn't available on a static data URI,
+  // so instead we just blend toward a rotated point on the same two-color
+  // gradient family by mixing in the theme's secondary brand tones. This
+  // keeps every variant on-brand rather than drifting into unrelated colors.
+  return degrees % 40 < 20 ? [hex1, hex2] : [hex2, hex1];
+}
+
+function localPlaceholderUrl(theme, variant = 0, w = 900, h = 600) {
+  const base = THEME_GRADIENTS[theme] || THEME_GRADIENTS.tech;
+  const seed = hashUnit(`${theme}-${variant}`);
+  const angle = Math.round(seed * 160); // 0-160deg, varies per variant
+  const [c1, c2] = shiftHue(base, angle + variant * 37);
+  const patternType = variant % 3; // 0=diagonal lines, 1=dots, 2=grid
+  let patternDefs, patternRect;
+  if (patternType === 0) {
+    patternDefs = `<pattern id="p" width="46" height="46" patternTransform="rotate(${angle})" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="46" stroke="#ffffff" stroke-opacity="0.07" stroke-width="16"/></pattern>`;
+  } else if (patternType === 1) {
+    const r = 3 + (variant % 4);
+    patternDefs = `<pattern id="p" width="34" height="34" patternUnits="userSpaceOnUse"><circle cx="17" cy="17" r="${r}" fill="#ffffff" fill-opacity="0.10"/></pattern>`;
+  } else {
+    patternDefs = `<pattern id="p" width="52" height="52" patternTransform="rotate(${angle})" patternUnits="userSpaceOnUse"><path d="M0 26h52M26 0v52" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/></pattern>`;
+  }
+  patternRect = `<rect width="${w}" height="${h}" fill="url(#p)"/>`;
+  const gx2 = 40 + Math.round(seed * 60);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <defs>
-      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <linearGradient id="g" x1="0%" y1="0%" x2="${gx2}%" y2="100%">
         <stop offset="0%" stop-color="${c1}"/>
         <stop offset="100%" stop-color="${c2}"/>
       </linearGradient>
-      <pattern id="lines" width="46" height="46" patternTransform="rotate(${angle})" patternUnits="userSpaceOnUse">
-        <line x1="0" y1="0" x2="0" y2="46" stroke="#ffffff" stroke-opacity="0.06" stroke-width="18"/>
-      </pattern>
+      ${patternDefs}
     </defs>
     <rect width="${w}" height="${h}" fill="url(#g)"/>
-    <rect width="${w}" height="${h}" fill="url(#lines)"/>
+    ${patternRect}
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -93,7 +138,45 @@ export function getSmartEventPhoto(event, dims = '900/600') {
   if (event?.image) return event.image;
   const theme = detectTheme(event?.title, event?.category);
   const [w, h] = dims.split('/').map(Number);
-  return localPlaceholderUrl(theme, w, h);
+  return localPlaceholderUrl(theme, 0, w, h);
+}
+
+/**
+ * Powers the "Browse photos" gallery in EventForm: N distinct on-brand
+ * variants for a given theme, generated instantly with no network call —
+ * always available even with no Unsplash key configured.
+ */
+export function getThemeGalleryVariants(themeKey, count = 8, dims = '480/300') {
+  const [w, h] = dims.split('/').map(Number);
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${themeKey}-${i}`,
+    url: localPlaceholderUrl(themeKey, i, w, h),
+  }));
+}
+
+/**
+ * If VITE_UNSPLASH_ACCESS_KEY is configured, fetch a page of real photos
+ * for a theme/query to mix into the gallery alongside the generated
+ * variants above. Returns [] (never throws) if unconfigured or the
+ * request fails/times out — the gallery works fine either way.
+ */
+export async function fetchUnsplashGallery(query, count = 8) {
+  const key = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
+  if (!key) return [];
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`https://api.unsplash.com/search/photos?per_page=${count}&orientation=landscape&query=${encodeURIComponent(query)}`, {
+      headers: { Authorization: `Client-ID ${key}` },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.results || []).map((r) => ({ id: r.id, url: r.urls.small, credit: r.user?.name }));
+  } catch {
+    return [];
+  }
 }
 
 async function tryUnsplash(query) {
@@ -126,5 +209,5 @@ export async function suggestEventPhoto(title, category) {
   const live = await tryUnsplash(query);
   if (live) return live;
   const theme = detectTheme(title, category);
-  return localPlaceholderUrl(theme);
+  return localPlaceholderUrl(theme, 0);
 }
