@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: presence
+      MONGO_INITDB_ROOT_PASSWORD: presence_dev_password
+      MONGO_INITDB_DATABASE: presence
+    ports:
+      - "27017:27017"
+    volumes:
+      - presence_mongodata:/data/db
+
+volumes:
+  presence_mongodata:
