@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- SVG favicons aren't used by iOS's "Add to Home Screen" or by most
+         link-preview/social-share crawlers — they need a real PNG. These
+         two, plus the manifest below, are what were missing before: without
+         them, saving this site to a phone's home screen or sharing its link
+         in WhatsApp/LinkedIn showed a blank or default icon instead of the
+         actual logo. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fonts moved here from a CSS @import (see index.css) — an @import
+         can't be discovered by the browser until after it downloads and
+         parses the built stylesheet, adding a full extra round-trip before
+         any text can render. A <link> in <head> lets the browser discover
+         and start fetching these in parallel with everything else, which is
+         a meaningful chunk of the "Performance" score on a text-heavy hero
+         section like this app's Landing page. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
+
+    <title>Presence: Event Registration and QR Attendance</title>
+    <meta name="description" content="Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan." />
+    <link rel="canonical" href="https://presence.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Presence: Event Registration and QR Attendance" />
+    <meta property="og:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
+    <meta property="og:image" content="https://presence.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Presence: Event Registration and QR Attendance" />
+    <meta name="twitter:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
+    <meta name="twitter:image" content="https://presence.app/og-image.png" />
+    <meta name="author" content="Ndi Romarick Kati" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Presence",
+        "applicationCategory": "EventManagementApplication",
+        "description": "Event registration and QR-based attendance tracking platform.",
+        "creator": {
+          "@type": "Person",
+          "name": "Ndi Romarick Kati",
+          "url": "https://kati-guidotti.netlify.app",
+          "sameAs": [
+            "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
+            "https://github.com/Romarick-Kati",
+            "https://kati-skyline.netlify.app"
+          ]
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

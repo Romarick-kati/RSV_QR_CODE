@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /my-events
+Disallow: /profile
+Disallow: /qr-pass
+
+Sitemap: https://presence.app/sitemap.xml

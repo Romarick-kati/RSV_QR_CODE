@@ -1,0 +1,174 @@
+@import "tailwindcss";
+/* Fraunces / Inter / JetBrains Mono are now loaded via <link> tags in
+   index.html instead of @import here — see the comment there for why. */
+
+:root{
+  --ink:#0A0D18;
+  --panel:#111528;
+  --panel-2:#161b32;
+  --line: rgba(255,255,255,0.09);
+  --cloud:#F3F5FB;
+  --dim:#8D93B2;
+  --amber:#F5A623;
+  --amber-2:#FFC868;
+  --teal:#22D3A6;
+  --coral:#FF5C77;
+  --violet:#8B7CF6;
+  --shadow: 0 24px 70px -24px rgba(0,0,0,0.65);
+  --ease: cubic-bezier(.22,1,.36,1);
+
+  /* User-selectable accent (Settings → Appearance). Everything that used to
+     hardcode #22D3A6/#8B7CF6 directly should reference these two instead,
+     so picking a new color on the Settings page updates it everywhere at
+     once. AccentContext.jsx sets these on <html> at runtime; the values
+     below are just the pre-JS/first-paint default (teal → violet). */
+  --accent: #22D3A6;
+  --accent-2: #8B7CF6;
+  --accent-rgb: 34,211,166;
+  --accent-ink: #04140f; /* readable text color to put ON TOP of --accent */
+
+  /* ---- theme tokens (dark = default) ---- */
+  --bg: #0A0D18;
+  --bg-translucent: rgba(10,13,24,0.82);
+  --text: #F3F5FB;
+  --text-dim: #8D93B2;
+  --danger-text: #FF9FB6;
+  --line-03: rgba(255,255,255,0.03);
+  --line-04: rgba(255,255,255,0.04);
+  --line-05: rgba(255,255,255,0.05);
+  --line-06: rgba(255,255,255,0.06);
+  --line-08: rgba(255,255,255,0.08);
+  --line-10: rgba(255,255,255,0.1);
+  --line-12: rgba(255,255,255,0.12);
+  --line-14: rgba(255,255,255,0.14);
+  --line-15: rgba(255,255,255,0.15);
+  /* fixed surfaces that never theme — the digital pass card, always dark like a physical badge */
+  --pass-text: #F3F5FB;
+  --pass-text-dim: #8D93B2;
+  color-scheme: dark;
+}
+
+[data-theme="light"]{
+  /* Brightened to a plain, clean white (was a slightly hazy light-gray
+     #F6F7FB) — panels are now a hair off-white so cards still read as
+     distinct surfaces against the page background, instead of everything
+     blending into one flat white. */
+  --bg: #FFFFFF;
+  --bg-translucent: rgba(255,255,255,0.88);
+  --panel: #FFFFFF;
+  --panel-2: #F3F5FA;
+  --text: #12142B;
+  --text-dim: #5A5F7A;
+  --danger-text: #C81E3A;
+  --line-03: rgba(10,13,36,0.04);
+  --line-04: rgba(10,13,36,0.05);
+  --line-05: rgba(10,13,36,0.06);
+  --line-06: rgba(10,13,36,0.07);
+  --line-08: rgba(10,13,36,0.09);
+  --line-10: rgba(10,13,36,0.11);
+  --line-12: rgba(10,13,36,0.13);
+  --line-14: rgba(10,13,36,0.15);
+  --line-15: rgba(10,13,36,0.16);
+  --shadow: 0 24px 70px -24px rgba(20,25,55,0.18);
+  color-scheme: light;
+}
+
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; overflow-x:hidden; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  transition: background-color .25s var(--ease), color .25s var(--ease);
+  overflow-x:hidden;
+}
+h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
+.font-mono{ font-family:'JetBrains Mono',monospace; }
+
+::selection{ background: var(--teal); color:#04140f; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
+
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:#242a47; border-radius:8px; }
+::-webkit-scrollbar-thumb:hover{ background:#323a63; }
+
+.grain{
+  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.reticle-pulse{ animation: reticlePulse 2.2s var(--ease) infinite; }
+@keyframes reticlePulse{
+  0%{ box-shadow: 0 0 0 0 rgba(34,211,166,0.45); }
+  70%{ box-shadow: 0 0 0 14px rgba(34,211,166,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(34,211,166,0); }
+}
+
+.skeleton{
+  background: linear-gradient(90deg, var(--panel) 25%, var(--panel-2) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  animation: skeletonWave 1.4s ease infinite;
+}
+@keyframes skeletonWave{
+  0%{ background-position: 100% 50%; }
+  100%{ background-position: 0 50%; }
+}
+
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:translateY(0);} }
+@keyframes scanFlashFade{ 0%{ opacity:0.55; } 100%{ opacity:0; } }
+.animate-fadeUp{ animation: fadeUp .6s var(--ease) forwards; }
+
+/* --- General-purpose motion utilities, used across nav, buttons, cards --- */
+
+/* Gentle lift + shadow on hover, snap-back on press — for cards, links,
+   nav items, anything clickable that should feel tactile. */
+.hover-lift{
+  transition: transform .22s var(--ease), box-shadow .22s var(--ease);
+}
+.hover-lift:hover{ transform: translateY(-2px); }
+.hover-lift:active{ transform: translateY(0) scale(0.98); transition-duration: .1s; }
+
+/* Slightly stronger version for primary CTA buttons. */
+.btn-pop{
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), filter .18s var(--ease);
+}
+.btn-pop:hover{ transform: translateY(-2px) scale(1.015); filter: brightness(1.06); }
+.btn-pop:active{ transform: translateY(0) scale(0.97); transition-duration: .1s; }
+
+/* Icons/badges that should breathe a little to draw the eye without being
+   distracting — used sparingly (logo mark, live indicators). */
+@keyframes softFloat{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-3px); } }
+.animate-softFloat{ animation: softFloat 3.4s ease-in-out infinite; }
+
+/* Subtle continuous sheen sweeping across an element — used on the hero
+   logo/badge for a bit of "alive" polish without looping too fast. */
+@keyframes sheen{ 0%{ background-position: -150% 0; } 100%{ background-position: 250% 0; } }
+.animate-sheen{
+  background-image: linear-gradient(110deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+  background-size: 250% 100%;
+  animation: sheen 3.2s ease-in-out infinite;
+}
+
+/* Shared text input/textarea/select style — used by EventForm and any
+   other form that wants the standard dark-panel field look without
+   repeating the same long inline style object everywhere. */
+.input{
+  width:100%;
+  border-radius:0.5rem;
+  border:1px solid var(--line-10);
+  background: var(--bg);
+  color: var(--text);
+  padding:0.625rem 0.875rem;
+  font-size:0.875rem;
+  outline:none;
+  transition: border-color .15s var(--ease);
+}
+.input::placeholder{ color: var(--text-dim); }
+.input:focus{ border-color:var(--accent); }
+.input:disabled{ opacity:0.6; cursor:not-allowed; }

@@ -1,0 +1,37 @@
+[build]
+  # --include=dev forces devDependencies (vite, tailwind, postcss — all
+  # needed to actually build the site) to install even though Netlify's
+  # production build context sets NODE_ENV=production, which makes a plain
+  # `npm install` skip devDependencies entirely. Without this flag the
+  # build fails with "vite: not found" even though vite is correctly
+  # listed in package.json — npm just never installed it.
+  command = "npm install --include=dev && npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Order matters — redirects are matched top to bottom, first match wins.
+
+# The backend API, wrapped as a Netlify Function (see netlify/functions/api.js).
+# Requests to /api/* on this same site are routed to that function instead
+# of a separate backend host — this is what avoids CORS entirely and needs
+# no other deployment.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA fallback — without this, refreshing (or sharing a link to) any route
+# other than "/" — e.g. /events/abc123 or /dashboard — returns Netlify's own
+# 404 page, because Netlify looks for a physical file at that path by
+# default. This tells it to always serve index.html and let React Router
+# take over client-side. Must stay AFTER the /api/* rule above.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  NODE_VERSION = "20"
