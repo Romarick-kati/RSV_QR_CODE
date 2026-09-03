@@ -36,6 +36,23 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('A Mobile Money phone number is required for this paid event.');
   }
 
+  // Custom registration questions: every 'required' question must have a
+  // non-empty answer, and every answer must reference a real question on
+  // THIS event (never trust ids/labels the client sends) — the label/value
+  // actually stored is always looked up from event.registrationQuestions,
+  // not from the request body, so a forged label can't slip in.
+  const submittedAnswers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  const answersById = new Map(submittedAnswers.map((a) => [a?.questionId, a?.value]));
+  const answers = [];
+  for (const q of event.registrationQuestions || []) {
+    const raw = answersById.get(q.id);
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (q.required && !value) {
+      throw ApiError.badRequest(`Please answer: ${q.label}`, { [`question_${q.id}`]: `${q.label} is required.` });
+    }
+    if (value) answers.push({ questionId: q.id, label: q.label, value });
+  }
+
   const existing = await Registration.findOne({ user: userId, event: eventId });
   if (existing && ['confirmed', 'waitlisted'].includes(existing.status) && existing.paymentStatus !== 'failed') {
     throw ApiError.conflict(existing.status === 'waitlisted' ? 'You are already on the waitlist for this event.' : 'You are already registered for this event.');
@@ -93,6 +110,7 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
       existing.status = registrationStatus;
       existing.registrationReference = registrationReference;
       existing.attendanceToken = generateAttendanceToken();
+      existing.answers = answers;
       Object.assign(existing, paymentFields);
       registration = await existing.save();
     } else {
@@ -102,6 +120,7 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
         registrationReference,
         attendanceToken: generateAttendanceToken(),
         status: registrationStatus,
+        answers,
         ...paymentFields,
       });
     }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImageIcon, Sparkles, Upload, X, Grid3x3 } from 'lucide-react';
+import { ImageIcon, Sparkles, Upload, X, Grid3x3, Plus, Trash2 } from 'lucide-react';
 import { CATEGORIES } from '../../lib/constants';
 import { toDateInputValue } from '../../lib/utils';
 import { getSmartEventPhoto, suggestEventPhoto } from '../../lib/eventPhoto';
@@ -10,7 +10,7 @@ import ImageCropModal from '../ui/ImageCropModal';
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
   venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
-  price: 0, momoNumber: '', timezone: 'Africa/Douala',
+  price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [],
 };
 
 export default function EventForm({ initial, onSubmit, submitLabel = 'Save event' }) {
@@ -21,6 +21,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     registrationDeadline: initial?.registrationDeadline ? toDateInputValue(initial.registrationDeadline) : '',
     momoNumber: initial?.momoNumber || '',
     price: initial?.price ?? 0,
+    registrationQuestions: initial?.registrationQuestions || [],
   }));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -38,6 +39,17 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
 
   function set(k, v) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  function addQuestion() {
+    const id = `q_${Date.now().toString(36)}`;
+    setForm((f) => ({ ...f, registrationQuestions: [...f.registrationQuestions, { id, label: '', type: 'text', options: [], required: false }] }));
+  }
+  function updateQuestion(id, patch) {
+    setForm((f) => ({ ...f, registrationQuestions: f.registrationQuestions.map((q) => (q.id === id ? { ...q, ...patch } : q)) }));
+  }
+  function removeQuestion(id) {
+    setForm((f) => ({ ...f, registrationQuestions: f.registrationQuestions.filter((q) => q.id !== id) }));
   }
 
   // "Like an AI automatically doing it" — as the organizer types an event
@@ -121,6 +133,12 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     }
     if (form.startTime >= form.endTime) e.endTime = 'End time must be after start time.';
     if (Number(form.price) > 0 && !form.momoNumber.trim()) e.momoNumber = 'A Mobile Money number is required for a paid event.';
+    form.registrationQuestions.forEach((q, i) => {
+      if (!q.label.trim()) e[`q_${i}`] = 'Question text is required.';
+      else if (q.type === 'select' && (q.options || []).filter((o) => o.trim()).length < 2) {
+        e[`q_${i}`] = 'Add at least 2 options for a dropdown question.';
+      }
+    });
     return e;
   }
 
@@ -131,7 +149,15 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     if (Object.keys(errs).length > 0) return;
     setSaving(true);
     await new Promise((r) => setTimeout(r, 450));
-    onSubmit({ ...form, capacity: Number(form.capacity), price: Number(form.price) || 0, longDescription: form.longDescription || form.description });
+    onSubmit({
+      ...form,
+      capacity: Number(form.capacity),
+      price: Number(form.price) || 0,
+      longDescription: form.longDescription || form.description,
+      registrationQuestions: form.registrationQuestions
+        .filter((q) => q.label.trim())
+        .map((q) => ({ ...q, label: q.label.trim(), options: q.type === 'select' ? (q.options || []).map((o) => o.trim()).filter(Boolean) : undefined })),
+    });
     setSaving(false);
   }
 
@@ -260,6 +286,81 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
             Their pass won't scan at the door until you confirm that payment from the attendee list.
           </p>
         )}
+
+        <div className="pt-1 border-t" style={{ borderColor: 'var(--line-08)' }}>
+          <div className="flex items-center justify-between mt-5 mb-1">
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)]">Registration questions</span>
+            <button type="button" onClick={addQuestion} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border hover:bg-white/5" style={{ borderColor: 'var(--line-12)' }}>
+              <Plus size={13} /> Add question
+            </button>
+          </div>
+          <p className="text-xs text-[var(--text-dim)] mb-3">
+            Optional — ask attendees anything at RSVP (e.g. "What's your major?"). Answers show up on the attendee list and CSV export.
+          </p>
+          {form.registrationQuestions.length === 0 ? (
+            <p className="text-xs text-[var(--text-dim)] italic">No custom questions yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {form.registrationQuestions.map((q, i) => (
+                <div key={q.id} className="rounded-xl border p-3.5" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
+                  <div className="flex gap-2 items-start">
+                    <input
+                      value={q.label}
+                      onChange={(e) => updateQuestion(q.id, { label: e.target.value })}
+                      placeholder="e.g. Dietary restrictions?"
+                      className="input flex-1"
+                    />
+                    <select
+                      value={q.type}
+                      onChange={(e) => updateQuestion(q.id, { type: e.target.value, options: e.target.value === 'select' ? (q.options?.length ? q.options : ['', '']) : q.options })}
+                      className="input w-32 shrink-0"
+                    >
+                      <option value="text">Free text</option>
+                      <option value="select">Dropdown</option>
+                    </select>
+                    <button type="button" onClick={() => removeQuestion(q.id)} className="p-2.5 rounded-lg border shrink-0 hover:bg-white/5 text-[var(--danger-text)]" style={{ borderColor: 'var(--line-12)' }} aria-label="Remove question">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  {q.type === 'select' && (
+                    <div className="flex flex-col gap-1.5 mt-2.5 ml-1">
+                      {(q.options || []).map((opt, oi) => (
+                        <div key={oi} className="flex gap-2 items-center">
+                          <input
+                            value={opt}
+                            onChange={(e) => {
+                              const options = [...(q.options || [])];
+                              options[oi] = e.target.value;
+                              updateQuestion(q.id, { options });
+                            }}
+                            placeholder={`Option ${oi + 1}`}
+                            className="input text-sm py-1.5"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateQuestion(q.id, { options: (q.options || []).filter((_, x) => x !== oi) })}
+                            className="text-xs text-[var(--text-dim)] hover:text-[var(--danger-text)] shrink-0"
+                            aria-label="Remove option"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => updateQuestion(q.id, { options: [...(q.options || []), ''] })} className="text-xs font-semibold text-left" style={{ color: 'var(--accent)' }}>
+                        + Add option
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 mt-2.5 ml-1 text-xs text-[var(--text-dim)] cursor-pointer select-none">
+                    <input type="checkbox" checked={q.required} onChange={(e) => updateQuestion(q.id, { required: e.target.checked })} />
+                    Required to RSVP
+                  </label>
+                  {errors[`q_${i}`] && <span className="block text-[12px] mt-1.5 ml-1" style={{ color: 'var(--danger-text)' }}>{errors[`q_${i}`]}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-2xl border p-6 h-fit flex flex-col gap-4" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>

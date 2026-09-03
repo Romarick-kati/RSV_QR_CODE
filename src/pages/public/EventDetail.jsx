@@ -38,6 +38,8 @@ export default function EventDetail() {
   const [paymentState, setPaymentState] = useState('idle');
   const [pendingRegistrationId, setPendingRegistrationId] = useState(null);
   const [justWaitlisted, setJustWaitlisted] = useState(null); // position number, or null
+  const [answers, setAnswers] = useState({}); // { [questionId]: value }
+  const [answerErrors, setAnswerErrors] = useState({});
 
   useSEO(event?.title, event?.description);
 
@@ -157,9 +159,24 @@ export default function EventDetail() {
       push('Enter the Mobile Money phone number to continue.', 'error');
       return;
     }
+    const qErrors = {};
+    for (const q of event.registrationQuestions || []) {
+      if (q.required && !(answers[q.id] || '').trim()) qErrors[q.id] = 'Required.';
+    }
+    if (Object.keys(qErrors).length > 0) {
+      setAnswerErrors(qErrors);
+      push('Please answer the required question(s) below.', 'error');
+      return;
+    }
+    const answerList = (event.registrationQuestions || [])
+      .filter((q) => (answers[q.id] || '').trim())
+      .map((q) => ({ questionId: q.id, value: answers[q.id].trim() }));
     setSubmitting(true);
     try {
-      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, isPaid ? { phone: phone.trim() } : undefined);
+      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, {
+        ...(isPaid ? { phone: phone.trim() } : {}),
+        ...(answerList.length ? { answers: answerList } : {}),
+      });
       if (waitlisted) {
         setJustWaitlisted(waitlistPosition);
         setMyWaitlistInfo({ id: registration.id });
@@ -252,6 +269,37 @@ export default function EventDetail() {
               <p className="text-xs text-[var(--text-dim)]">
                 We'll automatically confirm your spot the moment someone cancels — no need to check back, you'll just see it appear in "My Events".
               </p>
+            </div>
+          )}
+
+          {event.registrationQuestions?.length > 0 && !myRegistrationId && !myWaitlistInfo && !justWaitlisted && !past && !deadlinePassed && !full && (
+            <div className="rounded-xl border p-4 mb-3 flex flex-col gap-3" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
+              {event.registrationQuestions.map((q) => (
+                <label key={q.id} className="block">
+                  <span className="block text-xs font-medium text-[var(--text)] mb-1.5">
+                    {q.label}{q.required && <span style={{ color: '#FF5C77' }}> *</span>}
+                  </span>
+                  {q.type === 'select' ? (
+                    <select
+                      value={answers[q.id] || ''}
+                      onChange={(e) => { setAnswers((a) => ({ ...a, [q.id]: e.target.value })); setAnswerErrors((er) => ({ ...er, [q.id]: undefined })); }}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: answerErrors[q.id] ? '#FF5C77' : 'var(--line-12)', background: 'var(--panel)' }}
+                    >
+                      <option value="">Select…</option>
+                      {(q.options || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      value={answers[q.id] || ''}
+                      onChange={(e) => { setAnswers((a) => ({ ...a, [q.id]: e.target.value })); setAnswerErrors((er) => ({ ...er, [q.id]: undefined })); }}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: answerErrors[q.id] ? '#FF5C77' : 'var(--line-12)', background: 'var(--panel)' }}
+                    />
+                  )}
+                  {answerErrors[q.id] && <span className="block text-[11px] mt-1" style={{ color: '#FF5C77' }}>{answerErrors[q.id]}</span>}
+                </label>
+              ))}
             </div>
           )}
 

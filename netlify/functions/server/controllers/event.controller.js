@@ -115,7 +115,7 @@ function pickEventFields(body, partial = false) {
   const fields = [
     'title', 'description', 'longDescription', 'image', 'category', 'date', 'startTime',
     'endTime', 'venue', 'capacity', 'registrationDeadline', 'status', 'contact', 'price', 'momoNumber',
-    'timezone',
+    'timezone', 'registrationQuestions',
   ];
   const data = {};
   for (const f of fields) {
@@ -129,5 +129,27 @@ function pickEventFields(body, partial = false) {
   if (data.price !== undefined) data.price = Number(data.price) || 0;
   if (data.date) data.date = new Date(data.date);
   if (data.registrationDeadline) data.registrationDeadline = new Date(data.registrationDeadline);
+  if (data.registrationQuestions !== undefined) {
+    data.registrationQuestions = sanitizeRegistrationQuestions(data.registrationQuestions);
+  }
   return data;
+}
+
+// Never trust the client's question shape directly — drop anything without
+// a usable label, coerce types to the two the frontend actually renders,
+// and generate a stable id server-side for any question the organizer just
+// added (so answers can reference it even before the event is saved).
+function sanitizeRegistrationQuestions(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((q) => q && typeof q.label === 'string' && q.label.trim())
+    .map((q, i) => ({
+      id: (typeof q.id === 'string' && q.id.trim()) || `q_${Date.now().toString(36)}_${i}`,
+      label: q.label.trim(),
+      type: q.type === 'select' ? 'select' : 'text',
+      options: q.type === 'select' && Array.isArray(q.options)
+        ? q.options.filter((o) => o !== null && o !== undefined).map((o) => String(o).trim()).filter(Boolean)
+        : undefined,
+      required: !!q.required,
+    }));
 }

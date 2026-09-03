@@ -33,6 +33,22 @@ const eventSchema = new Schema(
     // showed/enforced the wrong clock time. Defaults to WAT so existing
     // events keep behaving exactly as before.
     timezone: { type: String, default: 'Africa/Douala' },
+    // Optional custom questions an organizer asks at RSVP time (e.g. "What's
+    // your major?", "Dietary restrictions?"). Answers are stored per
+    // registration below, with a snapshot of the question label at answer
+    // time so they still display correctly even if this list changes later.
+    registrationQuestions: {
+      type: [
+        {
+          id: { type: String, required: true },
+          label: { type: String, required: true },
+          type: { type: String, enum: ['text', 'select'], default: 'text' },
+          options: { type: [String], default: undefined },
+          required: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

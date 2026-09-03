@@ -26,6 +26,20 @@ const registrationSchema = new Schema(
     // API — paymentReference above is never trusted for that.
     paymentGatewayReference: { type: String, default: null },
     paymentPhone: { type: String, default: null },
+    // Snapshot of the attendee's answers to the event's registrationQuestions
+    // at the moment they RSVP'd. Storing the label (not just questionId)
+    // means it still displays correctly on the attendee list/CSV export even
+    // if the organizer edits or removes that question from the event later.
+    answers: {
+      type: [
+        {
+          questionId: { type: String, required: true },
+          label: { type: String, required: true },
+          value: { type: String, default: '' },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

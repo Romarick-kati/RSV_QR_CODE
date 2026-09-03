@@ -92,11 +92,15 @@ export default function AdminEventAttendees() {
     }
   }
   function exportCsv() {
+    const questionLabels = event?.registrationQuestions?.map((q) => q.label) || [];
     const headers = ['Attendee', 'Email', 'Reference', 'Status', 'Checked in'];
     if (isPaid) headers.push('Payment', 'Payment reference');
+    headers.push(...questionLabels);
     const rows = filtered.map((a) => {
       const row = [a.user?.name, a.user?.email, a.registrationReference, a.status, a.attendance ? formatDateTime(a.attendance.checkedInAt) : 'Not checked in'];
       if (isPaid) row.push(a.paymentStatus, a.paymentReference);
+      const answerByLabel = Object.fromEntries((a.answers || []).map((ans) => [ans.label, ans.value]));
+      row.push(...questionLabels.map((label) => answerByLabel[label] || ''));
       return row;
     });
     downloadCsv(`${(event?.title || 'attendees').replace(/\s+/g, '-').toLowerCase()}-attendees.csv`, headers, rows);
@@ -149,6 +153,15 @@ export default function AdminEventAttendees() {
                   <td className="px-5 py-3.5">
                     <p className="font-medium text-[var(--text)]">{a.user?.name}</p>
                     <p className="text-xs text-[var(--text-dim)]">{a.user?.email}</p>
+                    {a.answers?.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                        {a.answers.map((ans) => (
+                          <span key={ans.questionId} className="text-[11px] text-[var(--text-dim)]">
+                            <span className="font-medium">{ans.label}:</span> {ans.value}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td className="px-5 py-3.5 font-mono text-xs text-[var(--text-dim)]">{a.registrationReference}</td>
                   <td className="px-5 py-3.5 text-[var(--text-dim)]">{formatDateTime(a.createdAt)}</td>
