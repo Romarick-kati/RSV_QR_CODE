@@ -36,6 +36,23 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
     throw ApiError.badRequest('A Mobile Money phone number is required for this paid event.');
   }
 
+  // Custom registration questions the organizer set up (see EventForm) —
+  // matched to submitted answers by label, not index, since that's the
+  // stable identity the frontend renders against too. Anything marked
+  // `required` must have a non-empty answer; missing optional answers are
+  // just stored as ''.
+  const submittedAnswers = req.body.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+  const missingRequired = (event.registrationQuestions || []).filter(
+    (q) => q.required && !String(submittedAnswers[q.label] || '').trim()
+  );
+  if (missingRequired.length > 0) {
+    throw ApiError.badRequest(`Please answer: ${missingRequired.map((q) => q.label).join(', ')}`);
+  }
+  const answers = (event.registrationQuestions || []).map((q) => ({
+    label: q.label,
+    answer: String(submittedAnswers[q.label] || '').trim().slice(0, 1000),
+  }));
+
   const existing = await Registration.findOne({ user: userId, event: eventId });
   if (existing && ['confirmed', 'waitlisted'].includes(existing.status) && existing.paymentStatus !== 'failed') {
     throw ApiError.conflict(existing.status === 'waitlisted' ? 'You are already on the waitlist for this event.' : 'You are already registered for this event.');
@@ -93,6 +110,7 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
       existing.status = registrationStatus;
       existing.registrationReference = registrationReference;
       existing.attendanceToken = generateAttendanceToken();
+      existing.answers = answers;
       Object.assign(existing, paymentFields);
       registration = await existing.save();
     } else {
@@ -102,6 +120,7 @@ export const rsvpToEvent = asyncHandler(async (req, res) => {
         registrationReference,
         attendanceToken: generateAttendanceToken(),
         status: registrationStatus,
+        answers,
         ...paymentFields,
       });
     }

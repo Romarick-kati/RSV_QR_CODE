@@ -10,7 +10,7 @@ import ImageCropModal from '../ui/ImageCropModal';
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
   venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
-  price: 0, momoNumber: '', timezone: 'Africa/Douala',
+  price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [],
 };
 
 export default function EventForm({ initial, onSubmit, submitLabel = 'Save event' }) {
@@ -21,6 +21,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     registrationDeadline: initial?.registrationDeadline ? toDateInputValue(initial.registrationDeadline) : '',
     momoNumber: initial?.momoNumber || '',
     price: initial?.price ?? 0,
+    registrationQuestions: initial?.registrationQuestions || [],
   }));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -256,10 +257,67 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
         </div>
         {Number(form.price) > 0 && (
           <p className="text-xs -mt-2 text-[var(--text-dim)] leading-relaxed">
-            Attendees will be asked to send this amount to that Mobile Money number and submit the transaction reference at RSVP.
-            Their pass won't scan at the door until you confirm that payment from the attendee list.
+            At checkout, attendees enter their Mobile Money phone number and approve a real payment prompt via CamPay.
+            Their pass unlocks automatically the moment CamPay confirms the transaction — no manual confirmation needed.
           </p>
         )}
+
+        <div className="pt-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)]">
+              Registration questions (optional)
+            </span>
+            <button
+              type="button"
+              onClick={() => set('registrationQuestions', [...form.registrationQuestions, { label: '', required: false }])}
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg"
+              style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}
+            >
+              + Add question
+            </button>
+          </div>
+          <p className="text-xs text-[var(--text-dim)] leading-relaxed mb-3">
+            Anything you want to ask each attendee at RSVP — e.g. "What's your major?" or "Dietary restrictions?".
+            Answers show up in the attendee list and CSV export.
+          </p>
+          {form.registrationQuestions.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {form.registrationQuestions.map((q, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={q.label}
+                    onChange={(e) => {
+                      const next = [...form.registrationQuestions];
+                      next[i] = { ...next[i], label: e.target.value };
+                      set('registrationQuestions', next);
+                    }}
+                    placeholder="Question text"
+                    className="input flex-1"
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-[var(--text-dim)] shrink-0 select-none">
+                    <input
+                      type="checkbox"
+                      checked={q.required}
+                      onChange={(e) => {
+                        const next = [...form.registrationQuestions];
+                        next[i] = { ...next[i], required: e.target.checked };
+                        set('registrationQuestions', next);
+                      }}
+                    />
+                    Required
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => set('registrationQuestions', form.registrationQuestions.filter((_, idx) => idx !== i))}
+                    className="shrink-0 text-[var(--text-dim)] hover:text-[#FF5C77]"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-2xl border p-6 h-fit flex flex-col gap-4" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>

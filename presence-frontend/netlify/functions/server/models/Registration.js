@@ -26,6 +26,17 @@ const registrationSchema = new Schema(
     // API — paymentReference above is never trusted for that.
     paymentGatewayReference: { type: String, default: null },
     paymentPhone: { type: String, default: null },
+    // Answers to the event's registrationQuestions (if any), captured at
+    // RSVP time. Stored as a plain array of { label, answer } snapshots —
+    // NOT a reference back to Event.registrationQuestions by index/id —
+    // deliberately, so that if an organizer edits or removes a question
+    // later, every guest's already-submitted answers stay exactly as they
+    // were originally asked and answered (Luma does the same: "Registration
+    // changes only affect guests who register after you make them").
+    answers: {
+      type: [{ label: String, answer: String }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

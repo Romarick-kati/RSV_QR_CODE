@@ -20,11 +20,11 @@ const eventSchema = new Schema(
     contact: { type: String, default: null },
     organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     // 0 (or unset) = free event, no payment step at RSVP. > 0 = a paid
-    // event using the manual Mobile Money confirmation flow below — there's
-    // no live MTN/Orange Money API integration yet (that needs a merchant
-    // account this template can't provision for you), so the attendee pays
-    // out-of-band and submits a transaction reference, which the organizer
-    // confirms from the attendee list before the pass will scan.
+    // event verified through CamPay (Mobile Money) — see
+    // controllers/rsvp.controller.js and utils/campay.js. The attendee's
+    // phone gets a real PIN-approval prompt and the seat only becomes
+    // usable once CamPay itself confirms the transaction, not on anyone's
+    // say-so.
     price: { type: Number, default: 0, min: 0 },
     momoNumber: { type: String, default: null },
     // IANA zone the event's own start/end times are in (e.g.
@@ -33,6 +33,15 @@ const eventSchema = new Schema(
     // showed/enforced the wrong clock time. Defaults to WAT so existing
     // events keep behaving exactly as before.
     timezone: { type: String, default: 'Africa/Douala' },
+    // Custom fields an organizer wants collected at RSVP time (e.g. "What's
+    // your major?", "Dietary restrictions?") — Luma calls these
+    // "registration questions". Free-text answers only for now (no
+    // multiple-choice/dropdown question types yet) since that covers the
+    // large majority of real use without a much bigger form-builder UI.
+    registrationQuestions: {
+      type: [{ label: { type: String, required: true }, required: { type: Boolean, default: false } }],
+      default: [],
+    },
   },
   { timestamps: true }
 );
