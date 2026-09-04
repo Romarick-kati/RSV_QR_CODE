@@ -34,6 +34,7 @@ export default function EventDetail() {
   const [myWaitlistInfo, setMyWaitlistInfo] = useState(null); // { id, position } | null
   const [showPayment, setShowPayment] = useState(false);
   const [phone, setPhone] = useState('');
+  const [answers, setAnswers] = useState({});
   // 'idle' | 'awaiting-pin' | 'confirmed' | 'failed'
   const [paymentState, setPaymentState] = useState('idle');
   const [pendingRegistrationId, setPendingRegistrationId] = useState(null);
@@ -66,6 +67,51 @@ export default function EventDetail() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [user, id]);
+
+  // Polls the real CamPay-verified payment status every 3s while the
+  // attendee is looking at the "check your phone" screen. Stops on a
+  // definitive outcome or after ~2 minutes (CamPay prompts typically time
+  // out well before that if never approved).
+  //
+  // MUST live here, above the early `if (loading) return ...` / `if
+  // (notFound) return ...` blocks below — a hook declared after a
+  // conditional return runs on some renders and not others (e.g. it's
+  // skipped entirely while `loading` is true, then suddenly present once
+  // the event finishes loading), which violates React's Rules of Hooks
+  // and throws "Rendered more hooks than during the previous render."
+  // That crash fired on every single event page visit, right at the
+  // loading→loaded transition — i.e. exactly when someone clicks into an
+  // event. An ErrorBoundary elsewhere in the app will catch a crash like
+  // this and show a recoverable error screen instead of a blank page, but
+  // that's a safety net, not a fix — the actual bug was this hook's
+  // position, and it's fixed by simply not being conditional anymore.
+  useEffect(() => {
+    if (paymentState !== 'awaiting-pin' || !pendingRegistrationId) return;
+    let cancelled = false;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const { paymentStatus } = await meApi.paymentStatus(pendingRegistrationId);
+        if (cancelled) return;
+        if (paymentStatus === 'confirmed') {
+          clearInterval(interval);
+          setPaymentState('confirmed');
+          push('Payment confirmed — your pass is ready.', 'success');
+          navigate(`/qr-pass/${pendingRegistrationId}`);
+        } else if (paymentStatus === 'failed') {
+          clearInterval(interval);
+          setPaymentState('failed');
+        } else if (attempts >= 40) {
+          clearInterval(interval);
+          setPaymentState('failed');
+        }
+      } catch {
+        // Transient network error — just try again on the next tick.
+      }
+    }, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [paymentState, pendingRegistrationId, navigate, push]);
 
   if (loading) {
     return (
@@ -103,15 +149,18 @@ export default function EventDetail() {
   const deadlinePassed = isRegistrationDeadlinePassed(event);
   const full = remaining <= 0;
   const isPaid = (event.price || 0) > 0;
+  const hasQuestions = (event.registrationQuestions || []).length > 0;
 
   async function handleRsvp() {
     if (!user) {
       navigate('/login', { state: { from: `/events/${event.id}` } });
       return;
     }
-    if (isPaid && !showPayment) {
-      // First click on a paid event just opens the phone-number panel
-      // instead of charging right away.
+    // A paid event needs the phone panel, and/or any event with custom
+    // registration questions needs those answered — both live in the same
+    // "form" panel below, revealed on the first click rather than charging
+    // or submitting immediately.
+    if ((isPaid || hasQuestions) && !showPayment) {
       setShowPayment(true);
       return;
     }
@@ -119,9 +168,15 @@ export default function EventDetail() {
       push('Enter the Mobile Money phone number to continue.', 'error');
       return;
     }
+    const missingRequired = (event.registrationQuestions || []).filter((q) => q.required && !String(answers[q.label] || '').trim());
+    if (missingRequired.length > 0) {
+      push(`Please answer: ${missingRequired.map((q) => q.label).join(', ')}`, 'error');
+      return;
+    }
     setSubmitting(true);
     try {
-      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, isPaid ? { phone: phone.trim() } : undefined);
+      const body = (isPaid || hasQuestions) ? { ...(isPaid ? { phone: phone.trim() } : {}), answers } : undefined;
+      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, body);
       if (waitlisted) {
         setJustWaitlisted(waitlistPosition);
         setMyWaitlistInfo({ id: registration.id });
@@ -144,37 +199,6 @@ export default function EventDetail() {
     }
   }
 
-  // Polls the real CamPay-verified payment status every 3s while the
-  // attendee is looking at the "check your phone" screen. Stops on a
-  // definitive outcome or after ~2 minutes (CamPay prompts typically time
-  // out well before that if never approved).
-  useEffect(() => {
-    if (paymentState !== 'awaiting-pin' || !pendingRegistrationId) return;
-    let cancelled = false;
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts += 1;
-      try {
-        const { paymentStatus } = await meApi.paymentStatus(pendingRegistrationId);
-        if (cancelled) return;
-        if (paymentStatus === 'confirmed') {
-          clearInterval(interval);
-          setPaymentState('confirmed');
-          push('Payment confirmed — your pass is ready.', 'success');
-          navigate(`/qr-pass/${pendingRegistrationId}`);
-        } else if (paymentStatus === 'failed') {
-          clearInterval(interval);
-          setPaymentState('failed');
-        } else if (attempts >= 40) {
-          clearInterval(interval);
-          setPaymentState('failed');
-        }
-      } catch {
-        // Transient network error — just try again on the next tick.
-      }
-    }, 3000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [paymentState, pendingRegistrationId, navigate, push]);
 
   const waitlistable = full && !isPaid; // paid waitlist unsupported, see rsvp.controller.js
   let ctaLabel = isPaid ? `Pay & register — ${event.price} FCFA` : t('event_rsvp');
@@ -269,6 +293,27 @@ export default function EventDetail() {
               <p className="text-[11px] text-[var(--text-dim)] mt-1.5">
                 Your pass unlocks the moment the payment is confirmed — usually within a few seconds of approving on your phone.
               </p>
+            </div>
+          )}
+
+          {hasQuestions && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && paymentState === 'idle' && (
+            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'var(--line-12)', background: 'var(--line-04)' }}>
+              <p className="text-xs font-semibold mb-3 text-[var(--text)]">A few quick questions from the organizer</p>
+              <div className="flex flex-col gap-3">
+                {event.registrationQuestions.map((q) => (
+                  <label key={q.label} className="block">
+                    <span className="block text-xs text-[var(--text-dim)] mb-1">
+                      {q.label} {q.required && <span style={{ color: '#FF5C77' }}>*</span>}
+                    </span>
+                    <input
+                      value={answers[q.label] || ''}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [q.label]: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: 'var(--line-12)', background: 'var(--bg)' }}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Search, Download, UserX, CheckCircle2, ArrowLeft, Wallet, ArrowUpCircle } from 'lucide-react';
+import { Search, Download, UserX, CheckCircle2, ArrowLeft, Wallet, ArrowUpCircle, ChevronDown, ChevronRight, MessageSquareText } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
 import { useSEO } from '../../lib/useSEO';
 import Badge from '../../components/ui/Badge';
@@ -20,6 +20,7 @@ export default function AdminEventAttendees() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [busyId, setBusyId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const isPaid = (event?.price || 0) > 0;
 
   useEffect(() => {
@@ -92,11 +93,16 @@ export default function AdminEventAttendees() {
     }
   }
   function exportCsv() {
+    const questionLabels = (event?.registrationQuestions || []).map((q) => q.label);
     const headers = ['Attendee', 'Email', 'Reference', 'Status', 'Checked in'];
-    if (isPaid) headers.push('Payment', 'Payment reference');
+    if (isPaid) headers.push('Payment status', 'Payment phone');
+    headers.push(...questionLabels);
     const rows = filtered.map((a) => {
       const row = [a.user?.name, a.user?.email, a.registrationReference, a.status, a.attendance ? formatDateTime(a.attendance.checkedInAt) : 'Not checked in'];
-      if (isPaid) row.push(a.paymentStatus, a.paymentReference);
+      if (isPaid) row.push(a.paymentStatus, a.paymentPhone || '');
+      for (const label of questionLabels) {
+        row.push(a.answers?.find((ans) => ans.label === label)?.answer || '');
+      }
       return row;
     });
     downloadCsv(`${(event?.title || 'attendees').replace(/\s+/g, '-').toLowerCase()}-attendees.csv`, headers, rows);
@@ -144,11 +150,24 @@ export default function AdminEventAttendees() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id} className="border-t" style={{ borderColor: 'var(--line-06)' }}>
+              {filtered.map((a) => {
+                const hasAnswers = a.answers && a.answers.length > 0;
+                const isExpanded = expandedId === a.id;
+                return (
+                <Fragment key={a.id}>
+                <tr className="border-t" style={{ borderColor: 'var(--line-06)' }}>
                   <td className="px-5 py-3.5">
-                    <p className="font-medium text-[var(--text)]">{a.user?.name}</p>
-                    <p className="text-xs text-[var(--text-dim)]">{a.user?.email}</p>
+                    <div className="flex items-center gap-1.5">
+                      {hasAnswers && (
+                        <button onClick={() => setExpandedId(isExpanded ? null : a.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] shrink-0">
+                          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </button>
+                      )}
+                      <div>
+                        <p className="font-medium text-[var(--text)]">{a.user?.name}</p>
+                        <p className="text-xs text-[var(--text-dim)]">{a.user?.email}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-5 py-3.5 font-mono text-xs text-[var(--text-dim)]">{a.registrationReference}</td>
                   <td className="px-5 py-3.5 text-[var(--text-dim)]">{formatDateTime(a.createdAt)}</td>
@@ -157,11 +176,13 @@ export default function AdminEventAttendees() {
                     <td className="px-5 py-3.5">
                       {a.paymentStatus === 'confirmed' ? (
                         <span className="text-xs font-semibold" style={{ color: '#22D3A6' }}>Confirmed</span>
+                      ) : a.paymentStatus === 'failed' ? (
+                        <span className="text-xs font-semibold" style={{ color: '#FF5C77' }}>Failed</span>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-[var(--text-dim)]" title="Transaction reference the attendee submitted">{a.paymentReference || '—'}</span>
-                          <button disabled={busyId === a.id} onClick={() => confirmPayment(a.id)} className="text-[#F5A623] font-semibold text-xs inline-flex items-center gap-1 disabled:opacity-50">
-                            <Wallet size={12} /> Confirm
+                          <span className="text-xs font-mono text-[var(--text-dim)]" title="CamPay Mobile Money number">{a.paymentPhone || '—'}</span>
+                          <button disabled={busyId === a.id} onClick={() => confirmPayment(a.id)} title="Manual override — CamPay confirms automatically, this is only for edge cases" className="text-[#F5A623] font-semibold text-xs inline-flex items-center gap-1 disabled:opacity-50">
+                            <Wallet size={12} /> Force confirm
                           </button>
                         </div>
                       )}
@@ -178,7 +199,26 @@ export default function AdminEventAttendees() {
                     <button disabled={busyId === a.id} onClick={() => removeRegistration(a.id)} className="text-[#FF5C77] font-semibold text-xs disabled:opacity-50">{a.status === 'waitlisted' ? 'Remove from waitlist' : 'Remove'}</button>
                   </td>
                 </tr>
-              ))}
+                {isExpanded && hasAnswers && (
+                  <tr style={{ background: 'var(--line-03)' }}>
+                    <td colSpan={isPaid ? 6 : 5} className="px-5 py-3">
+                      <div className="flex items-start gap-2 text-xs">
+                        <MessageSquareText size={14} className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} />
+                        <div className="flex flex-col gap-1.5">
+                          {a.answers.map((ans) => (
+                            <p key={ans.label}>
+                              <span className="text-[var(--text-dim)]">{ans.label}: </span>
+                              <span className="text-[var(--text)] font-medium">{ans.answer || '—'}</span>
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

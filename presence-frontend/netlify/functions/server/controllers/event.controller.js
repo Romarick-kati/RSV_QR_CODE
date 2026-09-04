@@ -115,7 +115,7 @@ function pickEventFields(body, partial = false) {
   const fields = [
     'title', 'description', 'longDescription', 'image', 'category', 'date', 'startTime',
     'endTime', 'venue', 'capacity', 'registrationDeadline', 'status', 'contact', 'price', 'momoNumber',
-    'timezone',
+    'timezone', 'registrationQuestions',
   ];
   const data = {};
   for (const f of fields) {
@@ -129,5 +129,16 @@ function pickEventFields(body, partial = false) {
   if (data.price !== undefined) data.price = Number(data.price) || 0;
   if (data.date) data.date = new Date(data.date);
   if (data.registrationDeadline) data.registrationDeadline = new Date(data.registrationDeadline);
+  if (data.registrationQuestions !== undefined) {
+    // Defensive sanitation rather than a full validator entry (see
+    // validators.js — it only supports flat fields, not nested arrays):
+    // drop anything without a real label, coerce `required` to a real
+    // boolean, and cap the count so an organizer can't accidentally (or
+    // maliciously) balloon every future registration's payload.
+    data.registrationQuestions = (Array.isArray(data.registrationQuestions) ? data.registrationQuestions : [])
+      .filter((q) => q && typeof q.label === 'string' && q.label.trim())
+      .slice(0, 10)
+      .map((q) => ({ label: q.label.trim().slice(0, 200), required: Boolean(q.required) }));
+  }
   return data;
 }
