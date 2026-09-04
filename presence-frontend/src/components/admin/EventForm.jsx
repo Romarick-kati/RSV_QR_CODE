@@ -9,7 +9,7 @@ import ImageCropModal from '../ui/ImageCropModal';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
-  venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
+  venue: '', capacity: 100, registrationDeadline: '', contact: '', status: 'draft', image: '',
   price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [],
 };
 
@@ -238,18 +238,13 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
           </Field>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Organizer">
-            <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} placeholder="e.g. Faculty of Engineering" className="input" />
-          </Field>
-          <Field label="Contact email">
-            <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
-          </Field>
-        </div>
+        <Field label="Contact email">
+          <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
+        </Field>
 
         <div className="grid sm:grid-cols-2 gap-5">
           <Field label="Ticket price (0 = free)">
-            <input type="number" min={0} step="50" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
+            <input type="number" min={0} value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
           </Field>
           <Field label="Mobile Money number (if paid)" error={errors.momoNumber}>
             <input value={form.momoNumber} onChange={(e) => set('momoNumber', e.target.value)} placeholder="e.g. 6XX XXX XXX" disabled={!Number(form.price)} className="input disabled:opacity-50" />

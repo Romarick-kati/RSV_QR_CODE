@@ -4,9 +4,15 @@
 // Required environment variables (set in Netlify — never commit these):
 //   CAMPAY_PERMANENT_TOKEN   — from CamPay dashboard → your app → API ACCESS KEYS
 //   CAMPAY_ENV               — 'sandbox' (default) or 'production'. Sandbox
-//                               caps real transactions at 100 FCFA, useful
-//                               for testing the full flow safely before
-//                               clicking "Go Live" in the CamPay dashboard.
+//                               refuses any transaction above a small test
+//                               cap (CamPay returns the exact number in the
+//                               error message, e.g. "Maximum amount is
+//                               25.00 XAF" — it varies by account, so don't
+//                               hardcode a number here). Use a ticket price
+//                               under that cap while testing, or click
+//                               "Go Live" in the CamPay dashboard and set
+//                               CAMPAY_ENV=production once you're ready to
+//                               accept real payments at real prices.
 //
 // Until CAMPAY_PERMANENT_TOKEN is set, every function below throws a clear
 // configuration error rather than silently pretending to succeed — payment
