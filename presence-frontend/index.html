@@ -26,35 +26,58 @@
 
     <title>Presence: Event Registration and QR Attendance</title>
     <meta name="description" content="Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan." />
-    <link rel="canonical" href="https://presence.app/" />
+    <link rel="canonical" href="https://scan-point.netlify.app/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Presence" />
     <meta property="og:title" content="Presence: Event Registration and QR Attendance" />
     <meta property="og:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta property="og:image" content="https://presence.app/og-image.png" />
+    <meta property="og:image" content="https://scan-point.netlify.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://scan-point.netlify.app/" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Presence: Event Registration and QR Attendance" />
     <meta name="twitter:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta name="twitter:image" content="https://presence.app/og-image.png" />
+    <meta name="twitter:image" content="https://scan-point.netlify.app/og-image.png" />
     <meta name="author" content="Ndi Romarick Kati" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Presence",
-        "applicationCategory": "EventManagementApplication",
-        "description": "Event registration and QR-based attendance tracking platform.",
-        "creator": {
-          "@type": "Person",
-          "name": "Ndi Romarick Kati",
-          "url": "https://kati-guidotti.netlify.app",
-          "sameAs": [
-            "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
-            "https://github.com/Romarick-Kati",
-            "https://kati-skyline.netlify.app"
-          ]
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://scan-point.netlify.app/#website",
+            "name": "Presence",
+            "url": "https://scan-point.netlify.app/",
+            "description": "Presence is an event registration and QR-based attendance tracking platform.",
+            "publisher": { "@id": "https://scan-point.netlify.app/founder#person" }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://scan-point.netlify.app/#webapp",
+            "name": "Presence",
+            "url": "https://scan-point.netlify.app/",
+            "applicationCategory": "EventManagementApplication",
+            "operatingSystem": "Any (web-based)",
+            "description": "Presence is an event registration and QR-based attendance tracking platform: attendees RSVP online and receive a digital QR pass, organizers verify check-in with a single scan.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "creator": { "@id": "https://scan-point.netlify.app/founder#person" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://scan-point.netlify.app/founder#person",
+            "name": "Ndi Romarick Kati",
+            "url": "https://scan-point.netlify.app/founder",
+            "jobTitle": "Full-Stack Developer",
+            "description": "Ndi Romarick Kati is the founder and creator of Presence, a QR-based event registration and attendance tracking platform.",
+            "sameAs": [
+              "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
+              "https://github.com/Romarick-Kati",
+              "https://kati-guidotti.netlify.app",
+              "https://kati-skyline.netlify.app"
+            ]
+          }
+        ]
       }
     </script>
   </head>

@@ -20,11 +20,11 @@ const eventSchema = new Schema(
     contact: { type: String, default: null },
     organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     // 0 (or unset) = free event, no payment step at RSVP. > 0 = a paid
-    // event verified through CamPay (Mobile Money) — see
-    // controllers/rsvp.controller.js and utils/campay.js. The attendee's
-    // phone gets a real PIN-approval prompt and the seat only becomes
-    // usable once CamPay itself confirms the transaction, not on anyone's
-    // say-so.
+    // event verified through Fapshi (Mobile Money) — see
+    // controllers/rsvp.controller.js and utils/fapshi.js. The attendee is
+    // redirected to a Fapshi-hosted checkout page to pay, and the seat
+    // only becomes usable once Fapshi itself confirms the transaction,
+    // not on anyone's say-so.
     price: { type: Number, default: 0, min: 0 },
     momoNumber: { type: String, default: null },
     // IANA zone the event's own start/end times are in (e.g.
@@ -42,6 +42,23 @@ const eventSchema = new Schema(
       type: [{ label: { type: String, required: true }, required: { type: Boolean, default: false } }],
       default: [],
     },
+    // 'in-person' (default) needs a real venue and QR check-in as before.
+    // 'online' replaces the physical door entirely with a video meeting —
+    // venue is still required (kept as a simple label like "Zoom/Jitsi
+    // call" for display consistency) but QR scanning doesn't apply.
+    // 'hybrid' offers both at once.
+    format: { type: String, enum: ['in-person', 'online', 'hybrid'], default: 'in-person' },
+    // Auto-generated (never entered by the organizer — see
+    // controllers/event.controller.js) the moment an event's format is set
+    // to 'online' or 'hybrid'. Deliberately NEVER included in the public
+    // GET /events or GET /events/:id response — see withRemaining() in
+    // event.controller.js — the same way a QR pass only exists for a
+    // confirmed registration, the actual join link only exists for
+    // confirmed registrants too, via the gated GET
+    // /events/:id/meeting-link endpoint. Otherwise "registration" for an
+    // online event would be meaningless — anyone could join without
+    // ever RSVPing.
+    meetingUrl: { type: String, default: null },
   },
   { timestamps: true }
 );

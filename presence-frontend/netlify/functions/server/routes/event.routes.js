@@ -27,4 +27,9 @@ router.get('/:id/attendance', requireAuth, requireRole('ADMIN', 'ORGANIZER', 'AT
 // Attendee RSVP
 router.post('/:id/rsvp', requireAuth, rsvpController.rsvpToEvent);
 
+// Gated inside the controller itself (confirmed registrant or the event's
+// owner) — any authenticated role can call this, the real check is "do you
+// actually have a seat", not "what role are you".
+router.get('/:id/meeting-link', requireAuth, eventController.getMeetingLink);
+
 export default router;

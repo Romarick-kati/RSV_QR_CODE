@@ -1,4 +1,5 @@
-import { ShieldCheck, ScanLine, BarChart3, Users } from 'lucide-react';
+import { ShieldCheck, ScanLine, BarChart3, Users, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import { useSEO } from '../../lib/useSEO';
@@ -11,7 +12,7 @@ const PILLARS = [
 ];
 
 export default function About() {
-  useSEO('About', 'Presence replaces paper sign-in sheets with online RSVPs, digital QR passes, and one verified scan at check-in.');
+  useSEO('About', 'Presence replaces paper sign-in sheets with online RSVPs, digital QR passes, and one verified scan at check-in.', { path: '/about' });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />
@@ -40,6 +41,19 @@ export default function About() {
             </div>
           ))}
         </div>
+
+        <Link
+          to="/founder"
+          className="mt-10 flex items-center justify-between gap-4 rounded-2xl border p-6 hover-lift hover:border-[var(--accent)] transition-colors"
+          style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}
+        >
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Created by</span>
+            <h3 className="font-display text-lg font-bold mt-1">Meet the creator of Presence</h3>
+            <p className="text-sm text-[var(--text-dim)] mt-1">Ndi Romarick Kati — founder, full-stack developer</p>
+          </div>
+          <ArrowRight size={20} className="shrink-0" style={{ color: 'var(--accent)' }} />
+        </Link>
       </div>
       <PublicFooter />
     </div>

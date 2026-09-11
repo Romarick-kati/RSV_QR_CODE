@@ -106,6 +106,7 @@ export const eventsApi = {
   attendees: (id) => client.get(`/events/${id}/attendees`),
   attendance: (id) => client.get(`/events/${id}/attendance`),
   rsvp: (id, body) => client.post(`/events/${id}/rsvp`, body),
+  meetingLink: (id) => client.get(`/events/${id}/meeting-link`),
 };
 
 // ---------- My registrations (attendee) ----------

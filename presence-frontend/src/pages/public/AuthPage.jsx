@@ -18,7 +18,11 @@ export default function AuthPage({ mode = 'login' }) {
   const { login, register, loginWithGoogle, updateAvatar, user } = useAuth();
   const { push } = useToast();
   const { t } = useLanguage();
-  useSEO(isLoginRoute ? 'Sign in' : 'Create account', isLoginRoute ? 'Sign in to Presence to view your events, digital QR passes, and registration history.' : 'Create a free Presence account to RSVP to events and get an instant digital QR pass.');
+  useSEO(
+    isLoginRoute ? 'Sign in' : 'Create account',
+    isLoginRoute ? 'Sign in to Presence to view your events, digital QR passes, and registration history.' : 'Create a free Presence account to RSVP to events and get an instant digital QR pass.',
+    { path: isLoginRoute ? '/login' : '/register' }
+  );
 
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState('');

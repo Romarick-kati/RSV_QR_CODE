@@ -77,6 +77,7 @@ export default function PublicFooter() {
           <ul className="flex flex-col gap-2.5 text-sm text-[var(--text-dim)]">
             <li><Link to="/events" className="hover:text-[var(--text)]">{t('footer_browse_events')}</Link></li>
             <li><Link to="/about" className="hover:text-[var(--text)]">{t('footer_how_it_works')}</Link></li>
+            <li><Link to="/founder" className="hover:text-[var(--text)]">{t('footer_founder')}</Link></li>
             <li><Link to="/faq" className="hover:text-[var(--text)]">{t('nav_faq')}</Link></li>
             <li><Link to="/register" className="hover:text-[var(--text)]">{t('footer_create_account')}</Link></li>
           </ul>

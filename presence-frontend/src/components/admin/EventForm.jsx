@@ -9,8 +9,8 @@ import ImageCropModal from '../ui/ImageCropModal';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
-  venue: '', capacity: 100, registrationDeadline: '', contact: '', status: 'draft', image: '',
-  price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [],
+  venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
+  price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [], format: 'in-person',
 };
 
 export default function EventForm({ initial, onSubmit, submitLabel = 'Save event' }) {
@@ -121,7 +121,6 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
       e.registrationDeadline = 'Deadline must be on or before the event date.';
     }
     if (form.startTime >= form.endTime) e.endTime = 'End time must be after start time.';
-    if (Number(form.price) > 0 && !form.momoNumber.trim()) e.momoNumber = 'A Mobile Money number is required for a paid event.';
     return e;
   }
 
@@ -196,14 +195,42 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
           </div>
         </Field>
 
+        <div>
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">Format</span>
+          <div className="flex gap-2">
+            {[
+              { value: 'in-person', label: 'In-person' },
+              { value: 'online', label: 'Online' },
+              { value: 'hybrid', label: 'Hybrid' },
+            ].map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => set('format', f.value)}
+                className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-lg border transition-colors"
+                style={form.format === f.value
+                  ? { background: 'var(--accent)', color: 'var(--accent-ink)', borderColor: 'var(--accent)' }
+                  : { color: 'var(--text-dim)', borderColor: 'var(--line-12)' }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {form.format !== 'in-person' && (
+            <p className="text-xs text-[var(--text-dim)] mt-2 leading-relaxed">
+              A video meeting room is created automatically — no setup needed. Attendees see the join link once they've registered.
+            </p>
+          )}
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-5">
           <Field label="Category">
             <select value={form.category} onChange={(e) => set('category', e.target.value)} className="input">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
-          <Field label="Venue" error={errors.venue}>
-            <input value={form.venue} onChange={(e) => set('venue', e.target.value)} placeholder="e.g. Great Hall, Main Campus" className="input" />
+          <Field label={form.format === 'online' ? 'Venue label (e.g. "Online")' : 'Venue'} error={errors.venue}>
+            <input value={form.venue} onChange={(e) => set('venue', e.target.value)} placeholder={form.format === 'online' ? 'e.g. Online (Jitsi Meet)' : 'e.g. Great Hall, Main Campus'} className="input" />
           </Field>
         </div>
 
@@ -238,22 +265,25 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
           </Field>
         </div>
 
-        <Field label="Contact email">
-          <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
-        </Field>
+        <div className="grid sm:grid-cols-2 gap-5">
+          <Field label="Organizer">
+            <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} placeholder="e.g. Faculty of Engineering" className="input" />
+          </Field>
+          <Field label="Contact email">
+            <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
+          </Field>
+        </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
           <Field label="Ticket price (0 = free)">
-            <input type="number" min={0} value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
-          </Field>
-          <Field label="Mobile Money number (if paid)" error={errors.momoNumber}>
-            <input value={form.momoNumber} onChange={(e) => set('momoNumber', e.target.value)} placeholder="e.g. 6XX XXX XXX" disabled={!Number(form.price)} className="input disabled:opacity-50" />
+            <input type="number" min={0} step="50" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
           </Field>
         </div>
         {Number(form.price) > 0 && (
           <p className="text-xs -mt-2 text-[var(--text-dim)] leading-relaxed">
-            At checkout, attendees enter their Mobile Money phone number and approve a real payment prompt via CamPay.
-            Their pass unlocks automatically the moment CamPay confirms the transaction — no manual confirmation needed.
+            At checkout, attendees are redirected to a secure Fapshi payment page to pay via MTN or Orange Money.
+            Their pass unlocks automatically the moment Fapshi confirms the transaction — no manual confirmation needed,
+            and no Mobile Money number to set up here (that's configured once in your Fapshi account, not per event).
           </p>
         )}
 
