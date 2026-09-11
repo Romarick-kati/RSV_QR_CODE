@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Calendar, Clock, MapPin, Download, ArrowLeft, CheckCircle2, TriangleAlert, CalendarPlus, ScanLine } from 'lucide-react';
+import { Calendar, Clock, MapPin, Download, ArrowLeft, CheckCircle2, TriangleAlert, CalendarPlus, ScanLine, XCircle, Video } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import BrandMark from '../../components/ui/BrandMark';
 import { useLanguage } from '../../lib/LanguageContext';
-import { meApi } from '../../lib/api';
+import { useToast } from '../../lib/ToastContext';
+import { meApi, eventsApi, ApiError } from '../../lib/api';
 import { useSEO } from '../../lib/useSEO';
 import { formatDateLong, formatTime, formatDateTime, downloadIcsForEvent } from '../../lib/utils';
 import { buildCheckinUrl } from '../../lib/checkinUrl';
@@ -15,10 +16,12 @@ import { buildCheckinUrl } from '../../lib/checkinUrl';
 export default function QrPass() {
   const { id } = useParams();
   const { t } = useLanguage();
+  const { push } = useToast();
   useSEO('Your QR Pass', undefined, { noindex: true });
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [joiningMeeting, setJoiningMeeting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,8 +33,55 @@ export default function QrPass() {
     return () => { cancelled = true; };
   }, [id]);
 
+  // Fapshi redirects the attendee back to exactly this page right after a
+  // paid checkout, before its own webhook may have landed yet — so on
+  // arrival the registration can still be genuinely `paymentStatus:
+  // 'pending'` for a few seconds. This polls (re-verifying with Fapshi
+  // directly server-side each time, never trusting a cached value) until
+  // it resolves one way or the other. Placed here with the other hooks,
+  // above any early return below — see EventDetail.jsx for exactly what
+  // goes wrong when a hook ends up after a conditional return instead.
+  useEffect(() => {
+    if (!registration || registration.paymentStatus !== 'pending') return;
+    let cancelled = false;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const { paymentStatus } = await meApi.paymentStatus(id);
+        if (cancelled) return;
+        if (paymentStatus !== 'pending') {
+          clearInterval(interval);
+          setRegistration((r) => (r ? { ...r, paymentStatus } : r));
+        } else if (attempts >= 60) {
+          // ~3 minutes of polling — Fapshi checkout links are valid for up
+          // to 24h, but if it's been this long without resolving the
+          // attendee has almost certainly navigated away or abandoned the
+          // page; stop polling rather than running forever in a background
+          // tab. Refreshing this page later re-checks from scratch.
+          clearInterval(interval);
+        }
+      } catch {
+        // Transient network error — just try again on the next tick.
+      }
+    }, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [registration?.paymentStatus, id]);
+
   function handlePrint() {
     window.print();
+  }
+
+  async function handleJoinMeeting() {
+    setJoiningMeeting(true);
+    try {
+      const { meetingUrl } = await eventsApi.meetingLink(registration.event.id);
+      window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      push(err instanceof ApiError ? err.message : 'Could not load the meeting link. Please try again.', 'error');
+    } finally {
+      setJoiningMeeting(false);
+    }
   }
 
   function handleAddToCalendar() {
@@ -62,6 +112,33 @@ export default function QrPass() {
           <p className="text-xs text-[var(--text-dim)] leading-relaxed mt-3">
             There's no pass to show yet — this event is full. If a spot opens up, you'll be confirmed automatically and a scannable pass will appear here.
           </p>
+        </div>
+      ) : registration.paymentStatus === 'pending' ? (
+        <div className="max-w-md mx-auto rounded-[26px] border p-8 text-center" style={{ borderColor: 'rgba(var(--accent-rgb),0.35)', background: 'rgba(var(--accent-rgb),0.06)' }}>
+          <span className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin mb-4" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+          <h2 className="font-display text-lg font-bold mb-2">Confirming your payment</h2>
+          <p className="text-sm text-[var(--text-dim)] mb-1">{registration.event.title}</p>
+          <p className="text-xs text-[var(--text-dim)] leading-relaxed mt-3">
+            This usually takes just a few seconds. If you just completed checkout on Fapshi, your pass will appear here automatically — no need to refresh.
+          </p>
+        </div>
+      ) : registration.paymentStatus === 'failed' ? (
+        <div className="max-w-md mx-auto rounded-[26px] border p-8 text-center" style={{ borderColor: 'rgba(255,92,119,0.35)', background: 'rgba(255,92,119,0.06)' }}>
+          <span className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(255,92,119,0.16)' }}>
+            <XCircle size={22} style={{ color: '#FF5C77' }} />
+          </span>
+          <h2 className="font-display text-lg font-bold mb-2">Payment didn't go through</h2>
+          <p className="text-sm text-[var(--text-dim)] mb-1">{registration.event.title}</p>
+          <p className="text-xs text-[var(--text-dim)] leading-relaxed mt-3 mb-5">
+            It may have expired or been declined. No charge was made — you can head back to the event and try again.
+          </p>
+          <Link
+            to={`/events/${registration.event.id}`}
+            className="inline-block text-sm font-semibold px-4 py-2.5 rounded-lg"
+            style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+          >
+            Back to event
+          </Link>
         </div>
       ) : (
         <div className="max-w-md mx-auto">
@@ -119,6 +196,20 @@ export default function QrPass() {
                 <p className="text-xs text-[var(--text-dim)] leading-relaxed">{t('pass_howto_desc')}</p>
               </div>
             </div>
+          )}
+
+          {registration.event.format && registration.event.format !== 'in-person' && (
+            <button
+              onClick={handleJoinMeeting}
+              disabled={joiningMeeting}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3.5 rounded-xl mt-5 disabled:opacity-60"
+              style={{ background: 'rgba(139,124,246,0.14)', color: '#8B7CF6', border: '1px solid rgba(139,124,246,0.3)' }}
+            >
+              {joiningMeeting
+                ? <span className="w-4 h-4 rounded-full border-2 border-[#8B7CF6]/30 border-t-[#8B7CF6] animate-spin" />
+                : <Video size={16} />}
+              {joiningMeeting ? 'Loading link…' : 'Join online meeting'}
+            </button>
           )}
 
           <div className="grid grid-cols-2 gap-3 mt-5">

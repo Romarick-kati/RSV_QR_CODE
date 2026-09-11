@@ -95,11 +95,11 @@ export default function AdminEventAttendees() {
   function exportCsv() {
     const questionLabels = (event?.registrationQuestions || []).map((q) => q.label);
     const headers = ['Attendee', 'Email', 'Reference', 'Status', 'Checked in'];
-    if (isPaid) headers.push('Payment status', 'Payment phone');
+    if (isPaid) headers.push('Payment status', 'Fapshi transaction ID');
     headers.push(...questionLabels);
     const rows = filtered.map((a) => {
       const row = [a.user?.name, a.user?.email, a.registrationReference, a.status, a.attendance ? formatDateTime(a.attendance.checkedInAt) : 'Not checked in'];
-      if (isPaid) row.push(a.paymentStatus, a.paymentPhone || '');
+      if (isPaid) row.push(a.paymentStatus, a.paymentGatewayReference || '');
       for (const label of questionLabels) {
         row.push(a.answers?.find((ans) => ans.label === label)?.answer || '');
       }
@@ -180,8 +180,8 @@ export default function AdminEventAttendees() {
                         <span className="text-xs font-semibold" style={{ color: '#FF5C77' }}>Failed</span>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-[var(--text-dim)]" title="CamPay Mobile Money number">{a.paymentPhone || '—'}</span>
-                          <button disabled={busyId === a.id} onClick={() => confirmPayment(a.id)} title="Manual override — CamPay confirms automatically, this is only for edge cases" className="text-[#F5A623] font-semibold text-xs inline-flex items-center gap-1 disabled:opacity-50">
+                          <span className="text-xs font-mono text-[var(--text-dim)]" title="Fapshi transaction ID">{a.paymentGatewayReference || '—'}</span>
+                          <button disabled={busyId === a.id} onClick={() => confirmPayment(a.id)} title="Manual override — Fapshi confirms automatically, this is only for edge cases" className="text-[#F5A623] font-semibold text-xs inline-flex items-center gap-1 disabled:opacity-50">
                             <Wallet size={12} /> Force confirm
                           </button>
                         </div>

@@ -39,7 +39,7 @@ export default function Landing() {
   const [stats, setStats] = useState({ totalEvents: 0, totalRegistrations: 0, totalCapacity: 0 });
   const [openFaq, setOpenFaq] = useState(0);
   const { t } = useLanguage();
-  useSEO(null, 'RSVP to campus and corporate events online, get a digital QR pass, and check in with one verified scan at the door — no more paper sign-in sheets.');
+  useSEO(null, 'RSVP to campus and corporate events online, get a digital QR pass, and check in with one verified scan at the door — no more paper sign-in sheets.', { path: '/' });
 
   useEffect(() => {
     let cancelled = false;

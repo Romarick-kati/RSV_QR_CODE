@@ -16,7 +16,7 @@ const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, 
 
 export default function Discover() {
   const { t } = useLanguage();
-  useSEO('Discover Events', 'Browse upcoming events by category — technology, academic, career, workshops, and more.');
+  useSEO('Discover Events', 'Browse upcoming events by category — technology, academic, career, workshops, and more.', { path: '/discover' });
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 

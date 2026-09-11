@@ -50,6 +50,7 @@ const Events = lazyWithRetry(() => import('./pages/public/Events'));
 const Discover = lazyWithRetry(() => import('./pages/public/Discover'));
 const EventDetail = lazyWithRetry(() => import('./pages/public/EventDetail'));
 const About = lazyWithRetry(() => import('./pages/public/About'));
+const Founder = lazyWithRetry(() => import('./pages/public/Founder'));
 const FAQ = lazyWithRetry(() => import('./pages/public/FAQ'));
 const AuthPage = lazyWithRetry(() => import('./pages/public/AuthPage'));
 const CheckinLanding = lazyWithRetry(() => import('./pages/public/CheckinLanding'));
@@ -134,6 +135,7 @@ function AnimatedRoutes() {
             <Route path="/discover" element={<Suspense fallback={<PresenceLoader />}><Discover /></Suspense>} />
             <Route path="/events/:id" element={<Suspense fallback={<PresenceLoader />}><EventDetail /></Suspense>} />
             <Route path="/about" element={<Suspense fallback={<PresenceLoader />}><About /></Suspense>} />
+            <Route path="/founder" element={<Suspense fallback={<PresenceLoader />}><Founder /></Suspense>} />
             <Route path="/faq" element={<Suspense fallback={<PresenceLoader />}><FAQ /></Suspense>} />
             <Route path="/login" element={<Suspense fallback={<PresenceLoader />}><AuthPage mode="login" /></Suspense>} />
             <Route path="/register" element={<Suspense fallback={<PresenceLoader />}><AuthPage mode="register" /></Suspense>} />

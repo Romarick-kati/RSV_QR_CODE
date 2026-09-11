@@ -16,7 +16,7 @@ export const listPublicEvents = asyncHandler(async (req, res) => {
   if (q) filter.title = { $regex: escapeRegex(q), $options: 'i' };
 
   const events = await Event.find(filter).sort({ date: 1 });
-  res.json({ events: await Promise.all(events.map(withRemaining)) });
+  res.json({ events: await Promise.all(events.map((e) => withRemaining(e))) });
 });
 
 // Admin/organizer: every event regardless of status — but an ORGANIZER
@@ -34,7 +34,7 @@ export const listAdminEvents = asyncHandler(async (req, res) => {
   const checkInMap = Object.fromEntries(checkIns.map((c) => [c._id.toString(), c.count]));
 
   const withCounts = await Promise.all(
-    events.map(async (e) => ({ ...(await withRemaining(e)), checkedIn: checkInMap[e.id] || 0 }))
+    events.map(async (e) => ({ ...(await withRemaining(e, { includePrivate: true })), checkedIn: checkInMap[e.id] || 0 }))
   );
   res.json({ events: withCounts });
 });
@@ -43,6 +43,26 @@ export const getEvent = asyncHandler(async (req, res) => {
   const event = await Event.findById(req.params.id).populate('organizer', 'name');
   if (!event) throw ApiError.notFound('Event not found.');
   res.json({ event: await withRemaining(event) });
+});
+
+// Gated the same way a QR pass is: only someone who's actually confirmed
+// for this event (or the organizer who owns it) gets the real join link.
+// Unlike QR check-in, there's no server-side proof someone actually
+// entered the meeting — Jitsi doesn't report that back to us — so this is
+// intentionally presented in the UI as "opened the link", not "checked
+// in", to avoid claiming a stronger guarantee than what's actually true.
+export const getMeetingLink = asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) throw ApiError.notFound('Event not found.');
+  if (event.format === 'in-person') throw ApiError.badRequest('This event does not have an online meeting.');
+
+  const isOwner = event.organizer.toString() === req.user.id || req.user.role === 'ADMIN';
+  if (!isOwner) {
+    const registration = await Registration.findOne({ event: event.id, user: req.user.id, status: 'confirmed' });
+    if (!registration) throw ApiError.forbidden('You need a confirmed registration for this event to get the meeting link.');
+  }
+
+  res.json({ meetingUrl: event.meetingUrl, format: event.format });
 });
 
 export const createEvent = asyncHandler(async (req, res) => {
@@ -59,6 +79,10 @@ export const createEvent = asyncHandler(async (req, res) => {
   }
   const data = pickEventFields(req.body);
   const event = await Event.create({ ...data, organizer: req.user.id });
+  if (event.format !== 'in-person' && !event.meetingUrl) {
+    event.meetingUrl = generateMeetingUrl(event.id);
+    await event.save();
+  }
   res.status(201).json({ event });
 });
 
@@ -73,6 +97,14 @@ export const updateEvent = asyncHandler(async (req, res) => {
   }
   const data = pickEventFields(req.body, true);
   Object.assign(existing, data);
+  // Switching an event from in-person to online/hybrid (whether at
+  // creation or later) needs a real room — generate one the first time
+  // it's needed, and keep reusing the same one after that rather than
+  // regenerating a fresh link on every subsequent edit (which would
+  // silently break the link anyone already shared or bookmarked).
+  if (existing.format !== 'in-person' && !existing.meetingUrl) {
+    existing.meetingUrl = generateMeetingUrl(existing.id);
+  }
   const event = await existing.save();
   res.json({ event });
 });
@@ -106,16 +138,40 @@ export const eventStatistics = asyncHandler(async (req, res) => {
   });
 });
 
-async function withRemaining(event) {
+async function withRemaining(event, { includePrivate = false } = {}) {
   const confirmed = await Registration.countDocuments({ event: event._id, status: 'confirmed' });
-  return { ...event.toJSON(), registered: confirmed, remaining: Math.max(event.capacity - confirmed, 0) };
+  const json = event.toJSON();
+  if (!includePrivate) {
+    // The real join link is only ever handed out via getMeetingLink()
+    // above, to people who've actually confirmed a registration — leaving
+    // it in the general public event payload would let anyone browsing
+    // the events list join an "online" event without ever registering,
+    // making registration meaningless for that event type. Whether the
+    // event HAS an online component is still fine to show publicly (see
+    // `format` below, left in json) — just not the link itself.
+    delete json.meetingUrl;
+  }
+  return { ...json, registered: confirmed, remaining: Math.max(event.capacity - confirmed, 0) };
+}
+
+// Jitsi Meet needs no account, no API key, and no setup — any room name
+// becomes a real, working meeting the instant someone opens the URL, and
+// stays free with no time/participant limits on their public server. The
+// event's own Mongo id is already a globally unique, hard-to-guess 24-char
+// string, so it doubles as a perfectly good room name with no extra
+// randomness needed.
+function generateMeetingUrl(eventId) {
+  return `https://meet.jit.si/Presence-${eventId}`;
 }
 
 function pickEventFields(body, partial = false) {
   const fields = [
     'title', 'description', 'longDescription', 'image', 'category', 'date', 'startTime',
     'endTime', 'venue', 'capacity', 'registrationDeadline', 'status', 'contact', 'price', 'momoNumber',
-    'timezone', 'registrationQuestions',
+    'timezone', 'registrationQuestions', 'format',
+    // Deliberately NOT 'meetingUrl' — always server-generated (see
+    // generateMeetingUrl above), never settable by the client, so nobody
+    // can point an event's "official" meeting link at somewhere else.
   ];
   const data = {};
   for (const f of fields) {

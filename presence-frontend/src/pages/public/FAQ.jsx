@@ -16,7 +16,7 @@ const FAQS = [
 
 export default function FAQ() {
   const [open, setOpen] = useState(0);
-  useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.');
+  useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.', { path: '/faq' });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />

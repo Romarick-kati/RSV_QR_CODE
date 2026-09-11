@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faMicrochip, faGraduationCap, faBriefcase, faScrewdriverWrench,
-  faChalkboardUser, faBullseye, faMasksTheater, faCalendarDays, faLocationDot, faUsers,
-} from '@fortawesome/free-solid-svg-icons';
+import { Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Drama, Calendar, MapPin, Users, Video } from 'lucide-react';
 import { formatDate, formatTime, isEventPast } from '../../lib/utils';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { useLanguage } from '../../lib/LanguageContext';
 
+// lucide-react rather than FontAwesome deliberately — lucide is already a
+// dependency used everywhere else in the app, so reusing it here adds zero
+// extra bytes. FontAwesome was previously imported just for these 10
+// icons, but since EventCard renders on the homepage (not lazy-loaded),
+// that pulled its ~36KB gzipped runtime into the bundle every visitor
+// downloads before seeing anything — for icons lucide already covers.
 const CATEGORY_ICON = {
-  Technology: faMicrochip, Academic: faGraduationCap, Corporate: faBriefcase,
-  Workshop: faScrewdriverWrench, Seminar: faChalkboardUser, Career: faBullseye, Cultural: faMasksTheater,
+  Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase,
+  Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Drama,
 };
 
 export default function EventCard({ event, index = 0 }) {
@@ -23,7 +25,7 @@ export default function EventCard({ event, index = 0 }) {
   const nearlyFull = remaining <= event.capacity * 0.15 && remaining > 0;
   const full = remaining === 0;
   const past = isEventPast(event);
-  const icon = CATEGORY_ICON[event.category] || faMicrochip;
+  const CategoryIcon = CATEGORY_ICON[event.category] || Cpu;
 
   return (
     <Link
@@ -54,10 +56,14 @@ export default function EventCard({ event, index = 0 }) {
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
         <div className="absolute inset-0 flex items-start justify-between p-4">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm text-white">
-            <FontAwesomeIcon icon={icon} className="text-[11px]" /> {event.category}
+            <CategoryIcon size={11} /> {event.category}
           </span>
-          {past && (
+          {past ? (
             <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-black/40 text-white/80">{t('events_past')}</span>
+          ) : event.format && event.format !== 'in-person' && (
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm text-white">
+              <Video size={11} /> {event.format === 'online' ? 'Online' : 'Hybrid'}
+            </span>
           )}
         </div>
       </div>
@@ -66,12 +72,12 @@ export default function EventCard({ event, index = 0 }) {
           {event.title}
         </h3>
         <div className="flex flex-col gap-1.5 text-[13px] text-[var(--text-dim)] mb-4">
-          <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faCalendarDays} className="w-3.5" /> {formatDate(event.date)} &middot; {formatTime(event.startTime, event.timezone, event.date)}</span>
-          <span className="flex items-center gap-1.5"><FontAwesomeIcon icon={faLocationDot} className="w-3.5" /> {event.venue}</span>
+          <span className="flex items-center gap-1.5"><Calendar size={13} /> {formatDate(event.date)} &middot; {formatTime(event.startTime, event.timezone, event.date)}</span>
+          <span className="flex items-center gap-1.5"><MapPin size={13} /> {event.venue}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[13px] text-[var(--text-dim)]">
-            <FontAwesomeIcon icon={faUsers} className="w-3.5" />
+            <Users size={13} />
             {full ? t('events_fully_booked') : t('events_spots_left', { n: remaining })}
           </span>
           {nearlyFull && !full && (

@@ -13,7 +13,7 @@ import { useSEO } from '../../lib/useSEO';
 
 export default function Events() {
   const { t } = useLanguage();
-  useSEO('Browse Events', 'Browse upcoming technology conferences, workshops, seminars, and career fairs. RSVP online and get your QR pass instantly.');
+  useSEO('Browse Events', 'Browse upcoming technology conferences, workshops, seminars, and career fairs. RSVP online and get your QR pass instantly.', { path: '/events' });
   const [searchParams] = useSearchParams();
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
