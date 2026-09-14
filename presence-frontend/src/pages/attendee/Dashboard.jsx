@@ -16,7 +16,7 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
-  useSEO('Dashboard', undefined, { noindex: true });
+  useSEO(t('tab_overview'), undefined, { noindex: true });
 
   useEffect(() => {
     let cancelled = false;

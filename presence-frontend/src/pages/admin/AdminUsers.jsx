@@ -9,6 +9,7 @@ import { adminApi } from '../../lib/api';
 import { useToast } from '../../lib/ToastContext';
 import { useAuth } from '../../lib/AuthContext';
 import { formatDate } from '../../lib/utils';
+import { useLanguage } from '../../lib/LanguageContext';
 
 const ROLE_STYLES = {
   ADMIN: { bg: 'rgba(255,92,119,0.14)', fg: '#FF5C77' },
@@ -17,10 +18,12 @@ const ROLE_STYLES = {
 };
 
 function RoleBadge({ role }) {
+  const { t } = useLanguage();
   const s = ROLE_STYLES[role] || ROLE_STYLES.ATTENDEE;
+  const label = { ADMIN: t('adm_users_role_admin'), ORGANIZER: t('adm_users_role_organizer'), ATTENDEE: t('adm_users_role_attendee') }[role] || role;
   return (
     <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full" style={{ background: s.bg, color: s.fg }}>
-      {role}
+      {label}
     </span>
   );
 }
@@ -28,7 +31,8 @@ function RoleBadge({ role }) {
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'ATTENDEE' };
 
 export default function AdminUsers() {
-  useSEO('Users', undefined, { noindex: true });
+  const { t } = useLanguage();
+  useSEO(t('admin_users'), undefined, { noindex: true });
   const { push } = useToast();
   const { user: me } = useAuth();
 
@@ -63,7 +67,7 @@ export default function AdminUsers() {
     setRequestBusyId(id);
     try {
       await adminApi.approveOrganizerRequest(id);
-      push('Organizer access granted.', 'success');
+      push(t('adm_users_toast_org_granted'), 'success');
       loadRequests();
       load();
     } catch (err) {
@@ -76,7 +80,7 @@ export default function AdminUsers() {
     setRequestBusyId(id);
     try {
       await adminApi.rejectOrganizerRequest(id);
-      push('Request rejected.', 'info');
+      push(t('adm_users_toast_req_rejected'), 'info');
       loadRequests();
     } catch (err) {
       push(err.message, 'error');
@@ -106,10 +110,10 @@ export default function AdminUsers() {
 
   function validate() {
     const e = {};
-    if (!form.name.trim()) e.name = 'Name is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email address.';
-    if (!editing && form.password.length < 6) e.password = 'Password must be at least 6 characters.';
-    if (editing && form.password && form.password.length < 6) e.password = 'Password must be at least 6 characters.';
+    if (!form.name.trim()) e.name = t('adm_users_err_name');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t('adm_users_err_email');
+    if (!editing && form.password.length < 6) e.password = t('adm_users_err_password');
+    if (editing && form.password && form.password.length < 6) e.password = t('adm_users_err_password');
     return e;
   }
 
@@ -124,10 +128,10 @@ export default function AdminUsers() {
         const payload = { name: form.name, email: form.email, role: form.role };
         if (form.password) payload.password = form.password;
         await adminApi.updateUser(editing.id, payload);
-        push('User updated.', 'success');
+        push(t('adm_users_toast_updated'), 'success');
       } else {
         await adminApi.createUser(form);
-        push('User created.', 'success');
+        push(t('adm_users_toast_created'), 'success');
       }
       setFormOpen(false);
       load();
@@ -143,7 +147,7 @@ export default function AdminUsers() {
     setDeleting(true);
     try {
       await adminApi.deleteUser(deleteTarget.id);
-      push('User deleted.', 'info');
+      push(t('adm_users_toast_deleted'), 'info');
       setDeleteTarget(null);
       load();
     } catch (err) {
@@ -155,18 +159,18 @@ export default function AdminUsers() {
 
   return (
     <AdminShell
-      title="Users"
-      subtitle="Add, edit, or remove accounts and their access level."
+      title={t('admin_users')}
+      subtitle={t('adm_users_subtitle')}
       actions={
         <button onClick={openCreate} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap" style={{ background: '#22D3A6', color: '#04140f' }}>
-          <UserPlus size={14} /> Add user
+          <UserPlus size={14} /> {t('adm_users_add')}
         </button>
       }
     >
       {!requestsLoading && requests.length > 0 && (
         <div className="rounded-2xl border p-5 mb-6" style={{ borderColor: 'rgba(139,124,246,0.3)', background: 'rgba(139,124,246,0.06)' }}>
           <h3 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: '#8B7CF6' }}>
-            <Briefcase size={15} /> Pending organizer requests ({requests.length})
+            <Briefcase size={15} /> {t('adm_users_pending_requests', { n: requests.length })}
           </h3>
           <div className="flex flex-col gap-2.5">
             {requests.map((r) => (
@@ -177,10 +181,10 @@ export default function AdminUsers() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button disabled={requestBusyId === r.id} onClick={() => handleApproveRequest(r.id)} className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50" style={{ background: '#22D3A6', color: '#04140f' }}>
-                    <Check size={12} /> Approve
+                    <Check size={12} /> {t('adm_users_approve')}
                   </button>
                   <button disabled={requestBusyId === r.id} onClick={() => handleRejectRequest(r.id)} className="text-xs font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-50 text-[#FF5C77]" style={{ borderColor: 'var(--line-12)' }}>
-                    Reject
+                    {t('adm_users_reject')}
                   </button>
                 </div>
               </div>
@@ -194,7 +198,7 @@ export default function AdminUsers() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name or email…"
+          placeholder={t('adm_users_search_placeholder')}
           className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm text-[var(--text)] outline-none"
           style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }}
         />
@@ -203,15 +207,15 @@ export default function AdminUsers() {
       {loading ? (
         <div className="grid gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-xl skeleton" />)}</div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={UsersIcon} title="No users found" description={q ? 'No accounts match your search.' : 'No accounts yet.'} />
+        <EmptyState icon={UsersIcon} title={t('adm_users_empty_title')} description={q ? t('adm_users_empty_no_match') : t('adm_users_empty_none')} />
       ) : (
         <div className="rounded-2xl border overflow-x-auto" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--text-dim)]" style={{ background: 'var(--line-03)' }}>
-                <th className="px-5 py-3 font-semibold">Name</th>
-                <th className="px-5 py-3 font-semibold">Role</th>
-                <th className="px-5 py-3 font-semibold">Joined</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_users_th_name')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_users_th_role')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_users_th_joined')}</th>
                 <th className="px-5 py-3 font-semibold"></th>
               </tr>
             </thead>
@@ -219,20 +223,20 @@ export default function AdminUsers() {
               {filtered.map((u) => (
                 <tr key={u.id} className="border-t" style={{ borderColor: 'var(--line-06)' }}>
                   <td className="px-5 py-3.5">
-                    <p className="font-medium text-[var(--text)]">{u.name}{u.id === me.id && <span className="text-[var(--text-dim)] font-normal"> (you)</span>}</p>
+                    <p className="font-medium text-[var(--text)]">{u.name}{u.id === me.id && <span className="text-[var(--text-dim)] font-normal">{t('adm_users_you_suffix')}</span>}</p>
                     <p className="text-xs text-[var(--text-dim)]">{u.email}</p>
                   </td>
                   <td className="px-5 py-3.5"><RoleBadge role={u.role} /></td>
                   <td className="px-5 py-3.5 text-[var(--text-dim)]">{formatDate(u.createdAt)}</td>
                   <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(u)} className="text-[var(--text-dim)] hover:text-[var(--text)] inline-flex items-center gap-1 text-xs font-semibold mr-4"><Pencil size={13} /> Edit</button>
+                    <button onClick={() => openEdit(u)} className="text-[var(--text-dim)] hover:text-[var(--text)] inline-flex items-center gap-1 text-xs font-semibold mr-4"><Pencil size={13} /> {t('adm_events_edit')}</button>
                     <button
                       onClick={() => setDeleteTarget(u)}
                       disabled={u.id === me.id}
                       className="text-[#FF5C77] inline-flex items-center gap-1 text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={u.id === me.id ? "You can't delete your own account while signed in as it." : undefined}
+                      title={u.id === me.id ? t('adm_users_delete_self_title') : undefined}
                     >
-                      <Trash2 size={13} /> Delete
+                      <Trash2 size={13} /> {t('action_delete')}
                     </button>
                   </td>
                 </tr>
@@ -259,18 +263,18 @@ export default function AdminUsers() {
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display text-lg font-semibold text-[var(--text)]">{editing ? 'Edit user' : 'Add user'}</h3>
+                <h3 className="font-display text-lg font-semibold text-[var(--text)]">{editing ? t('adm_users_modal_edit_title') : t('adm_users_add')}</h3>
                 <button type="button" onClick={() => setFormOpen(false)} className="text-[var(--text-dim)] hover:text-[var(--text)]"><X size={18} /></button>
               </div>
 
               <div className="flex flex-col gap-4">
-                <Field label="Full name" error={formErrors.name}>
+                <Field label={t('adm_users_field_full_name')} error={formErrors.name}>
                   <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#22D3A6]" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }} />
                 </Field>
-                <Field label="Email" error={formErrors.email}>
+                <Field label={t('adm_users_field_email')} error={formErrors.email}>
                   <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#22D3A6]" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }} />
                 </Field>
-                <Field label="Role" error={formErrors.role}>
+                <Field label={t('adm_users_field_role')} error={formErrors.role}>
                   <select
                     value={form.role}
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
@@ -278,15 +282,15 @@ export default function AdminUsers() {
                     className="w-full rounded-lg border px-3.5 py-2.5 text-sm text-[var(--text)] outline-none focus:border-[#22D3A6]"
                     style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}
                   >
-                    <option value="ATTENDEE">Attendee</option>
-                    <option value="ORGANIZER">Organizer</option>
-                    <option value="ADMIN">Admin</option>
+                    <option value="ATTENDEE">{t('adm_users_role_attendee')}</option>
+                    <option value="ORGANIZER">{t('adm_users_role_organizer')}</option>
+                    <option value="ADMIN">{t('adm_users_role_admin')}</option>
                   </select>
                   {editing && editing.id === me.id && (
-                    <p className="text-[11px] text-[var(--text-dim)] mt-1">You can't change your own role while signed in as this account.</p>
+                    <p className="text-[11px] text-[var(--text-dim)] mt-1">{t('adm_users_own_role_hint')}</p>
                   )}
                 </Field>
-                <Field label={editing ? 'New password (leave blank to keep current)' : 'Password'} error={formErrors.password}>
+                <Field label={editing ? t('adm_users_field_new_password') : t('adm_users_field_password')} error={formErrors.password}>
                   <span className="flex items-center gap-2 rounded-lg border px-3.5 py-0" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
                     <input
                       type={pwReveal ? 'text' : 'password'}
@@ -304,10 +308,10 @@ export default function AdminUsers() {
 
               <div className="flex gap-2 mt-6">
                 <button type="button" onClick={() => setFormOpen(false)} disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-semibold border disabled:opacity-60 text-[var(--text)]" style={{ borderColor: 'var(--line-14)' }}>
-                  Cancel
+                  {t('action_cancel')}
                 </button>
                 <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-60" style={{ background: '#22D3A6', color: '#04140f' }}>
-                  {saving ? '…' : editing ? 'Save changes' : 'Create user'}
+                  {saving ? '…' : editing ? t('ef_save_changes') : t('adm_users_create_user')}
                 </button>
               </div>
             </motion.form>
@@ -317,9 +321,9 @@ export default function AdminUsers() {
 
       <ConfirmModal
         open={!!deleteTarget}
-        title={`Delete ${deleteTarget?.name}?`}
-        description="This removes their account and any event registrations they've made. This can't be undone."
-        confirmLabel="Delete user"
+        title={t('adm_users_delete_confirm_title', { name: deleteTarget?.name })}
+        description={t('adm_users_delete_confirm_desc')}
+        confirmLabel={t('adm_users_delete_confirm_label')}
         busy={deleting}
         onConfirm={handleDelete}
         onClose={() => setDeleteTarget(null)}

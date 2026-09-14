@@ -17,7 +17,7 @@ export default function QrPass() {
   const { id } = useParams();
   const { t } = useLanguage();
   const { push } = useToast();
-  useSEO('Your QR Pass', undefined, { noindex: true });
+  useSEO(t('tab_qr_pass'), undefined, { noindex: true });
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

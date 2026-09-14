@@ -3,26 +3,21 @@ import { ChevronDown } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import { useSEO } from '../../lib/useSEO';
+import { useLanguage } from '../../lib/LanguageContext';
 
-const FAQS = [
-  { q: 'How do I register for an event?', a: 'Open the event page and select "RSVP for this event." If you\u2019re not signed in yet, you\u2019ll be asked to create an account first, then registration itself takes under a minute.' },
-  { q: 'How do I access my digital pass?', a: 'After registering, your pass opens automatically. You can always find it again under "My events" in your dashboard.' },
-  { q: 'What happens if I lose signal at the door?', a: 'Your QR pass is a static image once loaded, so it will display even offline. The scanner device on the organizer\u2019s side needs connectivity to verify it.' },
-  { q: 'Can I register for an event that is full?', a: 'No, once an event reaches capacity, RSVP is disabled for that event. Organizers can raise capacity before the registration deadline if space allows.' },
-  { q: 'What happens if my QR code is scanned twice?', a: 'The second scan is rejected with "Already checked in." Only the first valid scan is recorded as attendance.' },
-  { q: 'Can I cancel my registration?', a: 'Yes, from "My events" in your dashboard. This frees your spot for someone else before the registration deadline.' },
-  { q: 'How is my data protected?', a: 'Your QR code encodes a random, unique token rather than any personal information. The server looks up your registration from that token, which is never embedded in the code itself.' },
-];
+const FAQ_KEYS = [1, 2, 3, 4, 5, 6, 7];
 
 export default function FAQ() {
   const [open, setOpen] = useState(0);
+  const { t } = useLanguage();
+  const FAQS = FAQ_KEYS.map((i) => ({ q: t(`faq_q${i}`), a: t(`faq_a${i}`) }));
   useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.', { path: '/faq' });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-20">
-        <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>Support</span>
-        <h1 className="font-display text-3xl sm:text-4xl font-semibold mt-2 mb-10">Frequently asked questions</h1>
+        <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>{t('faq_eyebrow')}</span>
+        <h1 className="font-display text-3xl sm:text-4xl font-semibold mt-2 mb-10">{t('faq_heading')}</h1>
         <div className="flex flex-col gap-3">
           {FAQS.map((f, i) => (
             <div key={f.q} className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>

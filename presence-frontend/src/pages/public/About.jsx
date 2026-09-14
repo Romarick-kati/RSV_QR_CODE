@@ -3,31 +3,30 @@ import { Link } from 'react-router-dom';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import { useSEO } from '../../lib/useSEO';
+import { useLanguage } from '../../lib/LanguageContext';
 
-const PILLARS = [
-  { icon: Users, title: 'For attendees', copy: 'Register for an event once, receive a digital pass instantly, and reuse it every time you check in.' },
-  { icon: ScanLine, title: 'For organizers', copy: 'Publish an event, watch RSVPs come in, and scan attendees at the door with any device camera.' },
-  { icon: ShieldCheck, title: 'For integrity', copy: 'Every QR pass carries a server-verified token, never personal data, so check-in results can be trusted.' },
-  { icon: BarChart3, title: 'For decisions', copy: 'Live dashboards turn attendance into a number you can report on, not a stack of paper to count by hand.' },
+const PILLAR_META = [
+  { icon: Users, n: 1 },
+  { icon: ScanLine, n: 2 },
+  { icon: ShieldCheck, n: 3 },
+  { icon: BarChart3, n: 4 },
 ];
 
 export default function About() {
+  const { t } = useLanguage();
+  const PILLARS = PILLAR_META.map((p) => ({ icon: p.icon, title: t(`about_pillar${p.n}_title`), copy: t(`about_pillar${p.n}_copy`) }));
   useSEO('About', 'Presence replaces paper sign-in sheets with online RSVPs, digital QR passes, and one verified scan at check-in.', { path: '/about' });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />
       <div className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
-        <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>About Presence</span>
-        <h1 className="font-display text-3xl sm:text-4xl font-semibold mt-2 mb-6">A digital replacement for the sign-in sheet</h1>
+        <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>{t('about_eyebrow')}</span>
+        <h1 className="font-display text-3xl sm:text-4xl font-semibold mt-2 mb-6">{t('about_heading')}</h1>
         <p className="text-[var(--text-dim)] leading-relaxed mb-6">
-          Presence was built to solve a familiar problem on campus: registration lists kept in spreadsheets,
-          attendance tracked with paper and a pen, and no reliable way to know who actually showed up until
-          someone counts the sheet by hand afterward.
+          {t('about_p1')}
         </p>
         <p className="text-[var(--text-dim)] leading-relaxed mb-14">
-          The platform pairs a simple RSVP flow with a QR-based check-in system. Every registration produces a
-          unique digital pass; every check-in is verified against that pass on the server, so duplicate scans
-          and forged codes are rejected automatically, and organizers can watch attendance update live.
+          {t('about_p2')}
         </p>
 
         <div className="grid sm:grid-cols-2 gap-5">
@@ -48,9 +47,9 @@ export default function About() {
           style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}
         >
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Created by</span>
-            <h3 className="font-display text-lg font-bold mt-1">Meet the creator of Presence</h3>
-            <p className="text-sm text-[var(--text-dim)] mt-1">Ndi Romarick Kati — founder, full-stack developer</p>
+            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>{t('about_created_by')}</span>
+            <h3 className="font-display text-lg font-bold mt-1">{t('about_meet_creator')}</h3>
+            <p className="text-sm text-[var(--text-dim)] mt-1">{t('about_founder_role')}</p>
           </div>
           <ArrowRight size={20} className="shrink-0" style={{ color: 'var(--accent)' }} />
         </Link>
