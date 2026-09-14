@@ -7,9 +7,11 @@ import EmptyState from '../../components/ui/EmptyState';
 import { adminApi, eventsApi } from '../../lib/api';
 import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../lib/ToastContext';
+import { useLanguage } from '../../lib/LanguageContext';
 
 export default function AdminReports() {
-  useSEO('Reports', undefined, { noindex: true });
+  const { t } = useLanguage();
+  useSEO(t('admin_reports'), undefined, { noindex: true });
   const { push } = useToast();
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
@@ -42,22 +44,22 @@ export default function AdminReports() {
     const a = document.createElement('a');
     a.href = url; a.download = 'presence-attendance-report.csv';
     a.click(); URL.revokeObjectURL(url);
-    push('Report exported as CSV.', 'success');
+    push(t('adm_reports_toast_exported'), 'success');
   }
 
   return (
     <AdminShell
-      title="Reports"
-      subtitle="Attendance across every event."
-      actions={<button onClick={exportCsv} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}><Download size={14} /> Export CSV</button>}
+      title={t('admin_reports')}
+      subtitle={t('adm_reports_subtitle')}
+      actions={<button onClick={exportCsv} className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}><Download size={14} /> {t('action_export_csv')}</button>}
     >
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search attendee name or email…" className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm text-[var(--text)] outline-none" style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('adm_reports_search_placeholder')} className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm text-[var(--text)] outline-none" style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }} />
         </div>
         <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="rounded-xl border px-4 py-2.5 text-sm text-[var(--text)] outline-none" style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }}>
-          <option value="all">All events</option>
+          <option value="all">{t('adm_reports_all_events')}</option>
           {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
         </select>
       </div>
@@ -65,18 +67,18 @@ export default function AdminReports() {
       {loading ? (
         <div className="grid gap-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-12 rounded-xl skeleton" />)}</div>
       ) : rows.length === 0 ? (
-        <EmptyState icon={FileBarChart} title="No attendance records yet" description="Records will appear here once attendees start registering." />
+        <EmptyState icon={FileBarChart} title={t('adm_reports_empty_title')} description={t('adm_reports_empty_desc')} />
       ) : (
         <div className="rounded-2xl border overflow-x-auto" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
           <table className="w-full text-sm min-w-[860px]">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--text-dim)]" style={{ background: 'var(--line-03)' }}>
-                <th className="px-5 py-3 font-semibold">Attendee</th>
-                <th className="px-5 py-3 font-semibold">Event</th>
-                <th className="px-5 py-3 font-semibold">Reference</th>
-                <th className="px-5 py-3 font-semibold">RSVP</th>
-                <th className="px-5 py-3 font-semibold">Check-in</th>
-                <th className="px-5 py-3 font-semibold">Check-in time</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_att_th_attendee')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_dash_th_event')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_att_th_reference')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_reports_th_rsvp')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_reports_th_checkin')}</th>
+                <th className="px-5 py-3 font-semibold">{t('adm_reports_th_checkin_time')}</th>
               </tr>
             </thead>
             <tbody>

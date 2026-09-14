@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, Link, Navigate, NavLink } from 'react-router-dom';
 import { Users, ScanLine, BarChart3, ExternalLink } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
 import { useSEO } from '../../lib/useSEO';
+import { useVisibilityPolling } from '../../lib/useVisibilityPolling';
 import EventForm from '../../components/admin/EventForm';
 import EventShareLink from '../../components/admin/EventShareLink';
 import Badge from '../../components/ui/Badge';
 import { eventsApi } from '../../lib/api';
 import { useToast } from '../../lib/ToastContext';
+import { useLanguage } from '../../lib/LanguageContext';
 
 export default function AdminEventDetail() {
-  useSEO('Manage Event', undefined, { noindex: true });
+  const { t } = useLanguage();
+  useSEO(t('tab_manage_event'), undefined, { noindex: true });
   const { id } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
@@ -18,6 +21,8 @@ export default function AdminEventDetail() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,18 +31,20 @@ export default function AdminEventDetail() {
       .catch(() => { if (!cancelled) setNotFound(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
-    // Keep the Registered/Checked-in numbers live while this page is open,
-    // so check-ins happening at the scanner right now show up here too.
-    const interval = setInterval(() => {
-      eventsApi.statistics(id).then((s) => { if (!cancelled) setStats(s); }).catch(() => {});
-    }, 4000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => { cancelled = true; };
   }, [id]);
+
+  // Keep the Registered/Checked-in numbers live while this page is open,
+  // so check-ins happening at the scanner right now show up here too.
+  // 8s (was 4s) and paused while the tab isn't visible.
+  useVisibilityPolling(() => {
+    eventsApi.statistics(id).then((s) => { if (mountedRef.current) setStats(s); }).catch(() => {});
+  }, 8000);
 
   if (notFound) return <Navigate to="/admin/events" replace />;
   if (loading || !event) {
     return (
-      <AdminShell title="Loading…" subtitle="">
+      <AdminShell title={t('adm_events_loading')} subtitle="">
         <div className="h-96 rounded-2xl skeleton" />
       </AdminShell>
     );
@@ -46,7 +53,7 @@ export default function AdminEventDetail() {
   async function handleSubmit(data) {
     try {
       await eventsApi.update(id, data);
-      push('Event updated.', 'success');
+      push(t('adm_detail_toast_updated'), 'success');
       navigate('/admin/events');
     } catch (err) {
       push(err.message, 'error');
@@ -56,12 +63,12 @@ export default function AdminEventDetail() {
   return (
     <AdminShell
       title={event.title}
-      subtitle="Edit details, then manage attendees, scanning, and analytics below."
+      subtitle={t('adm_detail_subtitle')}
       actions={
         <>
           <Badge status={event.status} />
           <Link to={`/events/${event.id}`} target="_blank" className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)]">
-            <ExternalLink size={14} /> Public page
+            <ExternalLink size={14} /> {t('adm_detail_public_page')}
           </Link>
         </>
       }
@@ -69,18 +76,18 @@ export default function AdminEventDetail() {
       <EventShareLink eventId={event.id} />
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
-        <MiniStat label="Registered" value={`${stats.registered}/${event.capacity}`} />
-        <MiniStat label="Checked in" value={stats.checkedIn} />
-        <MiniStat label="Attendance" value={`${stats.attendanceRate}%`} />
+        <MiniStat label={t('adm_dash_th_registered')} value={`${stats.registered}/${event.capacity}`} />
+        <MiniStat label={t('adm_dash_th_checked_in')} value={stats.checkedIn} />
+        <MiniStat label={t('adm_dash_flagship_attendance')} value={`${stats.attendanceRate}%`} />
       </div>
 
       <div className="flex gap-2 mb-6 flex-wrap">
-        <TabLink to={`/admin/events/${id}/attendees`} icon={Users} label="Attendees" />
-        <TabLink to={`/admin/events/${id}/scanner`} icon={ScanLine} label="Scanner" />
-        <TabLink to={`/admin/events/${id}/analytics`} icon={BarChart3} label="Analytics" />
+        <TabLink to={`/admin/events/${id}/attendees`} icon={Users} label={t('adm_detail_tab_attendees')} />
+        <TabLink to={`/admin/events/${id}/scanner`} icon={ScanLine} label={t('adm_events_scanner')} />
+        <TabLink to={`/admin/events/${id}/analytics`} icon={BarChart3} label={t('adm_events_analytics')} />
       </div>
 
-      <EventForm initial={event} onSubmit={handleSubmit} submitLabel="Save changes" />
+      <EventForm initial={event} onSubmit={handleSubmit} submitLabel={t('ef_save_changes')} />
     </AdminShell>
   );
 }

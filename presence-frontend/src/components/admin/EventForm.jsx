@@ -6,6 +6,7 @@ import { getSmartEventPhoto, suggestEventPhoto } from '../../lib/eventPhoto';
 import { TIMEZONE_OPTIONS } from '../../lib/timezones';
 import PhotoGalleryPicker from './PhotoGalleryPicker';
 import ImageCropModal from '../ui/ImageCropModal';
+import { useLanguage } from '../../lib/LanguageContext';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
@@ -13,7 +14,9 @@ const EMPTY = {
   price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [], format: 'in-person',
 };
 
-export default function EventForm({ initial, onSubmit, submitLabel = 'Save event' }) {
+export default function EventForm({ initial, onSubmit, submitLabel }) {
+  const { t } = useLanguage();
+  const resolvedSubmitLabel = submitLabel || t('ef_save_default');
   const [form, setForm] = useState(() => ({
     ...EMPTY,
     ...initial,
@@ -73,7 +76,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
     // saving it immediately — lets the organizer reposition/zoom/rotate
     // before it becomes the actual cover image.
     const reader = new FileReader();
-    reader.onerror = () => setImageError('Could not read that file.');
+    reader.onerror = () => setImageError(t('ef_could_not_read_file'));
     reader.onload = () => setCropSrc(reader.result);
     reader.readAsDataURL(file);
   }
@@ -92,7 +95,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
       setForm((f) => ({ ...f, image: url }));
       setImageSource('auto');
     } catch {
-      setImageError('Could not suggest a photo right now.');
+      setImageError(t('ef_could_not_suggest'));
     } finally {
       setSuggesting(false);
     }
@@ -111,16 +114,16 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
 
   function validate() {
     const e = {};
-    if (!form.title.trim()) e.title = 'Event name is required.';
-    if (!form.description.trim()) e.description = 'A short description is required.';
-    if (!form.date) e.date = 'Date is required.';
-    if (!form.venue.trim()) e.venue = 'Venue is required.';
-    if (!form.capacity || form.capacity < 1) e.capacity = 'Capacity must be at least 1.';
-    if (!form.registrationDeadline) e.registrationDeadline = 'Registration deadline is required.';
+    if (!form.title.trim()) e.title = t('ef_err_title');
+    if (!form.description.trim()) e.description = t('ef_err_description');
+    if (!form.date) e.date = t('ef_err_date');
+    if (!form.venue.trim()) e.venue = t('ef_err_venue');
+    if (!form.capacity || form.capacity < 1) e.capacity = t('ef_err_capacity');
+    if (!form.registrationDeadline) e.registrationDeadline = t('ef_err_deadline_required');
     if (form.registrationDeadline && form.date && form.registrationDeadline > form.date) {
-      e.registrationDeadline = 'Deadline must be on or before the event date.';
+      e.registrationDeadline = t('ef_err_deadline_before_date');
     }
-    if (form.startTime >= form.endTime) e.endTime = 'End time must be after start time.';
+    if (form.startTime >= form.endTime) e.endTime = t('ef_err_end_time');
     return e;
   }
 
@@ -138,17 +141,17 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
   return (
     <form onSubmit={handleSubmit} className="grid lg:grid-cols-[1fr_320px] gap-6">
       <div className="rounded-2xl border p-6 flex flex-col gap-5" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-        <Field label="Event name" error={errors.title}>
-          <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. University Technology & Innovation Conference" className="input" />
+        <Field label={t('ef_event_name')} error={errors.title}>
+          <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder={t('ef_event_name_placeholder')} className="input" />
         </Field>
-        <Field label="Short description" error={errors.description}>
-          <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={2} placeholder="One or two sentences shown on event cards." className="input resize-none" />
+        <Field label={t('ef_short_desc')} error={errors.description}>
+          <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={2} placeholder={t('ef_short_desc_placeholder')} className="input resize-none" />
         </Field>
-        <Field label="Full description">
-          <textarea value={form.longDescription} onChange={(e) => set('longDescription', e.target.value)} rows={4} placeholder="Full details shown on the event page." className="input resize-none" />
+        <Field label={t('ef_full_desc')}>
+          <textarea value={form.longDescription} onChange={(e) => set('longDescription', e.target.value)} rows={4} placeholder={t('ef_full_desc_placeholder')} className="input resize-none" />
         </Field>
 
-        <Field label="Cover photo">
+        <Field label={t('ef_cover_photo')}>
           <div className="flex gap-4 items-start">
             <div className="w-28 h-20 rounded-lg overflow-hidden shrink-0 border relative" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }}>
               <img
@@ -170,25 +173,25 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
               <div className="flex flex-wrap gap-2">
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5" style={{ borderColor: 'var(--line-12)' }}>
-                  <Upload size={13} /> Upload photo
+                  <Upload size={13} /> {t('ef_upload_photo')}
                 </button>
                 <button type="button" onClick={handleAutoSuggest} disabled={suggesting} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-60" style={{ background: 'rgba(139,124,246,0.14)', color: '#8B7CF6' }}>
-                  <Sparkles size={13} /> {suggesting ? 'Suggesting…' : 'Auto-suggest from name'}
+                  <Sparkles size={13} /> {suggesting ? t('ef_suggesting') : t('ef_auto_suggest')}
                 </button>
                 <button type="button" onClick={() => setGalleryOpen(true)} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5" style={{ borderColor: 'var(--line-12)' }}>
-                  <Grid3x3 size={13} /> Browse photos
+                  <Grid3x3 size={13} /> {t('ef_browse_photos')}
                 </button>
                 {form.image && (
                   <button type="button" onClick={handleRemoveImage} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border hover:bg-white/5 text-[var(--text-dim)]" style={{ borderColor: 'var(--line-12)' }}>
-                    <X size={13} /> Remove
+                    <X size={13} /> {t('ef_remove')}
                   </button>
                 )}
               </div>
               <p className="text-xs text-[var(--text-dim)] mt-2 flex items-start gap-1.5">
                 <ImageIcon size={13} className="shrink-0 mt-0.5" />
                 {imageSource === 'auto' && form.image
-                  ? "Auto-picked from the event name — upload your own to override it."
-                  : 'Upload your own image, or let it auto-match a photo to the event name as you type.'}
+                  ? t('ef_photo_hint_auto')
+                  : t('ef_photo_hint_manual')}
               </p>
               {imageError && <p className="text-xs mt-1.5" style={{ color: 'var(--danger-text)' }}>{imageError}</p>}
             </div>
@@ -196,12 +199,12 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
         </Field>
 
         <div>
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">Format</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-1.5">{t('ef_format')}</span>
           <div className="flex gap-2">
             {[
-              { value: 'in-person', label: 'In-person' },
-              { value: 'online', label: 'Online' },
-              { value: 'hybrid', label: 'Hybrid' },
+              { value: 'in-person', label: t('ef_format_in_person') },
+              { value: 'online', label: t('ef_format_online') },
+              { value: 'hybrid', label: t('ef_format_hybrid') },
             ].map((f) => (
               <button
                 key={f.value}
@@ -218,35 +221,35 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
           </div>
           {form.format !== 'in-person' && (
             <p className="text-xs text-[var(--text-dim)] mt-2 leading-relaxed">
-              A video meeting room is created automatically — no setup needed. Attendees see the join link once they've registered.
+              {t('ef_format_video_hint')}
             </p>
           )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Category">
+          <Field label={t('ef_category')}>
             <select value={form.category} onChange={(e) => set('category', e.target.value)} className="input">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
-          <Field label={form.format === 'online' ? 'Venue label (e.g. "Online")' : 'Venue'} error={errors.venue}>
-            <input value={form.venue} onChange={(e) => set('venue', e.target.value)} placeholder={form.format === 'online' ? 'e.g. Online (Jitsi Meet)' : 'e.g. Great Hall, Main Campus'} className="input" />
+          <Field label={form.format === 'online' ? t('ef_venue_label_online') : t('ef_venue')} error={errors.venue}>
+            <input value={form.venue} onChange={(e) => set('venue', e.target.value)} placeholder={form.format === 'online' ? t('ef_venue_placeholder_online') : t('ef_venue_placeholder')} className="input" />
           </Field>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
-          <Field label="Event date" error={errors.date}>
+          <Field label={t('ef_event_date')} error={errors.date}>
             <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} className="input" />
           </Field>
-          <Field label="Start time">
+          <Field label={t('ef_start_time')}>
             <input type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} className="input" />
           </Field>
-          <Field label="End time" error={errors.endTime}>
+          <Field label={t('ef_end_time')} error={errors.endTime}>
             <input type="time" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} className="input" />
           </Field>
         </div>
 
-        <Field label="Timezone" hint="What clock the times above are on — shown to every attendee regardless of where they're browsing from.">
+        <Field label={t('ef_timezone')} hint={t('ef_timezone_hint')}>
           <select value={form.timezone} onChange={(e) => set('timezone', e.target.value)} className="input">
             {TIMEZONE_OPTIONS.map((group) => (
               <optgroup key={group.group} label={group.group}>
@@ -257,40 +260,38 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
         </Field>
 
         <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Capacity" error={errors.capacity}>
+          <Field label={t('ef_capacity')} error={errors.capacity}>
             <input type="number" min={1} value={form.capacity} onChange={(e) => set('capacity', e.target.value)} className="input" />
           </Field>
-          <Field label="Registration deadline" error={errors.registrationDeadline}>
+          <Field label={t('ef_reg_deadline')} error={errors.registrationDeadline}>
             <input type="date" value={form.registrationDeadline} onChange={(e) => set('registrationDeadline', e.target.value)} className="input" />
           </Field>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Organizer">
-            <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} placeholder="e.g. Faculty of Engineering" className="input" />
+          <Field label={t('ef_organizer')}>
+            <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} placeholder={t('ef_organizer_placeholder')} className="input" />
           </Field>
-          <Field label="Contact email">
+          <Field label={t('ef_contact_email')}>
             <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
           </Field>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5">
-          <Field label="Ticket price (0 = free)">
+          <Field label={t('ef_ticket_price')}>
             <input type="number" min={0} step="50" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="0" className="input" />
           </Field>
         </div>
         {Number(form.price) > 0 && (
           <p className="text-xs -mt-2 text-[var(--text-dim)] leading-relaxed">
-            At checkout, attendees are redirected to a secure Fapshi payment page to pay via MTN or Orange Money.
-            Their pass unlocks automatically the moment Fapshi confirms the transaction — no manual confirmation needed,
-            and no Mobile Money number to set up here (that's configured once in your Fapshi account, not per event).
+            {t('ef_fapshi_note')}
           </p>
         )}
 
         <div className="pt-1">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-dim)]">
-              Registration questions (optional)
+              {t('ef_reg_questions')}
             </span>
             <button
               type="button"
@@ -298,12 +299,11 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
               className="text-xs font-semibold px-2.5 py-1 rounded-lg"
               style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}
             >
-              + Add question
+              {t('ef_add_question')}
             </button>
           </div>
           <p className="text-xs text-[var(--text-dim)] leading-relaxed mb-3">
-            Anything you want to ask each attendee at RSVP — e.g. "What's your major?" or "Dietary restrictions?".
-            Answers show up in the attendee list and CSV export.
+            {t('ef_reg_questions_hint')}
           </p>
           {form.registrationQuestions.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -316,7 +316,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
                       next[i] = { ...next[i], label: e.target.value };
                       set('registrationQuestions', next);
                     }}
-                    placeholder="Question text"
+                    placeholder={t('ef_question_placeholder')}
                     className="input flex-1"
                   />
                   <label className="flex items-center gap-1.5 text-xs text-[var(--text-dim)] shrink-0 select-none">
@@ -329,7 +329,7 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
                         set('registrationQuestions', next);
                       }}
                     />
-                    Required
+                    {t('ef_required')}
                   </label>
                   <button
                     type="button"
@@ -346,19 +346,18 @@ export default function EventForm({ initial, onSubmit, submitLabel = 'Save event
       </div>
 
       <div className="rounded-2xl border p-6 h-fit flex flex-col gap-4" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-        <Field label="Status">
+        <Field label={t('ef_status')}>
           <select value={form.status} onChange={(e) => set('status', e.target.value)} className="input">
-            <option value="draft">Draft (hidden from attendees)</option>
-            <option value="published">Published (visible &amp; open for RSVP)</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="draft">{t('ef_status_draft')}</option>
+            <option value="published">{t('ef_status_published')}</option>
+            <option value="cancelled">{t('ef_status_cancelled')}</option>
           </select>
         </Field>
         <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-          Draft events are only visible in this dashboard. Publishing makes the event immediately visible on the
-          public site and opens it for registration.
+          {t('ef_status_hint')}
         </p>
         <button disabled={saving} className="btn-pop w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-70" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
-          {saving ? 'Saving…' : submitLabel}
+          {saving ? t('ef_saving') : resolvedSubmitLabel}
         </button>
       </div>
 

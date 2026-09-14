@@ -22,7 +22,25 @@
          section like this app's Landing page. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
+    <!-- Loaded as non-render-blocking: `media="print"` makes the browser
+         fetch it at full priority without waiting for it before painting
+         anything, then the onload swaps it to "all" the instant it's
+         ready. `display=swap` in the URL already prevents invisible text
+         while waiting, so visually nothing changes — this just stops the
+         font CSS itself from being one more blocking request between the
+         browser and first paint, which is exactly the kind of thing
+         Google's page-speed signals measure. The <noscript> fallback
+         keeps this working identically for the rare visitor/crawler that
+         doesn't run JS at all. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
+    </noscript>
 
     <title>Presence: Event Registration and QR Attendance</title>
     <meta name="description" content="Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan." />

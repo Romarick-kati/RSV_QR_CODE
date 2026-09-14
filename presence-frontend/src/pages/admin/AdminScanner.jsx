@@ -4,15 +4,18 @@ import jsQR from 'jsqr';
 import { Camera, CameraOff, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, KeyRound, WifiOff, RefreshCw } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
 import { useSEO } from '../../lib/useSEO';
+import { useVisibilityPolling } from '../../lib/useVisibilityPolling';
 import { eventsApi, attendanceApi } from '../../lib/api';
 import { formatDateTime } from '../../lib/utils';
 import { extractCheckinToken } from '../../lib/checkinUrl';
 import { playScanSound } from '../../lib/scanSound';
 import { enqueueScan, listQueuedScans, removeQueuedScan } from '../../lib/offlineScanQueue';
 import { useToast } from '../../lib/ToastContext';
+import { useLanguage } from '../../lib/LanguageContext';
 
 export default function AdminScanner() {
-  useSEO('QR Scanner', undefined, { noindex: true });
+  const { t } = useLanguage();
+  useSEO(t('adm_scanner_title'), undefined, { noindex: true });
   const { id } = useParams();
   const { push } = useToast();
   const videoRef = useRef(null);
@@ -38,12 +41,17 @@ export default function AdminScanner() {
     refreshStats();
     refreshQueueCount();
     window.addEventListener('online', syncQueue);
-    // Poll so the live count here stays correct even when a second device
-    // is checking people in at the same door — not just this one's scans.
-    const interval = setInterval(refreshStats, 3000);
-    return () => { stopCamera(); window.removeEventListener('online', syncQueue); clearInterval(interval); };
+    return () => { stopCamera(); window.removeEventListener('online', syncQueue); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Poll so the live count here stays correct even when a second device
+  // is checking people in at the same door — not just this one's scans.
+  // Kept at 3s (this one genuinely needs to feel near-real-time at a busy
+  // door) but paused while the tab/screen isn't visible — a phone left on
+  // this screen but locked, or a staff member who alt-tabbed away, stops
+  // polling instead of hammering the server for a screen no one's on.
+  useVisibilityPolling(refreshStats, 3000);
 
   function refreshQueueCount() {
     setQueuedCount(listQueuedScans(id).length);
@@ -70,7 +78,7 @@ export default function AdminScanner() {
     setSyncing(false);
     refreshQueueCount();
     refreshStats();
-    if (synced > 0) push(`${synced} offline scan${synced === 1 ? '' : 's'} synced.`, 'success');
+    if (synced > 0) push(t(synced === 1 ? 'adm_scanner_synced_one' : 'adm_scanner_synced_many', { n: synced }), 'success');
   }
 
   function refreshStats() {
@@ -91,7 +99,7 @@ export default function AdminScanner() {
       setCameraOn(true);
       rafRef.current = requestAnimationFrame(tick);
     } catch {
-      setCameraError('Could not access the camera. Check browser permissions, or use manual entry below.');
+      setCameraError(t('adm_scanner_camera_error'));
     }
   }
 
@@ -138,11 +146,11 @@ export default function AdminScanner() {
         // legitimate attendee. It'll be verified for real once synced.
         enqueueScan({ eventId: id, token });
         refreshQueueCount();
-        setResult({ result: 'queued', message: 'No connection — scan saved and will be verified once you\'re back online.' });
+        setResult({ result: 'queued', message: t('adm_scanner_offline_msg') });
         playScanSound('duplicate');
         triggerFlash('duplicate');
       } else {
-        setResult({ result: 'invalid', message: err.message || 'Invalid or expired QR code.' });
+        setResult({ result: 'invalid', message: err.message || t('adm_scanner_invalid_default') });
         playScanSound('invalid');
         triggerFlash('invalid');
       }
@@ -168,9 +176,9 @@ export default function AdminScanner() {
 
   return (
     <AdminShell
-      title="QR scanner"
-      subtitle={event?.title || 'Loading…'}
-      actions={<Link to={`/admin/events/${id}`} className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)]"><ArrowLeft size={15} /> Event</Link>}
+      title={t('adm_scanner_title')}
+      subtitle={event?.title || t('adm_events_loading')}
+      actions={<Link to={`/admin/events/${id}`} className="flex items-center gap-1.5 text-sm font-medium text-[var(--text-dim)] hover:text-[var(--text)]"><ArrowLeft size={15} /> {t('adm_att_back_to_event')}</Link>}
     >
       {flash && (
         <div
@@ -183,10 +191,10 @@ export default function AdminScanner() {
           {queuedCount > 0 && (
             <div className="flex items-center justify-between gap-3 rounded-xl border px-4 py-3 mb-4" style={{ borderColor: 'rgba(139,124,246,0.35)', background: 'rgba(139,124,246,0.08)' }}>
               <p className="text-xs font-medium flex items-center gap-2" style={{ color: '#8B7CF6' }}>
-                <WifiOff size={14} /> {queuedCount} scan{queuedCount === 1 ? '' : 's'} saved offline — not yet verified.
+                <WifiOff size={14} /> {t(queuedCount === 1 ? 'adm_scanner_offline_one' : 'adm_scanner_offline_many', { n: queuedCount })}
               </p>
               <button onClick={syncQueue} disabled={syncing} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-60" style={{ background: 'rgba(139,124,246,0.16)', color: '#8B7CF6' }}>
-                <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Try syncing now'}
+                <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} /> {syncing ? t('adm_scanner_syncing') : t('adm_scanner_try_sync')}
               </button>
             </div>
           )}
@@ -197,9 +205,9 @@ export default function AdminScanner() {
                 <span className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'var(--line-06)' }}>
                   <Camera size={24} className="text-[var(--text-dim)]" />
                 </span>
-                <p className="text-sm text-[var(--text-dim)] max-w-xs">Start the camera to scan attendee QR codes at the door.</p>
+                <p className="text-sm text-[var(--text-dim)] max-w-xs">{t('adm_scanner_start_prompt')}</p>
                 <button onClick={startCamera} className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)', color: '#04140f' }}>
-                  <Camera size={16} /> Start scanner
+                  <Camera size={16} /> {t('adm_scanner_start_button')}
                 </button>
                 {cameraError && <p className="text-xs text-[var(--danger-text)] max-w-xs">{cameraError}</p>}
               </div>
@@ -210,7 +218,7 @@ export default function AdminScanner() {
                   <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-2xl border-2 reticle-pulse" style={{ borderColor: '#22D3A6' }} />
                 </div>
                 <button onClick={stopCamera} className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg" style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
-                  <CameraOff size={14} /> Stop
+                  <CameraOff size={14} /> {t('adm_scanner_stop')}
                 </button>
               </>
             )}
@@ -219,33 +227,33 @@ export default function AdminScanner() {
           <div className="mt-5 min-h-[132px]">
             {verifying && !result ? (
               <div className="rounded-2xl border p-6 text-center text-sm text-[var(--text-dim)] flex items-center justify-center gap-2" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-                <span className="w-4 h-4 rounded-full border-2 border-white/10 border-t-[#22D3A6] animate-spin" /> Verifying…
+                <span className="w-4 h-4 rounded-full border-2 border-white/10 border-t-[#22D3A6] animate-spin" /> {t('adm_scanner_verifying')}
               </div>
             ) : result ? (
               <ResultCard outcome={result} />
             ) : (
               <div className="rounded-2xl border p-6 text-center text-sm text-[var(--text-dim)]" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-                Scan results will appear here.
+                {t('adm_scanner_results_placeholder')}
               </div>
             )}
           </div>
 
           <form onSubmit={handleManualSubmit} className="mt-5 rounded-2xl border p-5" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-3 flex items-center gap-1.5"><KeyRound size={13} /> Manual token entry (backup, if a camera isn't available)</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-3 flex items-center gap-1.5"><KeyRound size={13} /> {t('adm_scanner_manual_entry_label')}</p>
             <div className="flex gap-2">
-              <input value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder="Paste attendance token…" className="flex-1 rounded-lg border px-3 py-2.5 text-sm text-[var(--text)] outline-none font-mono" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }} />
-              <button className="px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ background: 'rgba(34,211,166,0.14)', color: '#22D3A6' }}>Verify</button>
+              <input value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder={t('adm_scanner_manual_placeholder')} className="flex-1 rounded-lg border px-3 py-2.5 text-sm text-[var(--text)] outline-none font-mono" style={{ borderColor: 'var(--line-10)', background: 'var(--bg)' }} />
+              <button className="px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ background: 'rgba(34,211,166,0.14)', color: '#22D3A6' }}>{t('adm_scanner_verify')}</button>
             </div>
           </form>
         </div>
 
         <div className="rounded-2xl border p-6 h-fit" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-          <h3 className="font-display text-base font-semibold mb-4">Live count</h3>
+          <h3 className="font-display text-base font-semibold mb-4">{t('adm_scanner_live_count')}</h3>
           {stats ? (
             <>
               <div className="flex items-end gap-2 mb-1">
                 <span className="font-display text-4xl font-semibold">{stats.checkedIn}</span>
-                <span className="text-sm text-[var(--text-dim)] mb-1.5">/ {stats.registered} registered</span>
+                <span className="text-sm text-[var(--text-dim)] mb-1.5">{t('adm_scanner_registered_suffix', { n: stats.registered })}</span>
               </div>
               <div className="h-1.5 rounded-full mt-3 mb-6" style={{ background: 'var(--line-08)' }}>
                 <div className="h-full rounded-full" style={{ width: `${stats.registered ? (stats.checkedIn / stats.registered) * 100 : 0}%`, background: '#22D3A6' }} />
@@ -254,12 +262,12 @@ export default function AdminScanner() {
           ) : (
             <div className="h-16 rounded-xl skeleton mb-6" />
           )}
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-2">How it works</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)] mb-2">{t('adm_scanner_how_it_works')}</h4>
           <ol className="text-sm text-[var(--text-dim)] leading-relaxed list-decimal list-inside flex flex-col gap-1.5">
-            <li>Camera detects the QR code on the attendee's pass.</li>
-            <li>The token is checked against this event's registrations — and that it's within the check-in window.</li>
-            <li>A valid, unused token records the check-in instantly and shows their photo — compare it to the person in front of you.</li>
-            <li>A reused token is flagged as already checked in.</li>
+            <li>{t('adm_scanner_step1')}</li>
+            <li>{t('adm_scanner_step2')}</li>
+            <li>{t('adm_scanner_step3')}</li>
+            <li>{t('adm_scanner_step4')}</li>
           </ol>
         </div>
       </div>
@@ -268,11 +276,12 @@ export default function AdminScanner() {
 }
 
 function ResultCard({ outcome }) {
+  const { t } = useLanguage();
   const map = {
-    success: { icon: CheckCircle2, color: '#22D3A6', bg: 'rgba(34,211,166,0.1)', title: 'Attendance confirmed' },
-    duplicate: { icon: AlertTriangle, color: '#F5A623', bg: 'rgba(245,166,35,0.1)', title: 'Already checked in' },
-    invalid: { icon: XCircle, color: '#FF5C77', bg: 'rgba(255,92,119,0.1)', title: 'Invalid QR code' },
-    queued: { icon: WifiOff, color: '#8B7CF6', bg: 'rgba(139,124,246,0.1)', title: 'Saved offline' },
+    success: { icon: CheckCircle2, color: '#22D3A6', bg: 'rgba(34,211,166,0.1)', title: t('adm_scanner_result_success') },
+    duplicate: { icon: AlertTriangle, color: '#F5A623', bg: 'rgba(245,166,35,0.1)', title: t('adm_scanner_result_duplicate') },
+    invalid: { icon: XCircle, color: '#FF5C77', bg: 'rgba(255,92,119,0.1)', title: t('adm_scanner_result_invalid') },
+    queued: { icon: WifiOff, color: '#8B7CF6', bg: 'rgba(139,124,246,0.1)', title: t('adm_scanner_result_queued') },
   };
   const cfg = map[outcome.result] || map.invalid;
   const Icon = cfg.icon;
@@ -299,11 +308,11 @@ function ResultCard({ outcome }) {
             <p className="text-xs text-[var(--text-dim)] mt-0.5">{outcome.event?.title}</p>
             {outcome.attendance?.checkedInAt && (
               <p className="text-xs text-[var(--text-dim)] mt-0.5">
-                {outcome.result === 'duplicate' ? 'Originally checked in ' : 'Checked in '}{formatDateTime(outcome.attendance.checkedInAt)}
+                {outcome.result === 'duplicate' ? t('adm_scanner_originally_checked_in') : t('adm_scanner_checked_in_prefix')}{formatDateTime(outcome.attendance.checkedInAt)}
               </p>
             )}
             {!outcome.attendee.avatarUrl && (
-              <p className="text-[11px] mt-1.5" style={{ color: cfg.color }}>No photo on file — verify ID manually.</p>
+              <p className="text-[11px] mt-1.5" style={{ color: cfg.color }}>{t('adm_scanner_no_photo')}</p>
             )}
           </>
         ) : (
