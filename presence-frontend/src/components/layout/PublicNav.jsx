@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck, Settings as SettingsIcon, CircleHelp, Plus } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Menu, X, ChevronDown, LayoutDashboard, LogOut, ShieldCheck, Settings as SettingsIcon, CircleHelp, Plus, Sparkles } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
 import PreferencesToggle from '../ui/PreferencesToggle';
+import AssistantButton from '../assistant/AssistantButton';
+import AttendeeNotificationBell from './AttendeeNotificationBell';
 import { useAuth } from '../../lib/AuthContext';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useAssistant } from '../../lib/AssistantContext';
 
 export default function PublicNav() {
   const [open, setOpen] = useState(false);
@@ -13,6 +16,7 @@ export default function PublicNav() {
   const menuRef = useRef(null);
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const { open: openAssistant } = useAssistant();
   const navigate = useNavigate();
 
   const LINKS = [
@@ -38,8 +42,27 @@ export default function PublicNav() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [menuOpen]);
 
+  // Purely cosmetic depth cue — the header picks up a slightly stronger
+  // border/shadow once the page has actually scrolled, instead of always
+  // looking identically flat over both a hero and a dense list. Read-only,
+  // so no risk of racing the click-outside handler above.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    function onScroll() { setScrolled(window.scrollY > 8); }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md border-b" style={{ background: 'var(--bg-translucent)', borderColor: 'var(--line-08)' }}>
+    <header
+      className="sticky top-0 z-50 backdrop-blur-md border-b transition-shadow duration-300"
+      style={{
+        background: 'var(--bg-translucent)',
+        borderColor: 'var(--line-08)',
+        boxShadow: scrolled ? '0 8px 24px -16px rgba(0,0,0,0.45)' : 'none',
+      }}
+    >
       <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5 group">
           <motion.span
@@ -73,11 +96,12 @@ export default function PublicNav() {
 
         <div className="hidden md:flex items-center gap-3">
           <PreferencesToggle />
+          <AssistantButton />
           {user ? (
             <>
               {/* Any signed-in user can host, Luma-style — no approval gate
                   for a free event; only actually charging attendees (via
-                  Campay) needs the organizer-vetting flow, checked
+                  Fapshi) needs the organizer-vetting flow, checked
                   server-side when the event is saved. */}
               <Link
                 to="/admin/events/create"
@@ -86,6 +110,7 @@ export default function PublicNav() {
               >
                 <Plus size={15} /> {t('nav_create_event')}
               </Link>
+              <AttendeeNotificationBell />
               <Link
                 to="/settings"
                 aria-label={t('nav_settings')}
@@ -149,10 +174,19 @@ export default function PublicNav() {
         </button>
       </div>
 
-      {open && (
-        <div className="md:hidden border-t px-5 py-4 flex flex-col gap-1" style={{ borderColor: 'var(--line-08)', background: 'var(--bg)' }}>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="md:hidden border-t overflow-hidden"
+            style={{ borderColor: 'var(--line-08)', background: 'var(--bg)' }}
+          >
+            <div className="px-5 py-4 flex flex-col gap-1">
           <div className="flex items-center justify-between px-1 pb-3 mb-1 border-b" style={{ borderColor: 'var(--line-08)' }}>
-            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)]">Preferences</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)]">{t('nav_preferences_label')}</span>
             <PreferencesToggle />
           </div>
           {LINKS.map((l) => (
@@ -160,9 +194,16 @@ export default function PublicNav() {
               {l.label}
             </NavLink>
           ))}
+          <button onClick={() => { openAssistant(); setOpen(false); }} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text)] hover:bg-white/5 text-left">
+            <Sparkles size={15} /> {t('asst_nav_label')}
+          </button>
           <div className="h-px my-2" style={{ background: 'var(--line-08)' }} />
           {user ? (
             <>
+              <div className="flex items-center justify-between px-3 py-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-dim)]">{t('notif_title')}</span>
+                <AttendeeNotificationBell />
+              </div>
               <Link to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} onClick={() => setOpen(false)} className="px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text)] hover:bg-white/5">
                 {user.role === 'ADMIN' || user.role === 'ORGANIZER' ? t('nav_organizer_console') : t('nav_my_dashboard')}
               </Link>
@@ -184,8 +225,10 @@ export default function PublicNav() {
               </Link>
             </>
           )}
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

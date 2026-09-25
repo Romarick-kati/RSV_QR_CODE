@@ -199,7 +199,7 @@ export default function EventDetail() {
       <PublicNav />
 
       <div className="relative h-64 sm:h-80 flex items-end overflow-hidden">
-        <img src={getSmartEventPhoto(event, '1600/900')} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={getSmartEventPhoto(event, '1600/900')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
         <div className="max-w-5xl mx-auto px-5 sm:px-8 w-full pb-8 relative z-10">
           <Link to="/events" className="inline-flex items-center gap-1.5 text-white/85 text-sm font-medium mb-4 hover:text-white">

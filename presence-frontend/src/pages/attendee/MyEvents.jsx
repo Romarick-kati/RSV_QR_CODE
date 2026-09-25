@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarX, QrCode, X } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
 import EmptyState from '../../components/ui/EmptyState';
@@ -9,6 +10,12 @@ import { formatDate, formatTime, isEventPast } from '../../lib/utils';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useSEO } from '../../lib/useSEO';
+
+const listVariants = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+};
 
 export default function MyEvents() {
   const { push } = useToast();
@@ -57,9 +64,17 @@ export default function MyEvents() {
           <button
             key={tabItem.key}
             onClick={() => setTab(tabItem.key)}
-            className="text-sm font-medium px-3.5 py-1.5 rounded-full border transition-colors"
-            style={tab === tabItem.key ? { background: '#22D3A6', color: '#04140f', borderColor: '#22D3A6' } : { color: 'var(--text-dim)', borderColor: 'var(--line-12)' }}
+            className="relative text-sm font-medium px-3.5 py-1.5 rounded-full border transition-colors overflow-hidden"
+            style={tab === tabItem.key ? { color: '#04140f', borderColor: '#22D3A6' } : { color: 'var(--text-dim)', borderColor: 'var(--line-12)' }}
           >
+            {tab === tabItem.key && (
+              <motion.span
+                layoutId="myevents-tab-pill"
+                className="absolute inset-0 -z-10"
+                style={{ background: '#22D3A6' }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
             {tabItem.label}
           </button>
         ))}
@@ -72,36 +87,52 @@ export default function MyEvents() {
       ) : list.length === 0 ? (
         <EmptyState icon={CalendarX} title={tab === 'upcoming' ? t('dash_empty_title') : t('events_past')} description={tab === 'upcoming' ? t('myevents_empty_upcoming') : t('myevents_empty_past')} />
       ) : (
-        <div className="flex flex-col gap-3">
-          {list.map((r) => (
-            <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-              <div className="min-w-0">
-                <p className="font-medium text-[var(--text)]">{r.event.title}</p>
-                <p className="text-sm text-[var(--text-dim)]">{formatDate(r.event.date)} &middot; {formatTime(r.event.startTime, r.event.timezone, r.event.date)} &middot; {r.event.venue}</p>
-                <p className="text-xs text-[var(--text-dim)] font-mono mt-1">{r.registrationReference}</p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Badge status={r.status === 'waitlisted' ? 'waitlisted' : (r.attendance ? 'checked-in' : 'confirmed')} />
-                {r.status === 'waitlisted' ? (
-                  <span className="text-xs text-[var(--text-dim)]">Confirms automatically if a spot opens</span>
-                ) : (
-                  <Link to={`/qr-pass/${r.id}`} className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-lg" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
-                    <QrCode size={14} /> {t('myevents_pass')}
-                  </Link>
-                )}
-                {tab === 'upcoming' && !r.attendance && (
-                  <button
-                    onClick={() => handleCancel(r.id)}
-                    disabled={cancellingId === r.id}
-                    className="flex items-center gap-1 text-xs font-semibold px-2.5 py-2 rounded-lg text-[#FF5C77] hover:bg-white/5 disabled:opacity-60"
-                  >
-                    <X size={13} /> {cancellingId === r.id ? t('myevents_cancelling') : (r.status === 'waitlisted' ? 'Leave waitlist' : t('myevents_cancel'))}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div key={tab} variants={listVariants} initial="hidden" animate="show" className="flex flex-col gap-3">
+            {/* A second, nested AnimatePresence specifically for individual
+                items — the outer one only "sees" this whole list as one
+                unit (for the tab-switch transition), so without this,
+                cancelling a single registration would just make it vanish
+                instantly instead of animating out. */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {list.map((r) => (
+                <motion.div
+                  key={r.id}
+                  layout
+                  variants={itemVariants}
+                  exit={{ opacity: 0, x: -12, transition: { duration: 0.2 } }}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4"
+                  style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-[var(--text)]">{r.event.title}</p>
+                    <p className="text-sm text-[var(--text-dim)]">{formatDate(r.event.date)} &middot; {formatTime(r.event.startTime, r.event.timezone, r.event.date)} &middot; {r.event.venue}</p>
+                    <p className="text-xs text-[var(--text-dim)] font-mono mt-1">{r.registrationReference}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <Badge status={r.status === 'waitlisted' ? 'waitlisted' : (r.attendance ? 'checked-in' : 'confirmed')} />
+                    {r.status === 'waitlisted' ? (
+                      <span className="text-xs text-[var(--text-dim)]">Confirms automatically if a spot opens</span>
+                    ) : (
+                      <Link to={`/qr-pass/${r.id}`} className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-lg" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
+                        <QrCode size={14} /> {t('myevents_pass')}
+                      </Link>
+                    )}
+                    {tab === 'upcoming' && !r.attendance && (
+                      <button
+                        onClick={() => handleCancel(r.id)}
+                        disabled={cancellingId === r.id}
+                        className="flex items-center gap-1 text-xs font-semibold px-2.5 py-2 rounded-lg text-[#FF5C77] hover:bg-white/5 disabled:opacity-60"
+                      >
+                        <X size={13} /> {cancellingId === r.id ? t('myevents_cancelling') : (r.status === 'waitlisted' ? 'Leave waitlist' : t('myevents_cancel'))}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
       )}
     </AttendeeShell>
   );

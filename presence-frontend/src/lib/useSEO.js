@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const SITE_NAME = 'Presence';
-const SITE_URL = 'https://scan-point.netlify.app';
+const SITE_URL = 'https://presencescan.site';
 const DEFAULT_DESCRIPTION =
   'Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan.';
 

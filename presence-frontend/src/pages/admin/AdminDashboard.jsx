@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { CalendarDays, Users, ScanLine, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 import AdminShell from '../../components/layout/AdminShell';
@@ -10,6 +11,14 @@ import StatCard from '../../components/ui/StatCard';
 import Badge from '../../components/ui/Badge';
 import { adminApi, eventsApi } from '../../lib/api';
 import { formatDateTime, formatDate } from '../../lib/utils';
+
+const listVariants = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+};
+const rowVariants = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
+const rowItemVariants = { hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.3 } } };
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -72,14 +81,19 @@ export default function AdminDashboard() {
       subtitle={t('adm_dash_subtitle')}
       actions={<Link to="/admin/events/create" className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}><Plus size={15} /> {t('adm_dash_new_event')}</Link>}
     >
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label={t('adm_dash_stat_total_events')} value={stats.totalEvents} icon={CalendarDays} accent="#22D3A6" />
-        <StatCard label={t('adm_dash_stat_total_regs')} value={stats.totalRegistrations.toLocaleString()} icon={Users} accent="#8B7CF6" />
-        <StatCard label={t('adm_dash_stat_checked_in')} value={stats.totalCheckedIn.toLocaleString()} icon={ScanLine} accent="#F5A623" />
-        <StatCard label={t('adm_dash_stat_attendance_rate')} value={stats.attendanceRate} suffix="%" icon={TrendingUp} accent="#FF5C77" />
-      </div>
+      <motion.div variants={listVariants} initial="hidden" animate="show" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <motion.div variants={itemVariants}><StatCard label={t('adm_dash_stat_total_events')} value={stats.totalEvents} icon={CalendarDays} accent="#22D3A6" /></motion.div>
+        <motion.div variants={itemVariants}><StatCard label={t('adm_dash_stat_total_regs')} value={stats.totalRegistrations.toLocaleString()} icon={Users} accent="#8B7CF6" /></motion.div>
+        <motion.div variants={itemVariants}><StatCard label={t('adm_dash_stat_checked_in')} value={stats.totalCheckedIn.toLocaleString()} icon={ScanLine} accent="#F5A623" /></motion.div>
+        <motion.div variants={itemVariants}><StatCard label={t('adm_dash_stat_attendance_rate')} value={stats.attendanceRate} suffix="%" icon={TrendingUp} accent="#FF5C77" /></motion.div>
+      </motion.div>
 
-      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-5 mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        className="grid lg:grid-cols-[1.6fr_1fr] gap-5 mb-6"
+      >
         <div className="rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
           <div className="flex items-center justify-between mb-1">
             <h3 className="font-display text-base font-semibold">{t('adm_dash_trend_title')}</h3>
@@ -140,25 +154,33 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25, ease: [0.22, 1, 0.36, 1] }} className="grid lg:grid-cols-2 gap-5">
         <Panel title={t('adm_dash_recent_regs')} viewAllTo="/admin/reports">
-          {recentRegs.length === 0 ? <p className="text-sm text-[var(--text-dim)] py-6 text-center">{t('adm_dash_no_regs')}</p> : recentRegs.map((r) => (
-            <Row key={r.id} primary={r.user?.name} secondary={r.event?.title} meta={formatDateTime(r.createdAt)} />
-          ))}
+          {recentRegs.length === 0 ? <p className="text-sm text-[var(--text-dim)] py-6 text-center">{t('adm_dash_no_regs')}</p> : (
+            <motion.div variants={rowVariants} initial="hidden" animate="show">
+              {recentRegs.map((r) => (
+                <motion.div key={r.id} variants={rowItemVariants}><Row primary={r.user?.name} secondary={r.event?.title} meta={formatDateTime(r.createdAt)} /></motion.div>
+              ))}
+            </motion.div>
+          )}
         </Panel>
         <Panel title={t('adm_dash_recent_checkins')} viewAllTo="/admin/reports">
           {recentIns.length === 0 ? (
             <p className="text-sm text-[var(--text-dim)] py-6 text-center">{t('adm_dash_no_checkins')}</p>
-          ) : recentIns.map((r) => (
-            <Row key={r.id} primary={r.user?.name} secondary={r.event?.title} meta={formatDateTime(r.attendance.checkedInAt)} badge="checked-in" />
-          ))}
+          ) : (
+            <motion.div variants={rowVariants} initial="hidden" animate="show">
+              {recentIns.map((r) => (
+                <motion.div key={r.id} variants={rowItemVariants}><Row primary={r.user?.name} secondary={r.event?.title} meta={formatDateTime(r.attendance.checkedInAt)} badge="checked-in" /></motion.div>
+              ))}
+            </motion.div>
+          )}
         </Panel>
-      </div>
+      </motion.div>
 
-      <h3 className="font-display text-base font-semibold mt-8 mb-4">{t('adm_dash_event_performance')}</h3>
-      <div className="rounded-2xl border overflow-hidden overflow-x-auto" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+      <motion.h3 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="font-display text-base font-semibold mt-8 mb-4">{t('adm_dash_event_performance')}</motion.h3>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }} className="rounded-2xl border overflow-hidden overflow-x-auto" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
         <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--text-dim)]" style={{ background: 'var(--line-03)' }}>
@@ -183,7 +205,7 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
-      </div>
+      </motion.div>
     </AdminShell>
   );
 }

@@ -38,6 +38,8 @@ export default function EventCard({ event, index = 0 }) {
         <motion.img
           src={getSmartEventPhoto(event)}
           alt=""
+          loading="lazy"
+          decoding="async"
           onLoad={() => setLoaded(true)}
           onError={(e) => {
             // An uploaded/Unsplash image URL can go dead (deleted, expired,

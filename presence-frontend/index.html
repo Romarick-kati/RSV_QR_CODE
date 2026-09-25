@@ -22,41 +22,23 @@
          section like this app's Landing page. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Loaded as non-render-blocking: `media="print"` makes the browser
-         fetch it at full priority without waiting for it before painting
-         anything, then the onload swaps it to "all" the instant it's
-         ready. `display=swap` in the URL already prevents invisible text
-         while waiting, so visually nothing changes — this just stops the
-         font CSS itself from being one more blocking request between the
-         browser and first paint, which is exactly the kind of thing
-         Google's page-speed signals measure. The <noscript> fallback
-         keeps this working identically for the rare visitor/crawler that
-         doesn't run JS at all. -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
-    </noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
 
     <title>Presence: Event Registration and QR Attendance</title>
     <meta name="description" content="Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan." />
-    <link rel="canonical" href="https://scan-point.netlify.app/" />
+    <link rel="canonical" href="https://presencescan.site/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Presence" />
     <meta property="og:title" content="Presence: Event Registration and QR Attendance" />
     <meta property="og:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta property="og:image" content="https://scan-point.netlify.app/og-image.png" />
+    <meta property="og:image" content="https://presencescan.site/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="https://scan-point.netlify.app/" />
+    <meta property="og:url" content="https://presencescan.site/" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Presence: Event Registration and QR Attendance" />
     <meta name="twitter:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta name="twitter:image" content="https://scan-point.netlify.app/og-image.png" />
+    <meta name="twitter:image" content="https://presencescan.site/og-image.png" />
     <meta name="author" content="Ndi Romarick Kati" />
     <script type="application/ld+json">
       {
@@ -64,28 +46,28 @@
         "@graph": [
           {
             "@type": "WebSite",
-            "@id": "https://scan-point.netlify.app/#website",
+            "@id": "https://presencescan.site/#website",
             "name": "Presence",
-            "url": "https://scan-point.netlify.app/",
+            "url": "https://presencescan.site/",
             "description": "Presence is an event registration and QR-based attendance tracking platform.",
-            "publisher": { "@id": "https://scan-point.netlify.app/founder#person" }
+            "publisher": { "@id": "https://presencescan.site/founder#person" }
           },
           {
             "@type": "WebApplication",
-            "@id": "https://scan-point.netlify.app/#webapp",
+            "@id": "https://presencescan.site/#webapp",
             "name": "Presence",
-            "url": "https://scan-point.netlify.app/",
+            "url": "https://presencescan.site/",
             "applicationCategory": "EventManagementApplication",
             "operatingSystem": "Any (web-based)",
             "description": "Presence is an event registration and QR-based attendance tracking platform: attendees RSVP online and receive a digital QR pass, organizers verify check-in with a single scan.",
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-            "creator": { "@id": "https://scan-point.netlify.app/founder#person" }
+            "creator": { "@id": "https://presencescan.site/founder#person" }
           },
           {
             "@type": "Person",
-            "@id": "https://scan-point.netlify.app/founder#person",
+            "@id": "https://presencescan.site/founder#person",
             "name": "Ndi Romarick Kati",
-            "url": "https://scan-point.netlify.app/founder",
+            "url": "https://presencescan.site/founder",
             "jobTitle": "Full-Stack Developer",
             "description": "Ndi Romarick Kati is the founder and creator of Presence, a QR-based event registration and attendance tracking platform.",
             "sameAs": [

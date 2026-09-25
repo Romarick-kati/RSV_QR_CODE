@@ -3,6 +3,7 @@ import { Menu, X as XIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from './AdminSidebar';
 import NotificationBell from './NotificationBell';
+import AssistantButton from '../assistant/AssistantButton';
 import { useAuth } from '../../lib/AuthContext';
 
 export default function AdminShell({ title, subtitle, actions, children }) {
@@ -38,6 +39,7 @@ export default function AdminShell({ title, subtitle, actions, children }) {
           </div>
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {actions && <div className="flex items-center gap-2 overflow-x-auto max-w-[45vw] sm:max-w-none">{actions}</div>}
+            <AssistantButton />
             {(user?.role === 'ADMIN' || user?.role === 'ORGANIZER') && <NotificationBell />}
           </div>
         </header>
