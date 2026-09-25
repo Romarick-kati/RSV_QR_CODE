@@ -10,6 +10,17 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 export function createApp() {
   const app = express();
 
+  // Netlify Functions sit behind a proxy, so the visitor's real IP arrives
+  // in the X-Forwarded-For header rather than as the raw socket address.
+  // Express ignores that header by default (anyone could fake it on an
+  // untrusted network), but Netlify's proxy is trusted, so we opt in here.
+  // Without this, express-rate-limit can't reliably identify individual
+  // visitors by IP, which is what the ERR_ERL_UNDEFINED_IP_ADDRESS /
+  // ERR_ERL_UNEXPECTED_X_FORWARDED_FOR warnings in the function logs were
+  // about. `1` means "trust one hop" (Netlify's own proxy) — the standard,
+  // safe setting for this kind of single-layer serverless deployment.
+  app.set('trust proxy', 1);
+
   app.use(cors({
     // Reflects the request origin back only if it's in the allow-list
     // (config.corsOrigins, from the comma-separated CORS_ORIGIN env var).
