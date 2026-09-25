@@ -1,2 +1,9 @@
+# Force the old Netlify subdomain to permanently redirect to the real
+# custom domain — this is what Google Search Console's "Change of Address"
+# tool checks for (301 redirect from the old homepage). Must stay ABOVE
+# the SPA fallback rule below, or that rule will match first and this
+# one will never run.
+https://scan-point.netlify.app/*  https://presencescan.site/:splat  301!
+
 /api/*  /.netlify/functions/api/:splat  200
 /*      /index.html                     200
