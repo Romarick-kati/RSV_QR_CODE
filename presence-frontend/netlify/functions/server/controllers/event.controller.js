@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { eventValidators } from '../validators/validators.js';
 import { escapeRegex } from '../utils/regex.js';
 import { assertEventAccess } from '../utils/authz.js';
+import { notifyEventPublished } from '../services/notification.service.js';
 
 // Public: only published events, with computed remaining-capacity so the
 // frontend never has to trust a client-side capacity count.
@@ -68,7 +69,7 @@ export const getMeetingLink = asyncHandler(async (req, res) => {
 export const createEvent = asyncHandler(async (req, res) => {
   eventValidators.upsert(req.body);
   // Anyone can self-serve a free event (Luma-style — no approval needed).
-  // A *paid* event moves real Mobile Money through Campay, so that
+  // A *paid* event moves real Mobile Money through Fapshi, so that
   // specific case still requires being an approved ORGANIZER/ADMIN —
   // reusing the existing organizer-request vetting flow (see
   // requestOrganizerAccess in auth.controller.js) rather than letting any
@@ -83,6 +84,11 @@ export const createEvent = asyncHandler(async (req, res) => {
     event.meetingUrl = generateMeetingUrl(event.id);
     await event.save();
   }
+  // A brand-new event can be created already-published (no separate
+  // "publish" step required) — that's still the moment attendees first
+  // find out it exists, same as flipping a draft live later (see
+  // updateEvent below).
+  if (event.status === 'published') notifyEventPublished(event).catch(() => {}); // never let a notification failure break event creation
   res.status(201).json({ event });
 });
 
@@ -95,6 +101,7 @@ export const updateEvent = asyncHandler(async (req, res) => {
   if (price > 0 && !['ADMIN', 'ORGANIZER'].includes(req.user.role)) {
     throw ApiError.forbidden('Turning this into a paid event requires an approved organizer account. Apply for organizer access from your profile.');
   }
+  const wasPublished = existing.status === 'published';
   const data = pickEventFields(req.body, true);
   Object.assign(existing, data);
   // Switching an event from in-person to online/hybrid (whether at
@@ -106,6 +113,10 @@ export const updateEvent = asyncHandler(async (req, res) => {
     existing.meetingUrl = generateMeetingUrl(existing.id);
   }
   const event = await existing.save();
+  // Only fires on the actual draft-to-published transition, never on a
+  // routine edit to an event that was already live — otherwise fixing a
+  // typo in the description would re-notify every attendee all over again.
+  if (!wasPublished && event.status === 'published') notifyEventPublished(event).catch(() => {}); // never let a notification failure break the edit
   res.json({ event });
 });
 

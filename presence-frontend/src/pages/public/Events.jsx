@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, CalendarX } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import EventCard from '../../components/ui/EventCard';
 import EmptyState from '../../components/ui/EmptyState';
+import { Reveal } from '../../components/ui/Reveal';
 import { CATEGORIES } from '../../lib/constants';
 import { eventsApi } from '../../lib/api';
 import { isEventPast } from '../../lib/utils';
@@ -62,11 +64,11 @@ export default function Events() {
       <PublicNav />
 
       <div className="border-b" style={{ borderColor: 'var(--line-08)' }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-12 pb-8">
+        <Reveal className="max-w-7xl mx-auto px-5 sm:px-8 pt-12 pb-8">
           <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>{t('events_eyebrow')}</span>
           <h1 className="font-display text-3xl sm:text-4xl font-semibold mt-2 mb-2">{t('events_title')}</h1>
           <p className="text-[var(--text-dim)]">{loading ? t('events_loading') : t('events_count', { n: allEvents.length })}</p>
-        </div>
+        </Reveal>
       </div>
 
       <div className="max-w-7xl mx-auto px-5 sm:px-8 py-8">
@@ -121,9 +123,22 @@ export default function Events() {
             action={<button onClick={() => { setQ(''); setCategory('All'); setTimeframe('all'); }} className="text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}>{t('events_clear_filters')}</button>}
           />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((e, i) => <EventCard key={e.id} event={e} index={i} />)}
-          </div>
+          <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((e, i) => (
+                <motion.div
+                  key={e.id}
+                  layout
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.35, delay: Math.min(i, 8) * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <EventCard event={e} index={i} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
 

@@ -6,6 +6,8 @@ import { ToastProvider } from './lib/ToastContext';
 import { ThemeProvider } from './lib/ThemeContext';
 import { AccentProvider } from './lib/AccentContext';
 import { LanguageProvider } from './lib/LanguageContext';
+import { AssistantProvider } from './lib/AssistantContext';
+import AssistantPanel from './components/assistant/AssistantPanel';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PresenceLoader from './components/ui/PresenceLoader';
 import WhatsAppFloat from './components/ui/WhatsAppFloat';
@@ -190,10 +192,13 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <ToastProvider>
-              <BrowserRouter>
-                <AnimatedRoutes />
-                <WhatsAppFloat />
-              </BrowserRouter>
+              <AssistantProvider>
+                <BrowserRouter>
+                  <AnimatedRoutes />
+                  <WhatsAppFloat />
+                  <AssistantPanel />
+                </BrowserRouter>
+              </AssistantProvider>
             </ToastProvider>
           </AuthProvider>
         </LanguageProvider>

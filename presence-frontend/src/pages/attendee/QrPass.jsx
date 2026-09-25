@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { Calendar, Clock, MapPin, Download, ArrowLeft, CheckCircle2, TriangleAlert, CalendarPlus, ScanLine, XCircle, Video } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
@@ -141,7 +142,12 @@ export default function QrPass() {
           </Link>
         </div>
       ) : (
-        <div className="max-w-md mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-md mx-auto"
+        >
           {/* This card is intentionally always dark, like a physical event
               badge — its text uses fixed --pass-text tokens rather than the
               themed --text tokens, so it stays legible in light mode too. */}
@@ -163,9 +169,16 @@ export default function QrPass() {
               </div>
             </div>
 
-            <div className="mx-7 mb-3 rounded-2xl p-6 flex flex-col items-center gap-4" style={{ background: '#fff' }}>
+            <div
+              className={`mx-7 mb-3 rounded-2xl p-6 flex flex-col items-center gap-4 relative overflow-hidden ${!registration.attendance ? 'reticle-pulse' : ''}`}
+              style={{ background: '#fff' }}
+            >
               <QRCodeSVG value={buildCheckinUrl(registration.attendanceToken)} size={188} bgColor="#ffffff" fgColor="#0A0D18" level="M" />
               <p className="font-mono text-xs tracking-wide text-[#0A0D18]/60">{registration.registrationReference}</p>
+              {/* Only sweeps while the pass genuinely hasn't been scanned
+                  yet — once checked in, "waiting to be scanned" motion
+                  would just be noise, so it stops for good. */}
+              {!registration.attendance && <span className="qr-scan-sweep" aria-hidden="true" />}
             </div>
 
             <div className="px-7 pb-7 pt-2 grid grid-cols-2 gap-4 text-sm">
@@ -180,9 +193,15 @@ export default function QrPass() {
             </div>
 
             {registration.attendance && (
-              <div className="mx-7 mb-7 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium" style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                className="mx-7 mb-7 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+                style={{ background: 'rgba(34,211,166,0.12)', color: '#22D3A6' }}
+              >
                 <CheckCircle2 size={16} /> {t('pass_checked_in', { time: formatDateTime(registration.attendance.checkedInAt) })}
-              </div>
+              </motion.div>
             )}
           </div>
 
@@ -231,7 +250,7 @@ export default function QrPass() {
           <p className="text-center text-xs text-[var(--text-dim)] mt-4">
             {t('pass_disclaimer')}
           </p>
-        </div>
+        </motion.div>
       )}
     </AttendeeShell>
   );

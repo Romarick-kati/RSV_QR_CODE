@@ -7,4 +7,4 @@ Disallow: /profile
 Disallow: /qr-pass
 Disallow: /settings
 
-Sitemap: https://scan-point.netlify.app/sitemap.xml
+Sitemap: https://presencescan.site/sitemap.xml

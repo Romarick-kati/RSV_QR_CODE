@@ -141,4 +141,19 @@ export const adminApi = {
   rejectOrganizerRequest: (id) => client.post(`/admin/organizer-requests/${id}/reject`),
 };
 
+// ---------- Notifications (attendee-facing "new event" feed) ----------
+export const notificationsApi = {
+  mine: () => client.get('/notifications'),
+  markRead: (id) => client.patch(`/notifications/${id}/read`),
+  markAllRead: () => client.patch('/notifications/read-all'),
+};
+
+// ---------- Ask Presence assistant ----------
+// Works whether or not the visitor is logged in — the request helper
+// already omits the Authorization header when there's no token, so this
+// needs no special handling either way.
+export const assistantApi = {
+  chat: (message, history) => client.post('/assistant/chat', { message, history }),
+};
+
 export default client;

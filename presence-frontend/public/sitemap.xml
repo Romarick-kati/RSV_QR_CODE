@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://scan-point.netlify.app/</loc></url>
-  <url><loc>https://scan-point.netlify.app/events</loc></url>
-  <url><loc>https://scan-point.netlify.app/discover</loc></url>
-  <url><loc>https://scan-point.netlify.app/about</loc></url>
-  <url><loc>https://scan-point.netlify.app/founder</loc></url>
-  <url><loc>https://scan-point.netlify.app/faq</loc></url>
-  <url><loc>https://scan-point.netlify.app/login</loc></url>
-  <url><loc>https://scan-point.netlify.app/register</loc></url>
+  <url><loc>https://presencescan.site/</loc></url>
+  <url><loc>https://presencescan.site/events</loc></url>
+  <url><loc>https://presencescan.site/discover</loc></url>
+  <url><loc>https://presencescan.site/about</loc></url>
+  <url><loc>https://presencescan.site/founder</loc></url>
+  <url><loc>https://presencescan.site/faq</loc></url>
+  <url><loc>https://presencescan.site/login</loc></url>
+  <url><loc>https://presencescan.site/register</loc></url>
 </urlset>

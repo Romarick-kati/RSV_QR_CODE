@@ -145,7 +145,7 @@ export default function AuthPage({ mode = 'login' }) {
 
       <Link to="/" className="fixed top-6 left-6 z-20 flex items-center gap-2.5 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
         <BrandMark size={36} />
-        <span className="font-display font-bold text-white">Presence</span>
+        <span className="font-display font-bold" style={{ color: 'var(--text)' }}>Presence</span>
       </Link>
 
       <div
@@ -369,7 +369,7 @@ function Field({ label, type, value, onChange, placeholder, autoComplete, icon: 
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent border-0 py-0 text-[15px] text-[var(--text)] outline-none placeholder:text-white/30"
+          className="w-full bg-transparent border-0 py-0 text-[15px] text-[var(--text)] outline-none placeholder:text-[var(--text-dim)] placeholder:opacity-60"
           onFocus={(e) => (e.target.parentElement.style.borderColor = '#22D3A6')}
           onBlur={(e) => (e.target.parentElement.style.borderColor = 'var(--line-12)')}
         />

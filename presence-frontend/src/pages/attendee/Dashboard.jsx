@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { CalendarCheck, QrCode, History, ArrowRight } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
 import EmptyState from '../../components/ui/EmptyState';
@@ -10,6 +11,15 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { meApi } from '../../lib/api';
 import { formatDate, isEventPast, daysUntil } from '../../lib/utils';
 import { useSEO } from '../../lib/useSEO';
+
+// Dashboard content is mostly above the fold, so these animate in on load
+// rather than on scroll (see Reveal.jsx for the scroll-triggered version
+// used on longer pages like the homepage).
+const listVariants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,23 +50,25 @@ export default function Dashboard() {
   return (
     <AttendeeShell title={t('dash_welcome', { name: user.name.split(' ')[0] })} subtitle={t('dash_subtitle')}>
       {!loading && nextUp && (
-        <Link
-          to={`/qr-pass/${nextUp.id}`}
-          className="flex items-center justify-between gap-4 rounded-2xl border p-5 mb-6 transition-colors hover:border-[#22D3A6]"
-          style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'linear-gradient(120deg, rgba(34,211,166,0.10), rgba(139,124,246,0.08))' }}
-        >
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#22D3A6' }}>{t('dash_next_up')}</p>
-            <p className="font-display font-semibold text-[var(--text)] truncate">{nextUp.event.title}</p>
-            <p className="text-sm text-[var(--text-dim)] mt-0.5">
-              {daysUntil(nextUp.event) === 0 ? t('dash_days_today') : daysUntil(nextUp.event) === 1 ? t('dash_days_tomorrow') : t('dash_days_in', { days: daysUntil(nextUp.event) })}
-              {' '}&middot; {formatDate(nextUp.event.date)} &middot; {nextUp.event.venue}
-            </p>
-          </div>
-          <span className="shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}>
-            {t('dash_view_pass')} <ArrowRight size={14} />
-          </span>
-        </Link>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+          <Link
+            to={`/qr-pass/${nextUp.id}`}
+            className="flex items-center justify-between gap-4 rounded-2xl border p-5 mb-6 transition-colors hover:border-[#22D3A6]"
+            style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'linear-gradient(120deg, rgba(34,211,166,0.10), rgba(139,124,246,0.08))' }}
+          >
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#22D3A6' }}>{t('dash_next_up')}</p>
+              <p className="font-display font-semibold text-[var(--text)] truncate">{nextUp.event.title}</p>
+              <p className="text-sm text-[var(--text-dim)] mt-0.5">
+                {daysUntil(nextUp.event) === 0 ? t('dash_days_today') : daysUntil(nextUp.event) === 1 ? t('dash_days_tomorrow') : t('dash_days_in', { days: daysUntil(nextUp.event) })}
+                {' '}&middot; {formatDate(nextUp.event.date)} &middot; {nextUp.event.venue}
+              </p>
+            </div>
+            <span className="shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg" style={{ background: '#22D3A6', color: '#04140f' }}>
+              {t('dash_view_pass')} <ArrowRight size={14} />
+            </span>
+          </Link>
+        </motion.div>
       )}
 
       {loading ? (
@@ -64,11 +76,11 @@ export default function Dashboard() {
           {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 rounded-2xl skeleton" />)}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-3 gap-4 mb-8">
-          <StatCard label={t('dash_upcoming_events')} value={upcoming.length} icon={CalendarCheck} accent="#22D3A6" />
-          <StatCard label={t('dash_total_registrations')} value={confirmedRegsCount} icon={QrCode} accent="#8B7CF6" />
-          <StatCard label={t('dash_events_attended')} value={checkedIn.length} icon={History} accent="#F5A623" />
-        </div>
+        <motion.div variants={listVariants} initial="hidden" animate="show" className="grid sm:grid-cols-3 gap-4 mb-8">
+          <motion.div variants={itemVariants}><StatCard label={t('dash_upcoming_events')} value={upcoming.length} icon={CalendarCheck} accent="#22D3A6" /></motion.div>
+          <motion.div variants={itemVariants}><StatCard label={t('dash_total_registrations')} value={confirmedRegsCount} icon={QrCode} accent="#8B7CF6" /></motion.div>
+          <motion.div variants={itemVariants}><StatCard label={t('dash_events_attended')} value={checkedIn.length} icon={History} accent="#F5A623" /></motion.div>
+        </motion.div>
       )}
 
       {!loading && waitlisted.length > 0 && (
@@ -102,17 +114,19 @@ export default function Dashboard() {
           action={<Link to="/events" className="text-sm font-semibold px-4 py-2 rounded-lg inline-block" style={{ background: '#22D3A6', color: '#04140f' }}>{t('dash_browse_events')}</Link>}
         />
       ) : (
-        <div className="flex flex-col gap-3">
+        <motion.div variants={listVariants} initial="hidden" animate="show" className="flex flex-col gap-3">
           {upcoming.map((r) => (
-            <Link key={r.id} to={`/qr-pass/${r.id}`} className="flex items-center justify-between gap-4 rounded-2xl border p-4 hover:border-[#22D3A6] transition-colors" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-              <div className="min-w-0">
-                <p className="font-medium text-[var(--text)] truncate">{r.event.title}</p>
-                <p className="text-sm text-[var(--text-dim)]">{formatDate(r.event.date)} &middot; {r.event.venue}</p>
-              </div>
-              <Badge status={r.attendance ? 'checked-in' : 'confirmed'} />
-            </Link>
+            <motion.div key={r.id} variants={itemVariants}>
+              <Link to={`/qr-pass/${r.id}`} className="flex items-center justify-between gap-4 rounded-2xl border p-4 hover:border-[#22D3A6] transition-colors" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+                <div className="min-w-0">
+                  <p className="font-medium text-[var(--text)] truncate">{r.event.title}</p>
+                  <p className="text-sm text-[var(--text-dim)]">{formatDate(r.event.date)} &middot; {r.event.venue}</p>
+                </div>
+                <Badge status={r.attendance ? 'checked-in' : 'confirmed'} />
+              </Link>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </AttendeeShell>
   );
