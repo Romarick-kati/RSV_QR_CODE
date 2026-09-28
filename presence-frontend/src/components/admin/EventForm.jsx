@@ -5,12 +5,13 @@ import { toDateInputValue } from '../../lib/utils';
 import { getSmartEventPhoto, suggestEventPhoto } from '../../lib/eventPhoto';
 import { TIMEZONE_OPTIONS } from '../../lib/timezones';
 import PhotoGalleryPicker from './PhotoGalleryPicker';
+import MapLocationField from './MapLocationField';
 import ImageCropModal from '../ui/ImageCropModal';
 import { useLanguage } from '../../lib/LanguageContext';
 
 const EMPTY = {
   title: '', description: '', longDescription: '', category: 'Technology', date: '', startTime: '09:00', endTime: '17:00',
-  venue: '', capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
+  venue: '', latitude: null, longitude: null, capacity: 100, organizer: '', registrationDeadline: '', contact: '', status: 'draft', image: '',
   price: 0, momoNumber: '', timezone: 'Africa/Douala', registrationQuestions: [], format: 'in-person',
 };
 
@@ -134,7 +135,7 @@ export default function EventForm({ initial, onSubmit, submitLabel }) {
     if (Object.keys(errs).length > 0) return;
     setSaving(true);
     await new Promise((r) => setTimeout(r, 450));
-    onSubmit({ ...form, capacity: Number(form.capacity), price: Number(form.price) || 0, longDescription: form.longDescription || form.description });
+    onSubmit({ ...form, latitude: form.format === 'online' ? null : form.latitude, longitude: form.format === 'online' ? null : form.longitude, capacity: Number(form.capacity), price: Number(form.price) || 0, longDescription: form.longDescription || form.description });
     setSaving(false);
   }
 
@@ -237,6 +238,15 @@ export default function EventForm({ initial, onSubmit, submitLabel }) {
           </Field>
         </div>
 
+        {form.format !== 'online' && (
+          <MapLocationField
+            venue={form.venue}
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onChange={({ latitude, longitude }) => setForm((f) => ({ ...f, latitude, longitude }))}
+          />
+        )}
+
         <div className="grid sm:grid-cols-3 gap-5">
           <Field label={t('ef_event_date')} error={errors.date}>
             <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} className="input" />
@@ -273,7 +283,7 @@ export default function EventForm({ initial, onSubmit, submitLabel }) {
             <input value={form.organizer} onChange={(e) => set('organizer', e.target.value)} placeholder={t('ef_organizer_placeholder')} className="input" />
           </Field>
           <Field label={t('ef_contact_email')}>
-            <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="events@university.edu" className="input" />
+            <input type="email" value={form.contact} onChange={(e) => set('contact', e.target.value)} placeholder="contact@yourorganization.com" className="input" />
           </Field>
         </div>
 
@@ -365,7 +375,7 @@ export default function EventForm({ initial, onSubmit, submitLabel }) {
         open={galleryOpen}
         onClose={() => setGalleryOpen(false)}
         onSelect={handleGallerySelect}
-        initialTheme={{ Technology: 'tech', Academic: 'academic', Corporate: 'corporate', Workshop: 'workshop', Seminar: 'seminar', Career: 'career', Cultural: 'cultural' }[form.category]}
+        initialTheme={{ Technology: 'tech', Community: 'community', Corporate: 'corporate', Workshop: 'workshop', Seminar: 'seminar', Career: 'career', Cultural: 'cultural' }[form.category]}
       />
 
       <ImageCropModal

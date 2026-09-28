@@ -31,9 +31,9 @@ export function AssistantProvider({ children }) {
     setMessages((m) => [...m, { role: 'user', text: trimmed }]);
     setSending(true);
     try {
-      const { reply, history } = await assistantApi.chat(trimmed, apiHistory);
+      const { reply, history, events } = await assistantApi.chat(trimmed, apiHistory);
       setApiHistory(history || []);
-      setMessages((m) => [...m, { role: 'assistant', text: reply }]);
+      setMessages((m) => [...m, { role: 'assistant', text: reply, events: events || [] }]);
     } catch {
       setMessages((m) => [...m, { role: 'assistant', text: null, error: true }]);
     } finally {

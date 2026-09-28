@@ -179,7 +179,7 @@ function pickEventFields(body, partial = false) {
   const fields = [
     'title', 'description', 'longDescription', 'image', 'category', 'date', 'startTime',
     'endTime', 'venue', 'capacity', 'registrationDeadline', 'status', 'contact', 'price', 'momoNumber',
-    'timezone', 'registrationQuestions', 'format',
+    'timezone', 'registrationQuestions', 'format', 'latitude', 'longitude',
     // Deliberately NOT 'meetingUrl' — always server-generated (see
     // generateMeetingUrl above), never settable by the client, so nobody
     // can point an event's "official" meeting link at somewhere else.
@@ -191,6 +191,18 @@ function pickEventFields(body, partial = false) {
     } else {
       data[f] = body[f];
     }
+  }
+  // Map pin: accept numbers (or numeric strings), drop anything invalid or
+  // out of range, and keep latitude/longitude paired — half a coordinate is
+  // useless and would place the pin somewhere wrong.
+  if (data.latitude !== undefined || data.longitude !== undefined) {
+    const toNum = (v) => (v === null || v === '' || v === undefined ? null : Number(v));
+    let lat = toNum(data.latitude);
+    let lng = toNum(data.longitude);
+    const ok = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    if (!ok) { lat = null; lng = null; }
+    data.latitude = lat;
+    data.longitude = lng;
   }
   if (data.capacity !== undefined) data.capacity = Number(data.capacity);
   if (data.price !== undefined) data.price = Number(data.price) || 0;

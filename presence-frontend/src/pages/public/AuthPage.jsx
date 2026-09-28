@@ -134,7 +134,7 @@ export default function AuthPage({ mode = 'login' }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex flex-col sm:flex-row items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* ambient background, echoes the brand's scan-target motif */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 grain opacity-20" />
@@ -143,7 +143,7 @@ export default function AuthPage({ mode = 'login' }) {
         <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-[0.08] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
       </div>
 
-      <Link to="/" className="fixed top-6 left-6 z-20 flex items-center gap-2.5 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
+      <Link to="/" className="relative sm:fixed sm:top-6 sm:left-6 z-20 flex items-center gap-2.5 mb-5 sm:mb-0 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
         <BrandMark size={36} />
         <span className="font-display font-bold" style={{ color: 'var(--text)' }}>Presence</span>
       </Link>
@@ -194,7 +194,7 @@ export default function AuthPage({ mode = 'login' }) {
                 <Divider />
 
                 <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
                     value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
                   <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
                     value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
@@ -302,7 +302,7 @@ export default function AuthPage({ mode = 'login' }) {
                 <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
                   <Field label={t('auth_full_name')} type="text" autoComplete="name" placeholder="Your name" icon={User}
                     value={regForm.name} onChange={(v) => setRegForm((f) => ({ ...f, name: v }))} />
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
                     value={regForm.email} onChange={(v) => setRegForm((f) => ({ ...f, email: v }))} />
                   <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters" icon={Lock}
                     value={regForm.password} onChange={(v) => setRegForm((f) => ({ ...f, password: v }))} />

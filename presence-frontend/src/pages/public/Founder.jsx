@@ -21,25 +21,23 @@ const LINKS = LINK_META.map((l) => ({ ...l })); // stable hrefs for JSON-LD same
 const PERSON_JSON_LD = {
   '@context': 'https://schema.org',
   '@type': 'Person',
+  '@id': `${SITE_URL}/founder#person`,
   name: 'Ndi Romarick Kati',
   url: `${SITE_URL}/founder`,
-  jobTitle: 'Full-Stack Developer',
-  description: 'Ndi Romarick Kati is the founder and creator of Presence, a QR-based event registration and attendance tracking platform.',
+  image: `${SITE_URL}/creator.jpg`,
+  jobTitle: 'Founder of Presence and Full-Stack Developer',
+  description: 'Ndi Romarick Kati is the founder and builder of Presence, a QR-based event registration and attendance tracking platform.',
   knowsAbout: ['MongoDB', 'Express.js', 'React', 'Node.js', 'Full-stack web development'],
   sameAs: LINKS.map((l) => l.href),
-  worksFor: {
-    '@type': 'WebApplication',
-    name: 'Presence',
-    url: SITE_URL,
-  },
+  worksFor: { '@id': `${SITE_URL}/#organization` },
 };
 
 export default function Founder() {
   const { t } = useLanguage();
   const displayLinks = LINK_META.map((l) => ({ ...l, label: l.label || t(l.labelKey) }));
   useSEO(
-    'Ndi Romarick Kati — Founder & Creator of Presence',
-    'Ndi Romarick Kati is the founder and creator of Presence, a QR-powered event registration, check-in, and attendance management platform.',
+    'Ndi Romarick Kati — Founder & Builder of Presence',
+    'Ndi Romarick Kati is the founder and builder of Presence (presencescan.site), a QR-powered event registration, check-in, and attendance management platform.',
     { path: '/founder', jsonLd: PERSON_JSON_LD }
   );
 

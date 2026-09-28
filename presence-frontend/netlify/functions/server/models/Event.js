@@ -14,6 +14,11 @@ const eventSchema = new Schema(
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
     venue: { type: String, required: true },
+    // Optional exact map pin. When set, maps show this precise point instead
+    // of guessing from the venue text. Both or neither (enforced in
+    // controllers/event.controller.js).
+    latitude: { type: Number, default: null, min: -90, max: 90 },
+    longitude: { type: Number, default: null, min: -180, max: 180 },
     capacity: { type: Number, required: true },
     registrationDeadline: { type: Date, required: true },
     status: { type: String, enum: ['draft', 'published', 'cancelled', 'completed'], default: 'draft' },

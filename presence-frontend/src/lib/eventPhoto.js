@@ -16,13 +16,13 @@
 // Labeled catalog for the "Browse photos" gallery picker in EventForm —
 // each theme groups under a human-facing label + icon name (a lucide-react
 // icon name, resolved in the component) so the picker can show tabs like
-// "Tech", "Food", "Academic" instead of raw theme keys.
+// "Tech", "Food", "Community" instead of raw theme keys.
 export const THEME_CATALOG = [
   { key: 'tech', label: 'Tech', icon: 'Cpu' },
   { key: 'hackathon', label: 'Hackathon', icon: 'Code2' },
   { key: 'workshop', label: 'Workshop', icon: 'Wrench' },
   { key: 'conference', label: 'Conference', icon: 'Presentation' },
-  { key: 'academic', label: 'Academic', icon: 'GraduationCap' },
+  { key: 'community', label: 'Community', icon: 'Users' },
   { key: 'career', label: 'Career', icon: 'Target' },
   { key: 'corporate', label: 'Corporate', icon: 'Briefcase' },
   { key: 'cultural', label: 'Cultural', icon: 'Palette' },
@@ -43,7 +43,7 @@ const THEMES = THEME_CATALOG.map(({ key }) => ({
     tech: ['tech', 'technology', 'software', 'ai', 'coding', 'developer', 'innovation', 'startup', 'robotics', 'engineering'],
     workshop: ['workshop', 'bootcamp', 'training', 'masterclass', 'hands-on'],
     conference: ['conference', 'summit', 'symposium', 'convention'],
-    academic: ['lecture', 'academic', 'graduation', 'convocation', 'thesis', 'research', 'university', 'faculty'],
+    community: ['community', 'meetup', 'volunteer', 'charity', 'fundraiser', 'youth', 'association', 'town hall', 'church'],
     career: ['career', 'job fair', 'internship', 'recruit', 'hiring'],
     corporate: ['corporate', 'business', 'networking', 'meeting', 'leadership'],
     cultural: ['cultural', 'festival', 'heritage', 'traditional', 'exhibition'],
@@ -64,7 +64,7 @@ const THEMES = THEME_CATALOG.map(({ key }) => ({
 const THEME_GRADIENTS = {
   hackathon: ['#1C2B6B', '#22D3A6'], tech: ['#1C2B6B', '#22D3A6'],
   workshop: ['#3A1730', '#FF5C77'], conference: ['#1A2340', '#F5A623'],
-  academic: ['#2C1F5E', '#8B7CF6'], career: ['#2A1C3D', '#8B7CF6'],
+  community: ['#2C1F5E', '#8B7CF6'], career: ['#2A1C3D', '#8B7CF6'],
   corporate: ['#1A2340', '#F5A623'], cultural: ['#3D1C1C', '#F5A623'],
   music: ['#3A1730', '#FF5C77'], sports: ['#1C2B6B', '#22D3A6'],
   party: ['#3D1C1C', '#F5A623'], wedding: ['#2C1F5E', '#8B7CF6'],
@@ -73,7 +73,7 @@ const THEME_GRADIENTS = {
 };
 
 const CATEGORY_FALLBACK_THEME = {
-  Technology: 'tech', Academic: 'academic', Corporate: 'corporate', Workshop: 'workshop',
+  Technology: 'tech', Community: 'community', Academic: 'community', Corporate: 'corporate', Workshop: 'workshop',
   Seminar: 'seminar', Career: 'career', Cultural: 'cultural',
 };
 

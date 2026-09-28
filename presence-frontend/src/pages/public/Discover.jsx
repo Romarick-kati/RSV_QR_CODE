@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Compass, ArrowRight, Sparkles } from 'lucide-react';
+import { Cpu, Users, Briefcase, Wrench, Presentation, Target, Palette, Compass, ArrowRight, Sparkles } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import EventCard from '../../components/ui/EventCard';
@@ -12,11 +12,11 @@ import { isEventPast } from '../../lib/utils';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useSEO } from '../../lib/useSEO';
 
-const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
+const ICONS = { Technology: Cpu, Community: Users, Academic: Users, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
 
 export default function Discover() {
   const { t } = useLanguage();
-  useSEO('Discover Events', 'Browse upcoming events by category — technology, academic, career, workshops, and more.', { path: '/discover' });
+  useSEO('Discover Events', 'Browse upcoming events by category — technology, community, career, workshops, and more.', { path: '/discover' });
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 

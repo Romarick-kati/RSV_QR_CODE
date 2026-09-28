@@ -158,7 +158,7 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
   border-radius: 10px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   filter: blur(7px);
-  opacity: 0.22;
+  opacity: 0.4;
   animation: assistantGlowBreathe 3.6s ease-in-out infinite;
   pointer-events: none;
 }
@@ -171,11 +171,22 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
 .assistant-trigger:hover{ transform: scale(1.06); }
 .assistant-trigger:active{ transform: scale(0.96); transition-duration: .1s; }
 @keyframes assistantGlowBreathe{
-  0%,100%{ opacity: 0.16; }
-  50%{ opacity: 0.32; }
+  0%,100%{ opacity: 0.32; }
+  50%{ opacity: 0.6; }
 }
 
-.assistant-header-badge{ animation: assistantGlowBreathe 3.6s ease-in-out infinite; }
+/* The header badge used to animate its own opacity, which dimmed the sparkle
+   itself to ~20% and made it look washed out. Now the badge stays fully
+   opaque and only its glow (box-shadow) breathes. */
+.assistant-header-badge{
+  background: linear-gradient(135deg, rgba(34,211,166,0.28), rgba(139,124,246,0.28));
+  box-shadow: 0 0 10px 1px rgba(34,211,166,0.45), 0 0 18px 2px rgba(139,124,246,0.30);
+  animation: assistantBadgeGlow 3s ease-in-out infinite;
+}
+@keyframes assistantBadgeGlow{
+  0%,100%{ box-shadow: 0 0 8px 1px rgba(34,211,166,0.35), 0 0 14px 1px rgba(139,124,246,0.22); }
+  50%{ box-shadow: 0 0 14px 3px rgba(34,211,166,0.65), 0 0 24px 4px rgba(139,124,246,0.45); }
+}
 
 .assistant-dot{
   width: 6px; height: 6px; border-radius: 999px;

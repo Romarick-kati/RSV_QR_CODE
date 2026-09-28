@@ -33,6 +33,7 @@ HOW TO ANSWER
 - Be brief — a sentence or two, occasionally a short list. This is a chat widget, not an essay.
 - If someone asks whether an event exists, or wants recommendations, use search_events instead of guessing — you have no memory of what events exist otherwise.
 - If you don't know something about Presence, say so plainly rather than inventing an answer. Don't make up prices, dates, or policies not stated above.
+- When you find events, the chat automatically shows each one as a card with a map and a link, so just mention them briefly by name and date — don't repeat full addresses.
 - Never claim to process payments, change account details, or take any action yourself — you only answer questions and search events. Direct the person to the actual page/button for anything that requires action.`;
 
 const SEARCH_EVENTS_TOOL = {
@@ -56,10 +57,21 @@ async function searchEvents({ query, format }) {
     filter.$or = [{ title: rx }, { description: rx }, { category: rx }];
   }
   const events = await Event.find(filter).sort({ date: 1 }).limit(5);
-  if (events.length === 0) return 'No matching upcoming events found.';
-  return events
+  if (events.length === 0) return { text: 'No matching upcoming events found.', cards: [] };
+  const cards = events.map((e) => ({
+    id: String(e.id ?? e._id),
+    title: e.title,
+    date: e.date,
+    venue: e.venue,
+    latitude: e.latitude ?? null,
+    longitude: e.longitude ?? null,
+    format: e.format,
+    price: e.price || 0,
+  }));
+  const text = events
     .map((e) => `- "${e.title}" (${e.category}, ${e.format}) on ${e.date.toDateString()} at ${e.venue} — ${e.price > 0 ? `${e.price} FCFA` : 'free'}. /events/${e.id}`)
     .join('\n');
+  return { text, cards };
 }
 
 const MAX_MESSAGE_LENGTH = 1000;
@@ -71,8 +83,8 @@ const MAX_HISTORY_MESSAGES = 12; // caps token/cost growth on a long-running cha
 // auth is a plain x-goog-api-key header (no Bearer prefix), and the system
 // prompt is its own top-level `systemInstruction` field rather than living
 // alongside the conversation.
-async function callGemini(contents) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.assistantModel}:generateContent`;
+async function callGeminiOnce(model, contents) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -87,10 +99,41 @@ async function callGemini(contents) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`Gemini API error ${res.status}: ${body.slice(0, 300)}`);
+    const err = new Error(`Gemini API error ${res.status}: ${body.slice(0, 300)}`);
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Gemini's free tier fails in two temporary ways: 503 (model overloaded —
+// clears in seconds) and 429 (quota used up — clears when the per-minute
+// or daily window resets). So: retry a 503 once after a short pause, and
+// on a 503/429 that persists, try the optional fallback model (quotas are
+// tracked per model, so a second model often still has room).
+async function callGemini(contents) {
+  try {
+    return await callGeminiOnce(config.assistantModel, contents);
+  } catch (err) {
+    if (err.status === 503) {
+      await sleep(800);
+      try {
+        return await callGeminiOnce(config.assistantModel, contents);
+      } catch (retryErr) {
+        err = retryErr;
+      }
+    }
+    const fallback = config.assistantFallbackModel;
+    if ((err.status === 503 || err.status === 429) && fallback && fallback !== config.assistantModel) {
+      return callGeminiOnce(fallback, contents);
+    }
+    throw err;
+  }
+}
+
+const BUSY_REPLY = "I'm getting a lot of questions right now and need a short break. Please try again in a minute — or browse the Events page or FAQ in the meantime.";
 
 // `history` is whatever the previous turn returned — the frontend just
 // echoes it back untouched, so this stays fully stateless server-side
@@ -110,7 +153,16 @@ export async function runAssistant({ message, history = [] }) {
   const trimmedMessage = String(message || '').slice(0, MAX_MESSAGE_LENGTH);
   let contents = [...history.slice(-MAX_HISTORY_MESSAGES), { role: 'user', parts: [{ text: trimmedMessage }] }];
 
-  let data = await callGemini(contents);
+  let data;
+  try {
+    data = await callGemini(contents);
+  } catch (err) {
+    if (err.status === 429 || err.status === 503) {
+      console.error('Assistant unavailable:', err.message);
+      return { reply: BUSY_REPLY, history };
+    }
+    throw err;
+  }
 
   // Standard Gemini function-calling loop: if the model's turn contains
   // any functionCall parts, run them ourselves, hand the results back as
@@ -119,6 +171,7 @@ export async function runAssistant({ message, history = [] }) {
   // tool, so it should never need more than one round-trip in practice,
   // but a hard cap protects against an unexpected loop.
   let rounds = 0;
+  const eventCards = new Map(); // de-duplicated by id, shown under the reply
   while (rounds < 3) {
     const modelParts = data.candidates?.[0]?.content?.parts || [];
     const functionCalls = modelParts.filter((p) => p.functionCall).map((p) => p.functionCall);
@@ -128,7 +181,13 @@ export async function runAssistant({ message, history = [] }) {
       functionCalls.map(async (fc) => {
         let output;
         try {
-          output = fc.name === 'search_events' ? await searchEvents(fc.args || {}) : `Unknown tool: ${fc.name}`;
+          if (fc.name === 'search_events') {
+            const found = await searchEvents(fc.args || {});
+            found.cards.forEach((c) => eventCards.set(c.id, c));
+            output = found.text;
+          } else {
+            output = `Unknown tool: ${fc.name}`;
+          }
         } catch (err) {
           output = `Tool error: ${err.message}`;
         }
@@ -139,11 +198,19 @@ export async function runAssistant({ message, history = [] }) {
       })
     );
     contents = [...contents, { role: 'model', parts: modelParts }, { role: 'user', parts: functionResponseParts }];
-    data = await callGemini(contents);
+    try {
+      data = await callGemini(contents);
+    } catch (err) {
+      if (err.status === 429 || err.status === 503) {
+        console.error('Assistant unavailable:', err.message);
+        return { reply: BUSY_REPLY, history };
+      }
+      throw err;
+    }
   }
 
   const finalParts = data.candidates?.[0]?.content?.parts || [];
   const replyText = finalParts.filter((p) => p.text).map((p) => p.text).join('\n').trim() || "Sorry, I didn't catch that — could you rephrase?";
   contents = [...contents, { role: 'model', parts: finalParts }];
-  return { reply: replyText, history: contents.slice(-MAX_HISTORY_MESSAGES) };
+  return { reply: replyText, events: [...eventCards.values()], history: contents.slice(-MAX_HISTORY_MESSAGES) };
 }

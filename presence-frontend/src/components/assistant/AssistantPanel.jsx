@@ -1,9 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Send, Trash2 } from 'lucide-react';
+import { X, Send, Trash2, MapPin, CalendarDays, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import EventMap from '../ui/EventMap';
+import { formatDate } from '../../lib/utils';
 import { useAssistant } from '../../lib/AssistantContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import AssistantSparkle from './AssistantSparkle';
+
+// One event found by the assistant: title/date/venue, a link to the event,
+// and (for in-person or hybrid events) a tap-to-open map of the venue.
+function AssistantEventCard({ ev, onNavigate }) {
+  const [showMap, setShowMap] = useState(false);
+  const hasVenue = ev.format !== 'online' && ev.venue;
+  return (
+    <div className="rounded-xl border p-3 text-xs" style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }}>
+      <Link to={`/events/${ev.id}`} onClick={onNavigate} className="font-semibold text-sm text-[var(--text)] hover:underline block leading-snug">{ev.title}</Link>
+      <div className="flex items-center gap-1.5 mt-1.5 text-[var(--text-dim)]"><CalendarDays size={12} /> {formatDate(ev.date)}{ev.price > 0 ? ` · ${ev.price} FCFA` : ' · Free'}</div>
+      <div className="flex items-center gap-1.5 mt-1 text-[var(--text-dim)]"><MapPin size={12} /> <span className="truncate">{ev.venue}</span></div>
+      {hasVenue && (
+        <button type="button" onClick={() => setShowMap((v) => !v)} className="mt-2 inline-flex items-center gap-1 font-semibold" style={{ color: '#22D3A6' }}>
+          {showMap ? 'Hide map' : 'Show on map'} <ChevronDown size={13} style={{ transform: showMap ? 'rotate(180deg)' : 'none', transition: 'transform .18s' }} />
+        </button>
+      )}
+      {showMap && <div className="mt-2"><EventMap venue={ev.venue} latitude={ev.latitude} longitude={ev.longitude} height={160} /></div>}
+    </div>
+  );
+}
 
 export default function AssistantPanel() {
   const { isOpen, close, messages, sending, send, clearConversation } = useAssistant();
@@ -47,10 +70,9 @@ export default function AssistantPanel() {
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0" style={{ borderColor: 'var(--line-08)' }}>
               <div className="flex items-center gap-2">
                 <span
-                  className="assistant-header-badge w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgba(34,211,166,0.16), rgba(139,124,246,0.16))' }}
+                  className="assistant-header-badge w-8 h-8 rounded-full flex items-center justify-center"
                 >
-                  <AssistantSparkle size={15} active={sending} />
+                  <AssistantSparkle size={18} active={sending} />
                 </span>
                 <span className="font-display font-semibold text-sm text-[var(--text)]">{t('asst_title')}</span>
               </div>
@@ -78,12 +100,17 @@ export default function AssistantPanel() {
                 </div>
               )}
               {messages.map((m, i) => (
-                <div key={i} className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === 'user' ? 'self-end' : 'self-start'}`}
+                <div key={i} className={`max-w-[92%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === 'user' ? 'self-end' : 'self-start'}`}
                   style={m.role === 'user'
                     ? { background: '#22D3A6', color: '#04140f' }
                     : { background: 'var(--line-06)', color: 'var(--text)' }}
                 >
                   {m.error ? <span style={{ color: '#FF5C77' }}>{t('asst_error')}</span> : m.text}
+                  {m.events?.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-3">
+                      {m.events.map((ev) => <AssistantEventCard key={ev.id} ev={ev} onNavigate={close} />)}
+                    </div>
+                  )}
                 </div>
               ))}
               {sending && (

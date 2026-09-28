@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Check, Loader2, Cpu, Code2, Wrench, Presentation, GraduationCap, Target,
+  X, Check, Loader2, Cpu, Code2, Wrench, Presentation, Users, Target,
   Briefcase, Palette, Music, Trophy, PartyPopper, Heart, HeartPulse, UtensilsCrossed,
   Paintbrush, Mic, Image as ImageIcon,
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { THEME_CATALOG, getThemeGalleryVariants, fetchUnsplashGallery } from '..
 // bundle, ballooning it from a few KB to 600+ KB. Only importing the
 // handful actually used keeps this component's chunk small.
 const ICONS = {
-  Cpu, Code2, Wrench, Presentation, GraduationCap, Target, Briefcase, Palette,
+  Cpu, Code2, Wrench, Presentation, Users, Target, Briefcase, Palette,
   Music, Trophy, PartyPopper, Heart, HeartPulse, UtensilsCrossed, Paintbrush, Mic,
 };
 

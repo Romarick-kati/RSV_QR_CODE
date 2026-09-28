@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 const SITE_NAME = 'Presence';
 const SITE_URL = 'https://presencescan.site';
 const DEFAULT_DESCRIPTION =
-  'Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan.';
+  'Presence is a free event registration and QR attendance platform. RSVP online, get a digital QR pass, pay with Mobile Money, and check in with one verified scan.';
 
 function setMeta(name, content, attr = 'name') {
   if (!content) return;
@@ -54,7 +54,7 @@ function setJsonLd(id, data) {
  */
 export function useSEO(title, description, opts = {}) {
   useEffect(() => {
-    const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME}: Event Registration and QR Attendance`;
+    const fullTitle = title ? `${title} · ${SITE_NAME}` : 'Presence Scan: QR Event Registration & Check-in App';
     const fullDescription = description || DEFAULT_DESCRIPTION;
     const canonicalPath = opts.path ?? window.location.pathname;
     const canonicalUrl = `${SITE_URL}${canonicalPath === '/' ? '' : canonicalPath}`;

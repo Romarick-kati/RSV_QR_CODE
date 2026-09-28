@@ -1,8 +1,9 @@
+import EventMap from '../../components/ui/EventMap';
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, MapPin, Users, Mail, ArrowLeft, TriangleAlert, CheckCircle2,
-  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Wallet, Video,
+  Cpu, Briefcase, Wrench, Presentation, Target, Palette, Wallet, Video,
 } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
@@ -15,9 +16,50 @@ import { eventsApi, meApi, ApiError } from '../../lib/api';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { formatDateLong, formatTime, isEventPast, isRegistrationDeadlinePassed } from '../../lib/utils';
-import { useSEO } from '../../lib/useSEO';
+import { useSEO, SITE_URL } from '../../lib/useSEO';
 
-const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
+// schema.org/Event — makes each event eligible for Google's event rich
+// results (date, place, price shown right in the search listing).
+function buildEventJsonLd(event, id) {
+  const day = String(event.date).slice(0, 10);
+  const online = event.format === 'online';
+  const hasPin = Number.isFinite(event.latitude) && Number.isFinite(event.longitude);
+  const location = online
+    ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${id}` }
+    : {
+        '@type': 'Place',
+        name: event.venue,
+        address: event.venue,
+        ...(hasPin ? { geo: { '@type': 'GeoCoordinates', latitude: event.latitude, longitude: event.longitude } } : {}),
+      };
+  const image = event.image && /^https?:\/\//.test(event.image) ? [event.image] : undefined;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    description: event.description,
+    startDate: `${day}T${event.startTime}`,
+    endDate: `${day}T${event.endTime}`,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: online
+      ? 'https://schema.org/OnlineEventAttendanceMode'
+      : event.format === 'hybrid'
+        ? 'https://schema.org/MixedEventAttendanceMode'
+        : 'https://schema.org/OfflineEventAttendanceMode',
+    location,
+    ...(image ? { image } : {}),
+    organizer: { '@type': event.organizer?.name ? 'Person' : 'Organization', name: event.organizer?.name || 'Presence', url: SITE_URL },
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/events/${id}`,
+      price: String(event.price || 0),
+      priceCurrency: 'XAF',
+      availability: event.remaining === 0 ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+    },
+  };
+}
+
+const ICONS = { Technology: Cpu, Community: Users, Academic: Users, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -39,7 +81,7 @@ export default function EventDetail() {
   const [justWaitlisted, setJustWaitlisted] = useState(null); // position number, or null
   const [redirecting, setRedirecting] = useState(false);
 
-  useSEO(event?.title, event?.description, { path: `/events/${id}` });
+  useSEO(event?.title, event?.description, { path: `/events/${id}`, jsonLd: event ? buildEventJsonLd(event, id) : null });
 
   useEffect(() => {
     let cancelled = false;
@@ -229,6 +271,11 @@ export default function EventDetail() {
             <DetailRow icon={Mail} label={t('event_organizer')} value={event.organizer?.name || 'Presence'} />
             {event.contact && <DetailRow icon={Mail} label={t('event_contact')} value={event.contact} />}
           </div>
+          {event.format !== 'online' && event.venue && (
+            <div className="mb-8">
+              <EventMap venue={event.venue} latitude={event.latitude} longitude={event.longitude} height={240} />
+            </div>
+          )}
         </div>
 
         <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>

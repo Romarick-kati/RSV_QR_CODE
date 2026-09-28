@@ -40,7 +40,7 @@ export default function Landing() {
   const [stats, setStats] = useState({ totalEvents: 0, totalRegistrations: 0, totalCapacity: 0 });
   const [openFaq, setOpenFaq] = useState(0);
   const { t } = useLanguage();
-  useSEO(null, 'RSVP to campus and corporate events online, get a digital QR pass, and check in with one verified scan at the door — no more paper sign-in sheets.', { path: '/' });
+  useSEO(null, 'Presence Scan is a free QR event registration app. RSVP to conferences, workshops and community events online, get a digital QR pass, pay with Mobile Money, and check in with one scan — no paper sign-in sheets.', { path: '/' });
 
   useEffect(() => {
     let cancelled = false;
@@ -121,8 +121,8 @@ export default function Landing() {
                   <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_title')}</span>
                   <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}>{t('badge_confirmed')}</span>
                 </div>
-                <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>University Technology &amp; Innovation Conference</h3>
-                <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Great Hall &middot; Main Campus</p>
+                <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>Tech &amp; Innovation Summit 2026</h3>
+                <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Conference Hall &middot; Douala</p>
               </div>
               <div className="mx-6 mb-6 rounded-2xl p-5 flex items-center gap-5" style={{ background: '#0A0D18', border: '1px dashed rgba(255,255,255,0.15)' }}>
                 <div className="w-20 h-20 rounded-xl grid grid-cols-5 grid-rows-5 gap-[3px] p-2 shrink-0" style={{ background: '#fff' }}>
@@ -190,7 +190,7 @@ export default function Landing() {
         <div className="relative h-64 sm:h-80 overflow-hidden">
           <motion.img
             src="https://picsum.photos/seed/presence-banner/1600/500"
-            alt="Attendees checking in at a campus event"
+            alt="Attendees checking in at an event"
             className="absolute inset-0 w-full h-full object-cover"
             initial={{ scale: 1.1 }}
             whileInView={{ scale: 1 }}

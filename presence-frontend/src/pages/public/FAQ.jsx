@@ -13,7 +13,14 @@ export default function FAQ() {
   const [open, setOpen] = useState(0);
   const { t } = useLanguage();
   const FAQS = FAQ_KEYS.map((i) => ({ q: t(`faq_q${i}`), a: t(`faq_a${i}`) }));
-  useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.', { path: '/faq' });
+  // FAQPage structured data lets Google show these questions as expandable
+  // answers directly under the Presence result in search.
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  };
+  useSEO('FAQ', 'Answers to common questions about registering for events, digital QR passes, and how check-in works on Presence.', { path: '/faq', jsonLd: faqJsonLd });
   return (
     <div style={{ background: 'var(--bg)' }} className="min-h-screen">
       <PublicNav />

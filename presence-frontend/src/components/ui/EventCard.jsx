@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Drama, Calendar, MapPin, Users, Video } from 'lucide-react';
+import { Cpu, Briefcase, Wrench, Presentation, Target, Drama, Calendar, MapPin, Users, Video } from 'lucide-react';
 import { formatDate, formatTime, isEventPast } from '../../lib/utils';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
@@ -14,7 +14,7 @@ import { useLanguage } from '../../lib/LanguageContext';
 // that pulled its ~36KB gzipped runtime into the bundle every visitor
 // downloads before seeing anything — for icons lucide already covers.
 const CATEGORY_ICON = {
-  Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase,
+  Technology: Cpu, Community: Users, Academic: Users, Corporate: Briefcase,
   Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Drama,
 };
 

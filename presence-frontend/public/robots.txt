@@ -6,5 +6,6 @@ Disallow: /my-events
 Disallow: /profile
 Disallow: /qr-pass
 Disallow: /settings
+Disallow: /api/
 
 Sitemap: https://presencescan.site/sitemap.xml

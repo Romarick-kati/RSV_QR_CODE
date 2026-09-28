@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import BrandMark from '../ui/BrandMark';
 import { Mail, Phone, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../lib/LanguageContext';
 
@@ -65,7 +64,7 @@ export default function PublicFooter() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <Link to="/" className="flex items-center gap-2.5 mb-4">
-            <BrandMark size={32} />
+            <img src="/icon-192.png" width={32} height={32} alt="Presence logo" className="rounded-full" />
             <span className="font-display font-bold text-lg">Presence</span>
           </Link>
           <p className="text-sm text-[var(--text-dim)] max-w-sm leading-relaxed">
