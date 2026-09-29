@@ -135,6 +135,45 @@ async function callGemini(contents) {
 
 const BUSY_REPLY = "I'm getting a lot of questions right now and need a short break. Please try again in a minute — or browse the Events page or FAQ in the meantime.";
 
+// ---- Offline fallback ------------------------------------------------------
+// Used whenever Gemini is unavailable (quota used up, overloaded, bad key).
+// It answers the most common questions from fixed text and still searches the
+// real events database, so users get a useful answer instead of an error.
+const FAQ = [
+  { rx: /\b(hello|hi|hey|bonjour|salut|test|help|aide)\b/i, a: "Hi! I'm Presence Assistant. I can explain how RSVPs, QR passes, payments and check-in work, and find upcoming events. Try asking: \"how do I register?\" or \"any events this week?\"" },
+  { rx: /(who (built|made|created|founded|developed)|founder|creator|romarick|ndi|kati|qui a (cr|fait|d[eé]velopp))/i, a: "Presence was founded and built by Ndi Romarick Kati, a full-stack developer (MERN stack). You can read more on the Founder page." },
+  { rx: /(what is|what's|c'est quoi|qu'est).*(presence)|^presence\??$|about presence/i, a: "Presence replaces paper sign-in sheets with online RSVPs, digital QR passes and a scanner-verified check-in. Anyone can create a free event, and attendees get a QR pass instantly." },
+  { rx: /(pay|price|cost|ticket|mobile money|momo|mtn|orange|fapshi|paiement|payer)/i, a: "Paid events are charged through Fapshi with MTN or Orange Mobile Money. Your QR pass unlocks automatically as soon as the payment is confirmed. Free events just need an RSVP." },
+  { rx: /(qr|pass|check.?in|scan)/i, a: "After you register you get a QR pass, found under \"My events\" in your dashboard. At the venue an organizer scans it to check you in. Each code works only once." },
+  { rx: /(cancel|annul)/i, a: "You can cancel your registration from \"My events\" before the registration deadline." },
+  { rx: /(create|organi[sz]|host|cr[eé]er).*(event|[eé]v[eé]nement)|become.*organi[sz]er/i, a: "Any registered user can create a free event with \"+ Create event\" in the nav bar. Charging for tickets needs an approved organizer account, which you can request from your Profile page." },
+  { rx: /(register|rsvp|sign ?up|join|inscri)/i, a: "Open an event and click \"RSVP\" (or \"Pay & register\" for paid events). Your QR pass appears instantly under \"My events\"." },
+  { rx: /(online|virtual|zoom|jitsi|hybrid)/i, a: "Online and hybrid events get an automatic video room (Jitsi). The join link appears on your pass once you're registered." },
+  { rx: /(language|french|fran[cç]ais|english)/i, a: "Presence is available in English and French. Use the EN/FR toggle in the nav bar." },
+];
+
+const EVENT_WORDS = /(event|events|happening|upcoming|this week|weekend|recommend|suggest|[eé]v[eé]nement|workshop|conference|seminar|concert|party|career|tech)/i;
+
+async function degradedReply(message, history) {
+  const text = String(message || '');
+  const faq = FAQ.find((f) => f.rx.test(text));
+  let events = [];
+  if (EVENT_WORDS.test(text) || !faq) {
+    try {
+      const stop = /\b(who|what|when|where|how|the|is|are|a|an|of|to|for|me|my|you|about|events?|show|find|any|there|happening|presence|upcoming|this|week|weekend|recommend|suggest)\b/gi;
+      const q = text.replace(stop, ' ').replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/).filter((w) => w.length > 2)[0] || '';
+      const found = await searchEvents({ query: q });
+      events = found.cards;
+    } catch { /* database unavailable: fall through */ }
+  }
+  let reply;
+  if (faq && events.length) reply = `${faq.a}\n\nUpcoming events you may like are below.`;
+  else if (faq) reply = faq.a;
+  else if (events.length) reply = 'Here are some upcoming events that may match. You can also browse the Events page or read the FAQ.';
+  else reply = BUSY_REPLY;
+  return { reply, events, history };
+}
+
 // `history` is whatever the previous turn returned — the frontend just
 // echoes it back untouched, so this stays fully stateless server-side
 // (no session/conversation record in the database). Gemini calls this
@@ -157,9 +196,9 @@ export async function runAssistant({ message, history = [] }) {
   try {
     data = await callGemini(contents);
   } catch (err) {
-    if (err.status === 429 || err.status === 503) {
+    if (true) { // any Gemini failure (quota, overload, bad model name, network) degrades gracefully
       console.error('Assistant unavailable:', err.message);
-      return { reply: BUSY_REPLY, history };
+      return await degradedReply(trimmedMessage, history);
     }
     throw err;
   }
@@ -201,9 +240,9 @@ export async function runAssistant({ message, history = [] }) {
     try {
       data = await callGemini(contents);
     } catch (err) {
-      if (err.status === 429 || err.status === 503) {
+      if (true) { // any Gemini failure (quota, overload, bad model name, network) degrades gracefully
         console.error('Assistant unavailable:', err.message);
-        return { reply: BUSY_REPLY, history };
+        return await degradedReply(trimmedMessage, history);
       }
       throw err;
     }

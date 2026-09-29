@@ -69,7 +69,7 @@ export const config = {
   // zero. The assistant button still renders with no setup, but replies
   // with a friendly "not configured yet" message until this is set.
   geminiApiKey: process.env.GEMINI_API_KEY || null,
-  assistantModel: process.env.ASSISTANT_MODEL || 'gemini-3.8-flash',
+  assistantModel: process.env.ASSISTANT_MODEL || 'gemini-2.5-flash',
   // Optional second model tried when the main one is overloaded (503) or
   // out of quota (429). Leave unset to skip.
   assistantFallbackModel: process.env.ASSISTANT_FALLBACK_MODEL || null,

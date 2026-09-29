@@ -7,6 +7,7 @@ import AttendeeShell from '../../components/layout/AttendeeShell';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import BrandMark from '../../components/ui/BrandMark';
+import EventMap from '../../components/ui/EventMap';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useToast } from '../../lib/ToastContext';
 import { meApi, eventsApi, ApiError } from '../../lib/api';
@@ -165,7 +166,24 @@ export default function QrPass() {
               <div className="flex flex-col gap-2 text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>
                 <span className="flex items-center gap-2"><Calendar size={14} /> {formatDateLong(registration.event.date)}</span>
                 <span className="flex items-center gap-2"><Clock size={14} /> {formatTime(registration.event.startTime, registration.event.timezone, registration.event.date)} – {formatTime(registration.event.endTime, registration.event.timezone, registration.event.date)}</span>
-                <span className="flex items-center gap-2"><MapPin size={14} /> {registration.event.venue}</span>
+                <span className="flex items-center gap-2">
+                  <MapPin size={14} /> {registration.event.venue}
+                  {registration.event.format !== 'online' && registration.event.venue && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                        Number.isFinite(registration.event.latitude) && Number.isFinite(registration.event.longitude)
+                          ? `${registration.event.latitude},${registration.event.longitude}`
+                          : registration.event.venue
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-1 text-xs font-semibold underline underline-offset-2"
+                      style={{ color: '#22D3A6' }}
+                    >
+                      Directions
+                    </a>
+                  )}
+                </span>
               </div>
             </div>
 
@@ -204,6 +222,12 @@ export default function QrPass() {
               </motion.div>
             )}
           </div>
+
+          {registration.event.format !== 'online' && (Number.isFinite(registration.event.latitude) || registration.event.venue) && (
+            <div className="mt-5">
+              <EventMap venue={registration.event.venue} latitude={registration.event.latitude} longitude={registration.event.longitude} height={200} />
+            </div>
+          )}
 
           {!registration.attendance && (
             <div className="mt-5 rounded-2xl border p-5 flex items-start gap-3" style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'rgba(34,211,166,0.08)' }}>
