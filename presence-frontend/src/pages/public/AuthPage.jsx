@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, TriangleAlert, ScanLine, Sparkles, Camera, Mail, Lock, User, Plus, ImagePlus, Eye, EyeOff } from 'lucide-react';
 import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
+import Globe from '../../components/ui/Globe';
+import { authApi } from '../../lib/api';
 import { useAuth } from '../../lib/AuthContext';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
@@ -15,10 +17,18 @@ export default function AuthPage({ mode = 'login' }) {
   const isLoginRoute = mode === 'login';
   const [flipped, setFlipped] = useState(isLoginRoute);
   const navigate = useNavigate();
-  const { login, register, loginWithGoogle, updateAvatar, user } = useAuth();
+  const location = useLocation();
+  // Page the person was trying to open before being sent to sign in (set by
+  // ProtectedRoute). After signing in they land there, not somewhere random.
+  const cameFrom = typeof location.state?.from === 'string' && !['/login', '/register'].includes(location.state.from) ? location.state.from : null;
+  const { login, register, loginWithGoogle, loginWithCode, updateAvatar, user } = useAuth();
   const { push } = useToast();
   const { t } = useLanguage();
-  useSEO(isLoginRoute ? 'Sign in' : 'Create account', isLoginRoute ? 'Sign in to Presence to view your events, digital QR passes, and registration history.' : 'Create a free Presence account to RSVP to events and get an instant digital QR pass.');
+  useSEO(
+    isLoginRoute ? 'Sign in' : 'Create account',
+    isLoginRoute ? 'Sign in to Presence to view your events, digital QR passes, and registration history.' : 'Create a free Presence account to RSVP to events and get an instant digital QR pass.',
+    { path: isLoginRoute ? '/login' : '/register' }
+  );
 
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState('');
@@ -43,7 +53,7 @@ export default function AuthPage({ mode = 'login' }) {
       // Always land on the main dashboard/console first after signing in —
       // never drop the person straight back into whatever page they came
       // from, so they get their bearings before navigating further.
-      const dest = u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard';
+      const dest = cameFrom || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
       setPostAuth({ dest, messages: ['Verifying with Google…', 'Setting up your dashboard…', 'Almost there…'] });
     } catch (err) {
       setGoogleError(err.message);
@@ -98,11 +108,47 @@ export default function AuthPage({ mode = 'login' }) {
       const { user: u } = await login(loginForm);
       push(`Welcome back, ${u.name.split(' ')[0]}.`, 'success');
       // Same reasoning as the Google sign-in path above — main page first.
-      const dest = u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard';
+      const dest = cameFrom || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
       setPostAuth({ dest, messages: ['Verifying your credentials…', 'Setting up your dashboard…', 'Almost there…'] });
     } catch (err) {
       setLoginError(err.message);
       setLoginLoading(false);
+    }
+  }
+
+  // ---- "Email me a code" sign-in ----
+  const [codeStep, setCodeStep] = useState(null); // null | 'email' | 'verify'
+  const [codeEmail, setCodeEmail] = useState('');
+  const [codeValue, setCodeValue] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [codeBusy, setCodeBusy] = useState(false);
+
+  async function handleSendCode(e) {
+    e.preventDefault();
+    setCodeError('');
+    setCodeBusy(true);
+    try {
+      await authApi.requestCode(codeEmail.trim());
+      setCodeStep('verify');
+    } catch (err) {
+      setCodeError(err.message);
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function handleVerifyCode(e) {
+    e.preventDefault();
+    setCodeError('');
+    setCodeBusy(true);
+    try {
+      const { user: u } = await loginWithCode({ email: codeEmail.trim(), code: codeValue });
+      push(`Welcome back, ${u.name.split(' ')[0]}.`, 'success');
+      const dest = cameFrom || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
+      setPostAuth({ dest, messages: ['Verifying your code…', 'Setting up your dashboard…', 'Almost there…'] });
+    } catch (err) {
+      setCodeError(err.message);
+      setCodeBusy(false);
     }
   }
 
@@ -122,7 +168,7 @@ export default function AuthPage({ mode = 'login' }) {
         await updateAvatar(regAvatarDataUrl).catch(() => {});
       }
       push(`Account created. Welcome, ${u.name.split(' ')[0]}.`, 'success');
-      setPostAuth({ dest: '/dashboard', messages: ['Creating your account…', 'Generating your digital profile…', 'Almost there…'] });
+      setPostAuth({ dest: cameFrom || '/dashboard', messages: ['Creating your account…', 'Generating your digital profile…', 'Almost there…'] });
     } catch (err) {
       setRegError(err.message);
       setRegLoading(false);
@@ -130,18 +176,20 @@ export default function AuthPage({ mode = 'login' }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex flex-col sm:flex-row items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* ambient background, echoes the brand's scan-target motif */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 grain opacity-20" />
         <div className="absolute w-[420px] h-[420px] rounded-full blur-[90px] opacity-[0.14] -top-24 -left-24" style={{ background: '#22D3A6' }} />
         <div className="absolute w-[380px] h-[380px] rounded-full blur-[90px] opacity-[0.12] -bottom-24 -right-16" style={{ background: '#8B7CF6' }} />
         <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-[0.08] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
+        <div className="hidden lg:block absolute -right-16 top-1/2 -translate-y-1/2 opacity-80"><Globe size={520} /></div>
+        <div className="hidden lg:block absolute -left-24 bottom-[-120px] opacity-40"><Globe size={360} tilt={-0.3} speed={0.0003} land="#8B7CF6" glow="rgba(139,124,246,0.3)" /></div>
       </div>
 
-      <Link to="/" className="fixed top-6 left-6 z-20 flex items-center gap-2.5 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
+      <Link to="/" className="relative sm:fixed sm:top-6 sm:left-6 z-20 flex items-center gap-2.5 mb-5 sm:mb-0 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
         <BrandMark size={36} />
-        <span className="font-display font-bold text-white">Presence</span>
+        <span className="font-display font-bold" style={{ color: 'var(--text)' }}>Presence</span>
       </Link>
 
       <div
@@ -189,13 +237,38 @@ export default function AuthPage({ mode = 'login' }) {
 
                 <Divider />
 
-                <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
-                    value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
-                  <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
-                    value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
-                  <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label="Sign in" />
-                </form>
+                {codeStep === null && (
+                  <>
+                    <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
+                      <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
+                        value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
+                      <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
+                        value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
+                      <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label="Sign in" />
+                    </form>
+                    <button type="button" onClick={() => { setCodeStep('email'); setCodeEmail(loginForm.email); setCodeError(''); }} className="w-full text-center text-sm font-semibold mt-4" style={{ color: '#22D3A6' }}>
+                      Email me a sign-in code instead
+                    </button>
+                  </>
+                )}
+                {codeStep === 'email' && (
+                  <form onSubmit={handleSendCode} className="flex flex-col gap-4" noValidate>
+                    {codeError && <FormError message={codeError} />}
+                    <p className="text-sm text-[var(--text-dim)]">We will email you a 6-digit code. No password needed.</p>
+                    <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail} value={codeEmail} onChange={setCodeEmail} />
+                    <SubmitButton loading={codeBusy} icon={<Mail size={16} />} label="Send code" />
+                    <button type="button" onClick={() => setCodeStep(null)} className="text-sm text-[var(--text-dim)]">Back to password sign-in</button>
+                  </form>
+                )}
+                {codeStep === 'verify' && (
+                  <form onSubmit={handleVerifyCode} className="flex flex-col gap-4" noValidate>
+                    {codeError && <FormError message={codeError} />}
+                    <p className="text-sm text-[var(--text-dim)]">If <strong>{codeEmail}</strong> has an account, a code is on its way. It expires in 10 minutes.</p>
+                    <Field label="6-digit code" type="text" autoComplete="one-time-code" placeholder="123456" icon={Lock} value={codeValue} onChange={(v) => setCodeValue(v.replace(/\D/g, '').slice(0, 6))} />
+                    <SubmitButton loading={codeBusy} icon={<LogIn size={16} />} label="Sign in" />
+                    <button type="button" onClick={() => { setCodeStep('email'); setCodeValue(''); setCodeError(''); }} className="text-sm text-[var(--text-dim)]">Send a new code</button>
+                  </form>
+                )}
 
                 <p className="text-center text-sm text-[var(--text-dim)] mt-5">
                   {t('auth_new_here')}{' '}
@@ -298,7 +371,7 @@ export default function AuthPage({ mode = 'login' }) {
                 <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
                   <Field label={t('auth_full_name')} type="text" autoComplete="name" placeholder="Your name" icon={User}
                     value={regForm.name} onChange={(v) => setRegForm((f) => ({ ...f, name: v }))} />
-                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@university.edu" icon={Mail}
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
                     value={regForm.email} onChange={(v) => setRegForm((f) => ({ ...f, email: v }))} />
                   <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters" icon={Lock}
                     value={regForm.password} onChange={(v) => setRegForm((f) => ({ ...f, password: v }))} />
@@ -365,7 +438,7 @@ function Field({ label, type, value, onChange, placeholder, autoComplete, icon: 
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-transparent border-0 py-0 text-[15px] text-[var(--text)] outline-none placeholder:text-white/30"
+          className="w-full bg-transparent border-0 py-0 text-[15px] text-[var(--text)] outline-none placeholder:text-[var(--text-dim)] placeholder:opacity-60"
           onFocus={(e) => (e.target.parentElement.style.borderColor = '#22D3A6')}
           onBlur={(e) => (e.target.parentElement.style.borderColor = 'var(--line-12)')}
         />

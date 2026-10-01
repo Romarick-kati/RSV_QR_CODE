@@ -1,9 +1,22 @@
 import rateLimit from 'express-rate-limit';
 
+// Behind Netlify + serverless-http, Express sometimes can't populate req.ip,
+// and express-rate-limit then throws ERR_ERL_UNDEFINED_IP_ADDRESS, which
+// crashed the request with a 500 (the "Something went wrong" bubble). This
+// key generator reads the visitor IP from Netlify's own headers and never
+// returns undefined, so a request can no longer fail because of the limiter.
+const clientKey = (req) => {
+  const h = req.headers || {};
+  const xff = typeof h['x-forwarded-for'] === 'string' ? h['x-forwarded-for'].split(',')[0].trim() : '';
+  return h['x-nf-client-connection-ip'] || xff || req.ip || req.socket?.remoteAddress || 'unknown';
+};
+const common = { keyGenerator: clientKey, validate: false };
+
 // Generous limit for normal API traffic.
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
+  ...common,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -12,6 +25,7 @@ export const apiLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
+  ...common,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many attempts. Please wait a few minutes and try again.' },
@@ -22,6 +36,25 @@ export const authLimiter = rateLimit({
 export const checkInLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
+  ...common,
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+// The assistant calls a paid, per-token external API on every message, so
+// it gets its own tighter cap layered under the global apiLimiter above —
+// 15/minute is enough for a real back-and-forth conversation but blunts a
+// script hammering it. Same caveat as everywhere else in this file: the
+// default in-memory store doesn't persist across a Netlify Function cold
+// start, so this only reliably protects a burst hitting the same warm
+// container, not sustained or distributed abuse. If this assistant gets
+// meaningful public traffic, swap the store for something shared (e.g.
+// rate-limit-redis backed by Upstash) rather than raising this number.
+export const assistantLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  ...common,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many messages — please wait a moment and try again.' },
 });

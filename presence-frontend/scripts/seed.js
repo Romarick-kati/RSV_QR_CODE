@@ -44,7 +44,7 @@ async function main() {
   admin.passwordHash = adminHash;
   await admin.save();
 
-  const organizer = await upsertUser({ name: 'Faculty of Engineering', email: 'organizer@presence.app', passwordHash: organizerHash, role: 'ORGANIZER' });
+  const organizer = await upsertUser({ name: 'Presence Demo Organizer', email: 'organizer@presence.app', passwordHash: organizerHash, role: 'ORGANIZER' });
 
   const attendeeNames = ['Aisha Bello', 'Tanwie Divine', 'Grace Mbeki', 'Samuel Okafor', 'Linda Achu', 'Chidi Umeh', 'Fatima Njoya', 'Peter Achumbe'];
   const attendees = [];
@@ -56,28 +56,28 @@ async function main() {
 
   const eventDefs = [
     {
-      title: 'University Technology & Innovation Conference 2026',
-      description: 'A university-wide showcase of student research, startups, and emerging technology.',
-      longDescription: 'The flagship technology event of the academic year, bringing together final-year project teams, faculty researchers, and industry partners for a day of demos, talks, and networking.',
+      title: 'Tech & Innovation Summit 2026',
+      description: 'A showcase of startups, developers, and emerging technology.',
+      longDescription: 'A flagship technology event bringing together startup teams, developers, and industry partners for a day of demos, talks, and networking.',
       category: 'Technology', date: addDays(6), startTime: '09:00', endTime: '17:00',
-      venue: 'Great Hall, Main Campus', capacity: 300, registrationDeadline: addDays(5),
-      status: 'published', contact: 'events@university.edu',
+      venue: 'Conference Hall, Douala', capacity: 300, registrationDeadline: addDays(5),
+      status: 'published', contact: 'events@example.com',
     },
     {
       title: 'Hands-on Machine Learning Bootcamp',
       description: 'A full-day practical workshop covering data preprocessing, model training, and deployment.',
-      longDescription: 'A practical, laptop-required workshop for students who already know basic Python.',
+      longDescription: 'A practical, laptop-required workshop for anyone who already knows basic Python.',
       category: 'Workshop', date: addDays(12), startTime: '10:00', endTime: '16:00',
-      venue: 'Computer Science Lab 2', capacity: 60, registrationDeadline: addDays(10),
-      status: 'published', contact: 'cs-dept@university.edu',
+      venue: 'Innovation Hub, Douala', capacity: 60, registrationDeadline: addDays(10),
+      status: 'published', contact: 'workshops@example.com',
     },
     {
-      title: 'Engineering Career & Internship Fair',
-      description: 'Meet recruiters from telecom, fintech, and infrastructure companies hiring graduates.',
+      title: 'Tech Career & Internship Fair',
+      description: 'Meet recruiters from telecom, fintech, and infrastructure companies that are hiring.',
       longDescription: 'Over a dozen employers set up booths for a full afternoon of networking and CV reviews.',
       category: 'Career', date: addDays(20), startTime: '12:00', endTime: '18:00',
-      venue: 'Engineering Atrium', capacity: 400, registrationDeadline: addDays(18),
-      status: 'published', contact: 'careers@university.edu',
+      venue: 'Exhibition Center, Douala', capacity: 400, registrationDeadline: addDays(18),
+      status: 'published', contact: 'careers@example.com',
     },
   ];
 

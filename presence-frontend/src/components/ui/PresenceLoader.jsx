@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ScanLine } from 'lucide-react';
+import BrandMark from './BrandMark';
 
 const DEFAULT_MESSAGES = ['Loading…'];
 
@@ -41,12 +41,11 @@ export default function PresenceLoader({ messages = DEFAULT_MESSAGES, cycleMs = 
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.span
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#22D3A6,#8B7CF6)' }}
+            className="w-16 h-16 flex items-center justify-center"
             animate={{ rotate: [0, 8, -8, 0] }}
             transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <ScanLine size={28} color="#04140f" />
+            <BrandMark size={64} />
           </motion.span>
           <motion.span
             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full"

@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Google shows a favicon in search results only from a crawlable icon
+         whose size is a multiple of 48px — the 192px PNG satisfies that, and
+         the SVG above still serves modern browsers. -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <!-- SVG favicons aren't used by iOS's "Add to Home Screen" or by most
          link-preview/social-share crawlers — they need a real PNG. These
          two, plus the manifest below, are what were missing before: without
@@ -24,42 +28,99 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
 
-    <title>Presence: Event Registration and QR Attendance</title>
-    <meta name="description" content="Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital pass, and check in with a single verified scan." />
-    <link rel="canonical" href="https://presence.app/" />
+    <title>Presence Scan: QR Event Registration &amp; Check-in App</title>
+    <meta name="description" content="Presence is a free event registration and QR attendance platform. RSVP online, get a digital QR pass, pay with Mobile Money, and check in with one verified scan." />
+    <link rel="canonical" href="https://presencescan.site/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Presence: Event Registration and QR Attendance" />
+    <meta property="og:site_name" content="Presence" />
+    <meta property="og:title" content="Presence Scan: QR Event Registration &amp; Check-in App" />
     <meta property="og:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta property="og:image" content="https://presence.app/og-image.png" />
+    <meta property="og:image" content="https://presencescan.site/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Presence logo: a check mark in a teal and violet circle, above the words Event Registration and QR Attendance" />
+    <meta property="og:url" content="https://presencescan.site/" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Presence: Event Registration and QR Attendance" />
+    <meta name="twitter:title" content="Presence Scan: QR Event Registration &amp; Check-in App" />
     <meta name="twitter:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
-    <meta name="twitter:image" content="https://presence.app/og-image.png" />
+    <meta name="twitter:image" content="https://presencescan.site/og-image.png" />
     <meta name="author" content="Ndi Romarick Kati" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Presence",
-        "applicationCategory": "EventManagementApplication",
-        "description": "Event registration and QR-based attendance tracking platform.",
-        "creator": {
-          "@type": "Person",
-          "name": "Ndi Romarick Kati",
-          "url": "https://kati-guidotti.netlify.app",
-          "sameAs": [
-            "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
-            "https://github.com/Romarick-Kati",
-            "https://kati-skyline.netlify.app"
-          ]
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://presencescan.site/#organization",
+            "name": "Presence",
+            "alternateName": ["Presence Scan", "Presence QR Event Registration"],
+            "url": "https://presencescan.site/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://presencescan.site/#logo",
+              "url": "https://presencescan.site/icon-512.png",
+              "contentUrl": "https://presencescan.site/icon-512.png",
+              "width": 512,
+              "height": 512,
+              "caption": "Presence logo"
+            },
+            "image": { "@id": "https://presencescan.site/#logo" },
+            "description": "Presence is an event registration and QR-based attendance tracking platform founded by Ndi Romarick Kati.",
+            "founder": { "@id": "https://presencescan.site/founder#person" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://presencescan.site/#website",
+            "name": "Presence",
+            "alternateName": ["Presence Scan", "presencescan.site"],
+            "url": "https://presencescan.site/",
+            "description": "Presence is an event registration and QR-based attendance tracking platform.",
+            "publisher": { "@id": "https://presencescan.site/#organization" }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://presencescan.site/#webapp",
+            "name": "Presence",
+            "url": "https://presencescan.site/",
+            "image": { "@id": "https://presencescan.site/#logo" },
+            "applicationCategory": "EventManagementApplication",
+            "operatingSystem": "Any (web-based)",
+            "description": "Presence is an event registration and QR-based attendance tracking platform: attendees RSVP online and receive a digital QR pass, organizers verify check-in with a single scan.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "creator": { "@id": "https://presencescan.site/founder#person" },
+            "publisher": { "@id": "https://presencescan.site/#organization" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://presencescan.site/founder#person",
+            "name": "Ndi Romarick Kati",
+            "url": "https://presencescan.site/founder",
+            "image": "https://presencescan.site/creator.jpg",
+            "jobTitle": "Founder of Presence and Full-Stack Developer",
+            "description": "Ndi Romarick Kati is the founder and builder of Presence, a QR-based event registration and attendance tracking platform.",
+            "worksFor": { "@id": "https://presencescan.site/#organization" },
+            "sameAs": [
+              "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
+              "https://github.com/Romarick-Kati",
+              "https://kati-guidotti.netlify.app",
+              "https://kati-skyline.netlify.app"
+            ]
+          }
+        ]
       }
     </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main style="max-width:640px;margin:48px auto;padding:0 20px;font-family:system-ui,sans-serif;line-height:1.6">
+        <img src="/icon-512.png" width="96" height="96" alt="Presence logo: a check mark in a teal and violet circle" />
+        <h1>Presence Scan: QR Event Registration &amp; Check-in App</h1>
+        <p>Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital QR pass, and check in with a single verified scan.</p>
+        <p>Presence was founded and built by <a href="/founder">Ndi Romarick Kati</a>, a full-stack developer.</p>
+        <p><a href="/events">Browse events</a> · <a href="/about">About Presence</a> · <a href="/faq">FAQ</a></p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

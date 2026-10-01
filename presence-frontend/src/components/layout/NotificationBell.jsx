@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, UserPlus, Check } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import { useLanguage } from '../../lib/LanguageContext';
 import { formatDateTime } from '../../lib/utils';
 
 const ICONS = {
@@ -15,6 +16,7 @@ const ICONS = {
 const POLL_MS = 30000;
 
 export default function NotificationBell() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -61,7 +63,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5 transition-colors"
-        aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
+        aria-label={unreadCount ? t('notif_aria_unread', { n: unreadCount }) : t('notif_aria')}
       >
         <Bell size={18} />
         {unreadCount > 0 && (
@@ -87,16 +89,16 @@ export default function NotificationBell() {
             style={{ borderColor: 'var(--line-10)', background: 'var(--panel)' }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--line-08)' }}>
-              <span className="font-semibold text-sm text-[var(--text)]">Notifications</span>
+              <span className="font-semibold text-sm text-[var(--text)]">{t('notif_title')}</span>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-xs font-semibold flex items-center gap-1" style={{ color: '#22D3A6' }}>
-                  <Check size={12} /> Mark all read
+                  <Check size={12} /> {t('notif_mark_all_read')}
                 </button>
               )}
             </div>
             <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="text-sm text-[var(--text-dim)] text-center py-8 px-4">No notifications yet — you'll see new user signups here.</p>
+                <p className="text-sm text-[var(--text-dim)] text-center py-8 px-4">{t('notif_empty_admin')}</p>
               ) : (
                 notifications.map((n) => {
                   const Icon = ICONS[n.type] || Bell;

@@ -19,13 +19,30 @@ const registrationSchema = new Schema(
     paymentStatus: { type: String, enum: ['not_required', 'pending', 'confirmed', 'failed'], default: 'not_required' },
     // Legacy free-text field from the honor-system flow (kept so old
     // registrations still display something meaningful) — no longer
-    // written to by new RSVPs now that CamPay verifies payments for real.
+    // written to by new RSVPs now that a real payment gateway verifies
+    // payments (see utils/fapshi.js).
     paymentReference: { type: String, default: null },
-    // The transaction reference CamPay itself returns from /collect/. This
-    // is the value actually used to verify payment status with CamPay's
-    // API — paymentReference above is never trusted for that.
+    // The transaction id the active payment gateway (Fapshi) returns when
+    // a payment is initiated. This is the value actually used to verify
+    // payment status against the gateway's API — paymentReference above
+    // is never trusted for that.
     paymentGatewayReference: { type: String, default: null },
+    // Always null under Fapshi (it collects the phone on its own hosted
+    // checkout page, never sends it back to us) — kept only because CamPay
+    // did provide this, so switching providers back doesn't need a schema
+    // migration.
     paymentPhone: { type: String, default: null },
+    // Answers to the event's registrationQuestions (if any), captured at
+    // RSVP time. Stored as a plain array of { label, answer } snapshots —
+    // NOT a reference back to Event.registrationQuestions by index/id —
+    // deliberately, so that if an organizer edits or removes a question
+    // later, every guest's already-submitted answers stay exactly as they
+    // were originally asked and answered (Luma does the same: "Registration
+    // changes only affect guests who register after you make them").
+    answers: {
+      type: [{ label: String, answer: String }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

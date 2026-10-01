@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Link, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, ScanLine, QrCode, CalendarCheck, BarChart3, ShieldCheck, Zap,
   Smartphone, ClipboardList, Users, ChevronDown,
@@ -8,10 +8,19 @@ import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
 import CreatorSection from '../../components/layout/CreatorSection';
 import EventCard from '../../components/ui/EventCard';
+import { Reveal, RevealGroup, RevealItem } from '../../components/ui/Reveal';
 import { eventsApi } from '../../lib/api';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../lib/LanguageContext';
 import AnimatedNumber from '../../components/ui/AnimatedNumber';
+import Marquee from '../../components/ui/Marquee';
+import WithWithout from '../../components/ui/WithWithout';
+import Testimonials from '../../components/ui/Testimonials';
+import OldWaySection from '../../components/ui/OldWaySection';
+import LocalSeoSection from '../../components/ui/LocalSeoSection';
+import OrbitRings from '../../components/ui/OrbitRings';
+import Globe from '../../components/ui/Globe';
+import { useAuth } from '../../lib/AuthContext';
 import { useSEO } from '../../lib/useSEO';
 
 const STEPS = [
@@ -39,7 +48,15 @@ export default function Landing() {
   const [stats, setStats] = useState({ totalEvents: 0, totalRegistrations: 0, totalCapacity: 0 });
   const [openFaq, setOpenFaq] = useState(0);
   const { t } = useLanguage();
-  useSEO(null, 'RSVP to campus and corporate events online, get a digital QR pass, and check in with one verified scan at the door — no more paper sign-in sheets.');
+  const { user } = useAuth();
+  useSEO(null, 'Presence Scan is a free QR event registration app. RSVP to conferences, workshops and community events online, get a digital QR pass, pay with Mobile Money, and check in with one scan — no paper sign-in sheets.', {
+    path: '/',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +71,10 @@ export default function Landing() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  // Signed-in people never need the marketing page again: send them
+  // straight to their console.
+  if (user) return <Navigate to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} replace />;
 
   return (
     <div style={{ background: 'var(--bg)' }}>
@@ -113,15 +134,15 @@ export default function Landing() {
           </div>
 
           {/* Signature visual: a digital pass card echoing the scan-target brand mark */}
-          <motion.div initial={{ opacity: 0, scale: 0.94, rotate: 2 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }} className="relative mx-auto w-full max-w-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.94, rotate: 2 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }} className="relative mx-auto w-full max-w-sm"><OrbitRings>
             <div className="rounded-[26px] border shadow-2xl overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
               <div className="p-6 pb-0">
                 <div className="flex items-center justify-between mb-5">
                   <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_title')}</span>
                   <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}>{t('badge_confirmed')}</span>
                 </div>
-                <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>University Technology &amp; Innovation Conference</h3>
-                <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Great Hall &middot; Main Campus</p>
+                <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>Tech &amp; Innovation Summit 2026</h3>
+                <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Conference Hall &middot; Douala</p>
               </div>
               <div className="mx-6 mb-6 rounded-2xl p-5 flex items-center gap-5" style={{ background: '#0A0D18', border: '1px dashed rgba(255,255,255,0.15)' }}>
                 <div className="w-20 h-20 rounded-xl grid grid-cols-5 grid-rows-5 gap-[3px] p-2 shrink-0" style={{ background: '#fff' }}>
@@ -140,43 +161,50 @@ export default function Landing() {
             <div className="absolute -bottom-4 -right-4 w-14 h-14 rounded-2xl flex items-center justify-center reticle-pulse" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>
               <ScanLine size={22} color="var(--accent-ink)" />
             </div>
-          </motion.div>
+          </OrbitRings></motion.div>
         </div>
       </section>
 
+      <Marquee />
+
       {/* HOW IT WORKS */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
-        <SectionHeading eyebrow="How it works" title="From RSVP to verified check-in" />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+        <Reveal><SectionHeading eyebrow="How it works" title="From RSVP to verified check-in" /></Reveal>
+        <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
           {STEPS.map((s, i) => (
-            <div key={s.title} className="relative rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+            <RevealItem key={s.title} className="relative rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
               <span className="font-mono text-xs text-[var(--text-dim)]">0{i + 1}</span>
               <span className="w-11 h-11 rounded-xl flex items-center justify-center my-4" style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
                 <s.icon size={20} style={{ color: 'var(--accent)' }} />
               </span>
               <h3 className="font-display text-base font-semibold mb-2">{s.title}</h3>
               <p className="text-sm text-[var(--text-dim)] leading-relaxed">{s.copy}</p>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
 
       {/* FEATURES */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
-        <SectionHeading eyebrow="Why Presence" title="Built for the door, not just the spreadsheet" />
-        <div className="grid sm:grid-cols-2 gap-5 mt-12">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="flex gap-4 rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-              <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(139,124,246,0.14)' }}>
+        <Reveal><SectionHeading eyebrow="Why Presence" title="Built for the door, not just the spreadsheet" /></Reveal>
+        <RevealGroup className="grid sm:grid-cols-2 gap-5 mt-12">
+          {FEATURES.map((f, i) => (
+            <RevealItem key={f.title} direction={i % 2 === 0 ? 'left' : 'right'} className="flex gap-4 rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+              <motion.span
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(139,124,246,0.14)' }}
+                whileHover={{ scale: 1.1, rotate: 6 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              >
                 <f.icon size={20} style={{ color: 'var(--accent-2)' }} />
-              </span>
+              </motion.span>
               <div>
                 <h3 className="font-display text-base font-semibold mb-1.5">{f.title}</h3>
                 <p className="text-sm text-[var(--text-dim)] leading-relaxed">{f.copy}</p>
               </div>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
 
       {/* PHOTO BANNER */}
@@ -184,7 +212,7 @@ export default function Landing() {
         <div className="relative h-64 sm:h-80 overflow-hidden">
           <motion.img
             src="https://picsum.photos/seed/presence-banner/1600/500"
-            alt="Attendees checking in at a campus event"
+            alt="Attendees checking in at an event"
             className="absolute inset-0 w-full h-full object-cover"
             initial={{ scale: 1.1 }}
             whileInView={{ scale: 1 }}
@@ -212,56 +240,81 @@ export default function Landing() {
 
       {/* EVENT DISCOVERY PREVIEW */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
-        <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
+        <Reveal className="flex items-end justify-between flex-wrap gap-4 mb-10">
           <SectionHeading eyebrow="Discover" title="Upcoming events" />
           <Link to="/events" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
             View all events <ArrowRight size={14} />
           </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((e, i) => <EventCard key={e.id} event={e} index={i} />)}
-        </div>
+        </Reveal>
+        <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((e, i) => <RevealItem key={e.id}><EventCard event={e} index={i} /></RevealItem>)}
+        </RevealGroup>
       </section>
 
       {/* STATS BAND */}
       <section className="border-y" style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-14 grid grid-cols-2 sm:grid-cols-4 gap-8">
-          <BigStat icon={CalendarCheck} label="Events managed" value={stats.totalEvents} />
-          <BigStat icon={Users} label={t('stat_registrations')} value={stats.totalRegistrations} />
-          <BigStat icon={ScanLine} label={t('stat_seats')} value={stats.totalCapacity} />
-          <BigStat icon={BarChart3} label="Live QR check-in" value="Enabled" />
-        </div>
+        <RevealGroup className="max-w-7xl mx-auto px-5 sm:px-8 py-14 grid grid-cols-2 sm:grid-cols-4 gap-8">
+          <RevealItem><BigStat icon={CalendarCheck} label="Events managed" value={stats.totalEvents} /></RevealItem>
+          <RevealItem><BigStat icon={Users} label={t('stat_registrations')} value={stats.totalRegistrations} /></RevealItem>
+          <RevealItem><BigStat icon={ScanLine} label={t('stat_seats')} value={stats.totalCapacity} /></RevealItem>
+          <RevealItem><BigStat icon={BarChart3} label="Live QR check-in" value="Enabled" /></RevealItem>
+        </RevealGroup>
       </section>
 
       {/* FAQ */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
-        <SectionHeading eyebrow="FAQ" title="Common questions" center />
-        <div className="mt-10 flex flex-col gap-3">
+        <Reveal><SectionHeading eyebrow="FAQ" title="Common questions" center /></Reveal>
+        <RevealGroup className="mt-10 flex flex-col gap-3">
           {FAQS.map((f, i) => (
-            <div key={f.q} className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+            <RevealItem key={f.q} className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
               <button onClick={() => setOpenFaq(openFaq === i ? -1 : i)} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
                 <span className="font-medium text-[var(--text)] text-sm">{f.q}</span>
-                <ChevronDown size={16} className="text-[var(--text-dim)] transition-transform shrink-0" style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none' }} />
+                <motion.span animate={{ rotate: openFaq === i ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
+                  <ChevronDown size={16} className="text-[var(--text-dim)]" />
+                </motion.span>
               </button>
-              {openFaq === i && <p className="px-5 pb-4 text-sm text-[var(--text-dim)] leading-relaxed">{f.a}</p>}
-            </div>
+              <AnimatePresence initial={false}>
+                {openFaq === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-5 pb-4 text-sm text-[var(--text-dim)] leading-relaxed">{f.a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
+
+      <OldWaySection />
+
+      <WithWithout />
+
+      <Testimonials />
 
       {/* CTA */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-24">
-        <div className="rounded-[28px] border p-12 text-center relative overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
+        <Reveal className="rounded-[28px] border p-12 text-center relative overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb),0.14), transparent 60%)' }} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-40 pointer-events-none" aria-hidden="true"><Globe size={460} /></div>
           <div className="relative z-10">
             <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>Ready to replace the sign-in sheet?</h2>
             <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>Create an account, RSVP to an event, and see your digital pass generate in seconds.</p>
-            <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
-              Get started <ArrowRight size={16} />
-            </Link>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="inline-block">
+              <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
+                Get started <ArrowRight size={16} />
+              </Link>
+            </motion.div>
           </div>
-        </div>
+        </Reveal>
       </section>
+
+      <LocalSeoSection />
 
       <CreatorSection />
 

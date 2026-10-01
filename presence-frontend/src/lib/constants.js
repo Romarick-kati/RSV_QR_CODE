@@ -1,10 +1,10 @@
 export const CATEGORIES = [
-  'Technology', 'Academic', 'Corporate', 'Workshop', 'Seminar', 'Career', 'Cultural',
+  'Technology', 'Community', 'Corporate', 'Workshop', 'Seminar', 'Career', 'Cultural',
 ];
 
 export const EVENT_GRADIENTS = {
   Technology: 'from-[#1c2b6b] via-[#2c3e8f] to-[#22D3A6]',
-  Academic: 'from-[#2c1f5e] via-[#4a2e8c] to-[#8B7CF6]',
+  Community: 'from-[#2c1f5e] via-[#4a2e8c] to-[#8B7CF6]',
   Corporate: 'from-[#1a2340] via-[#233158] to-[#F5A623]',
   Workshop: 'from-[#3a1730] via-[#5c1f3f] to-[#FF5C77]',
   Seminar: 'from-[#152a2e] via-[#1c3f42] to-[#22D3A6]',
@@ -16,7 +16,7 @@ export const EVENT_GRADIENTS = {
 // label and title stay readable regardless of the photo underneath.
 export const EVENT_TINTS = {
   Technology: 'linear-gradient(160deg, rgba(28,43,107,0.75), rgba(34,211,166,0.55))',
-  Academic: 'linear-gradient(160deg, rgba(44,31,94,0.75), rgba(139,124,246,0.55))',
+  Community: 'linear-gradient(160deg, rgba(44,31,94,0.75), rgba(139,124,246,0.55))',
   Corporate: 'linear-gradient(160deg, rgba(26,35,64,0.78), rgba(245,166,35,0.5))',
   Workshop: 'linear-gradient(160deg, rgba(58,23,48,0.78), rgba(255,92,119,0.5))',
   Seminar: 'linear-gradient(160deg, rgba(21,42,46,0.78), rgba(34,211,166,0.5))',
@@ -25,6 +25,11 @@ export const EVENT_TINTS = {
 };
 
 export const ICON_BY_CATEGORY = {
-  Technology: 'Cpu', Academic: 'GraduationCap', Corporate: 'Briefcase',
+  Technology: 'Cpu', Community: 'Users', Corporate: 'Briefcase',
   Workshop: 'Wrench', Seminar: 'Presentation', Career: 'Target', Cultural: 'Palette',
 };
+
+// Events created before the "Academic" category was renamed "Community" keep rendering.
+EVENT_GRADIENTS.Academic = EVENT_GRADIENTS.Community;
+EVENT_TINTS.Academic = EVENT_TINTS.Community;
+ICON_BY_CATEGORY.Academic = ICON_BY_CATEGORY.Community;

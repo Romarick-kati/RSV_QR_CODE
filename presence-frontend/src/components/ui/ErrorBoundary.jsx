@@ -11,7 +11,7 @@ import { RefreshCw, TriangleAlert } from 'lucide-react';
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -57,6 +57,24 @@ export default class ErrorBoundary extends Component {
             >
               <RefreshCw size={15} /> Reload page
             </button>
+
+            {/* Surfaces the real error text so it can be copied and sent
+                back for a fix, instead of a diagnosis-by-screenshot round
+                trip — expand it, tap "Copy", paste it to support/dev. */}
+            {this.state.error && (
+              <details className="mt-6 text-left">
+                <summary className="text-xs font-medium cursor-pointer" style={{ color: 'var(--text-dim, #8D93B2)' }}>
+                  Show technical details
+                </summary>
+                <pre
+                  className="mt-2 text-[11px] leading-relaxed whitespace-pre-wrap break-words rounded-lg p-3 max-h-48 overflow-y-auto"
+                  style={{ background: 'rgba(0,0,0,0.25)', color: 'var(--text-dim, #8D93B2)' }}
+                >
+                  {String(this.state.error?.message || this.state.error)}
+                  {this.state.error?.stack ? `\n\n${this.state.error.stack}` : ''}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       );

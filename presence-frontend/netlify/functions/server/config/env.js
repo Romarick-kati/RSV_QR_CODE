@@ -61,4 +61,16 @@ export const config = {
   // still fires either way.
   resendApiKey: process.env.RESEND_API_KEY || null,
   notificationEmailFrom: process.env.NOTIFICATION_EMAIL_FROM || 'Presence <onboarding@resend.dev>',
+
+  // Optional — powers the "Ask Presence" assistant in the nav bar (see
+  // utils/assistant.js). Get a free key from aistudio.google.com/apikey —
+  // Gemini's free tier is rate-limited rather than credit-based, so unlike
+  // most AI APIs there's no card needed and no balance counting down to
+  // zero. The assistant button still renders with no setup, but replies
+  // with a friendly "not configured yet" message until this is set.
+  geminiApiKey: process.env.GEMINI_API_KEY || null,
+  assistantModel: process.env.ASSISTANT_MODEL || 'gemini-2.5-flash',
+  // Optional second model tried when the main one is overloaded (503) or
+  // out of quota (429). Leave unset to skip.
+  assistantFallbackModel: process.env.ASSISTANT_FALLBACK_MODEL || null,
 };

@@ -23,6 +23,13 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
 
+# Search-engine sitemap, generated live from the database (static pages +
+# every published event). Must come before the SPA fallback below.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/api/sitemap.xml"
+  status = 200
+
 # SPA fallback — without this, refreshing (or sharing a link to) any route
 # other than "/" — e.g. /events/abc123 or /dashboard — returns Netlify's own
 # 404 page, because Netlify looks for a physical file at that path by

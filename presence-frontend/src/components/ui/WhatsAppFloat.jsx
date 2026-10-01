@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useAssistant } from '../../lib/AssistantContext';
 
 // Fixed, always-on-top WhatsApp contact bubble. Lives once at the App root
 // (see App.jsx) so it follows the visitor across every public, attendee,
@@ -8,38 +10,53 @@ const DEFAULT_MESSAGE = "Hi! I'd like to know more about Presence.";
 
 export default function WhatsAppFloat() {
   const [hovered, setHovered] = useState(false);
+  // The AI assistant panel also docks in this same bottom-right corner
+  // (see AssistantPanel.jsx), and used to sit *under* this button since
+  // this button's z-index was higher — which visually buried the panel's
+  // send button under this bubble whenever the assistant was open. Hiding
+  // this one while the assistant is open removes the collision entirely,
+  // rather than trying to squeeze both into the same corner at once.
+  const { isOpen: assistantOpen } = useAssistant();
   const href = `https://wa.me/${CONTACT_PHONE.replace('+', '')}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      aria-label="Chat with us on WhatsApp"
-      className="fixed z-[60] bottom-5 right-5 sm:bottom-6 sm:right-6 flex items-center gap-2.5 rounded-full shadow-2xl transition-all duration-300"
-      style={{
-        background: '#25D366',
-        padding: hovered ? '12px 18px 12px 14px' : '14px',
-        boxShadow: '0 8px 24px -6px rgba(37,211,102,0.6)',
-      }}
-    >
-      <span className="relative flex items-center justify-center shrink-0" style={{ width: 26, height: 26 }}>
-        {/* continuous pulse ring */}
-        <span
-          className="absolute inset-0 rounded-full animate-ping"
-          style={{ background: 'rgba(255,255,255,0.55)', animationDuration: '1.8s' }}
-        />
-        <WhatsAppIcon />
-      </span>
-      <span
-        className="text-white text-sm font-semibold whitespace-nowrap overflow-hidden transition-all duration-300"
-        style={{ maxWidth: hovered ? 160 : 0, opacity: hovered ? 1 : 0 }}
-      >
-        Chat with us
-      </span>
-    </a>
+    <AnimatePresence>
+      {!assistantOpen && (
+        <motion.a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          aria-label="Chat with us on WhatsApp"
+          className="fixed z-[60] bottom-5 right-5 sm:bottom-6 sm:right-6 flex items-center gap-2.5 rounded-full shadow-2xl transition-all duration-300"
+          style={{
+            background: '#25D366',
+            padding: hovered ? '12px 18px 12px 14px' : '14px',
+            boxShadow: '0 8px 24px -6px rgba(37,211,102,0.6)',
+          }}
+          initial={{ opacity: 0, scale: 0.6, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.6, y: 20 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <span className="relative flex items-center justify-center shrink-0" style={{ width: 26, height: 26 }}>
+            {/* continuous pulse ring */}
+            <span
+              className="absolute inset-0 rounded-full animate-ping"
+              style={{ background: 'rgba(255,255,255,0.55)', animationDuration: '1.8s' }}
+            />
+            <WhatsAppIcon />
+          </span>
+          <span
+            className="text-white text-sm font-semibold whitespace-nowrap overflow-hidden transition-all duration-300"
+            style={{ maxWidth: hovered ? 160 : 0, opacity: hovered ? 1 : 0 }}
+          >
+            Chat with us
+          </span>
+        </motion.a>
+      )}
+    </AnimatePresence>
   );
 }
 

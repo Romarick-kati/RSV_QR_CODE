@@ -5,5 +5,7 @@ Disallow: /dashboard
 Disallow: /my-events
 Disallow: /profile
 Disallow: /qr-pass
+Disallow: /settings
+Disallow: /api/
 
-Sitemap: https://presence.app/sitemap.xml
+Sitemap: https://presencescan.site/sitemap.xml

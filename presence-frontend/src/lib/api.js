@@ -86,6 +86,8 @@ export const authApi = {
   login: (email, password) => client.post('/auth/login', { email, password }, { auth: false }),
   register: (name, email, password) => client.post('/auth/register', { name, email, password }, { auth: false }),
   google: (credential) => client.post('/auth/google', { credential }, { auth: false }),
+  requestCode: (email) => client.post('/auth/email-code', { email }, { auth: false }),
+  verifyCode: (email, code) => client.post('/auth/email-code/verify', { email, code }, { auth: false }),
   me: () => client.get('/auth/me'),
   updateMe: (payload) => client.patch('/auth/me', payload),
   requestOrganizerAccess: (payload) => client.post('/auth/me/organizer-request', payload),
@@ -106,6 +108,10 @@ export const eventsApi = {
   attendees: (id) => client.get(`/events/${id}/attendees`),
   attendance: (id) => client.get(`/events/${id}/attendance`),
   rsvp: (id, body) => client.post(`/events/${id}/rsvp`, body),
+  meetingLink: (id) => client.get(`/events/${id}/meeting-link`),
+  liveShare: (id, body) => client.post(`/events/${id}/live`, body),
+  liveStop: (id) => client.del(`/events/${id}/live`),
+  liveList: (id) => client.get(`/events/${id}/live`),
 };
 
 // ---------- My registrations (attendee) ----------
@@ -138,6 +144,21 @@ export const adminApi = {
   organizerRequests: () => client.get('/admin/organizer-requests'),
   approveOrganizerRequest: (id) => client.post(`/admin/organizer-requests/${id}/approve`),
   rejectOrganizerRequest: (id) => client.post(`/admin/organizer-requests/${id}/reject`),
+};
+
+// ---------- Notifications (attendee-facing "new event" feed) ----------
+export const notificationsApi = {
+  mine: () => client.get('/notifications'),
+  markRead: (id) => client.patch(`/notifications/${id}/read`),
+  markAllRead: () => client.patch('/notifications/read-all'),
+};
+
+// ---------- Ask Presence assistant ----------
+// Works whether or not the visitor is logged in — the request helper
+// already omits the Authorization header when there's no token, so this
+// needs no special handling either way.
+export const assistantApi = {
+  chat: (message, history) => client.post('/assistant/chat', { message, history }),
 };
 
 export default client;

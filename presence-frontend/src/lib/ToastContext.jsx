@@ -41,7 +41,7 @@ export function ToastProvider({ children }) {
               >
                 <Icon size={18} style={{ color: COLORS[t.type], flexShrink: 0, marginTop: 2 }} />
                 <p className="text-sm text-[var(--text)] leading-snug flex-1">{t.message}</p>
-                <button onClick={() => dismiss(t.id)} className="text-[var(--text-dim)] hover:text-white transition-colors">
+                <button onClick={() => dismiss(t.id)} className="text-[var(--text-dim)] hover:text-[var(--text)] transition-colors">
                   <X size={14} />
                 </button>
               </motion.div>

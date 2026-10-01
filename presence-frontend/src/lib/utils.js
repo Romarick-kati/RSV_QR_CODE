@@ -2,6 +2,8 @@
 // ISO datetime string as returned by the Prisma/Postgres backend, and always
 // returns a Date anchored at UTC midnight for that calendar day so event
 // dates don't shift by a day depending on the viewer's timezone.
+import { timezoneAbbreviation } from './timezones';
+
 function toDateOnly(value) {
   const s = String(value);
   const day = s.length > 10 ? s.slice(0, 10) : s;
@@ -14,11 +16,20 @@ export function formatDate(iso, opts = {}) {
 export function formatDateLong(iso) {
   return toDateOnly(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
-export function formatTime(t) {
+// `t` is the event's own wall-clock "HH:MM" string (what the organizer
+// typed — always meant in the event's own timezone, never the viewer's).
+// Pass the event's `timezone`/`date` to also append a short abbreviation
+// (e.g. "6:00 PM WAT") so a visitor browsing from a different timezone
+// still understands which clock the time is on, instead of silently
+// assuming it's their own local time.
+export function formatTime(t, timezone, date) {
   const [h, m] = t.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  const base = `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  if (!timezone) return base;
+  const abbr = timezoneAbbreviation(timezone, date ? toDateOnly(date) : new Date());
+  return `${base} ${abbr}`;
 }
 export function formatDateTime(iso) {
   return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -27,14 +38,28 @@ export function isEventPast(event) {
   return toDateOnly(event.date) < new Date(new Date().toDateString());
 }
 // A registration deadline of "today" should mean "open until the end of
-// today in Douala time", not "open until midnight UTC" (~1am Douala) — see
+// today in the event's own timezone", not "open until midnight UTC" — see
 // the matching backend fix in netlify/functions/server/utils/checkInWindow.js
 // (endOfDayInEventTimezone). Comparing the raw deadline string against
 // `new Date()` directly, like the old code did, would show "Registration
 // closed" in the UI for most of a same-day deadline even though the
 // (already-fixed) backend would actually accept the request — so this has
 // to mirror that fix exactly, or the button just lies about being closed.
-const EVENT_TZ_OFFSET_MINUTES = 60; // WAT = UTC+1, no daylight saving
+// Each event can now be hosted in a different city/timezone (event.timezone,
+// an IANA zone name) rather than the app assuming every event is WAT.
+function getTimezoneOffsetMinutes(timeZone, date) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).formatToParts(date).reduce((acc, p) => { if (p.type !== 'literal') acc[p.type] = p.value; return acc; }, {});
+    const asUTC = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+    return Math.round((asUTC - date.getTime()) / 60000);
+  } catch {
+    return 60; // fall back to WAT for an unrecognized zone string
+  }
+}
 export function isRegistrationDeadlinePassed(event) {
   if (!event?.registrationDeadline) return false;
   // Parse the date-only string as UTC directly (same as the backend's
@@ -42,10 +67,11 @@ export function isRegistrationDeadlinePassed(event) {
   // above — that helper appends a bare "T00:00:00" with no "Z", which
   // JavaScript parses as the *visitor's local* midnight, not UTC. For a
   // visitor east of UTC (e.g. Asia), that shifts the calendar day back by
-  // one before we even get to the WAT-offset math below.
+  // one before we even get to the timezone-offset math below.
   const dateOnly = String(event.registrationDeadline).slice(0, 10);
   const d = new Date(dateOnly);
-  const endOfDayUtc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999) - EVENT_TZ_OFFSET_MINUTES * 60000);
+  const offsetMinutes = getTimezoneOffsetMinutes(event.timezone || 'Africa/Douala', d);
+  const endOfDayUtc = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999) - offsetMinutes * 60000);
   return endOfDayUtc < new Date();
 }
 export function daysUntil(event) {

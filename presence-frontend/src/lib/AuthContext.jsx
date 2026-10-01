@@ -82,12 +82,19 @@ export function AuthProvider({ children }) {
     return next;
   }
 
+  async function loginWithCode({ email, code }) {
+    const { user, token } = await authApi.verifyCode(email, code);
+    const next = { user, token };
+    setSession(next);
+    return next;
+  }
+
   function logout() {
     setSession(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user: session?.user || null, token: session?.token || null, initializing, login, register, loginWithGoogle, logout, updateProfile, updateAvatar, applyForOrganizer }}>
+    <AuthContext.Provider value={{ user: session?.user || null, token: session?.token || null, initializing, login, register, loginWithGoogle, loginWithCode, logout, updateProfile, updateAvatar, applyForOrganizer }}>
       {children}
     </AuthContext.Provider>
   );

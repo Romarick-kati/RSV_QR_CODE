@@ -1,8 +1,9 @@
+import EventMap from '../../components/ui/EventMap';
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, MapPin, Users, Mail, ArrowLeft, TriangleAlert, CheckCircle2,
-  Cpu, GraduationCap, Briefcase, Wrench, Presentation, Target, Palette, Wallet,
+  Cpu, Briefcase, Wrench, Presentation, Target, Palette, Wallet, Video,
 } from 'lucide-react';
 import PublicNav from '../../components/layout/PublicNav';
 import PublicFooter from '../../components/layout/PublicFooter';
@@ -14,10 +15,52 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { eventsApi, meApi, ApiError } from '../../lib/api';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
+import { LogoChip } from '../../components/ui/EventLogo';
 import { formatDateLong, formatTime, isEventPast, isRegistrationDeadlinePassed } from '../../lib/utils';
-import { useSEO } from '../../lib/useSEO';
+import { useSEO, SITE_URL } from '../../lib/useSEO';
 
-const ICONS = { Technology: Cpu, Academic: GraduationCap, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
+// schema.org/Event — makes each event eligible for Google's event rich
+// results (date, place, price shown right in the search listing).
+function buildEventJsonLd(event, id) {
+  const day = String(event.date).slice(0, 10);
+  const online = event.format === 'online';
+  const hasPin = Number.isFinite(event.latitude) && Number.isFinite(event.longitude);
+  const location = online
+    ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${id}` }
+    : {
+        '@type': 'Place',
+        name: event.venue,
+        address: event.venue,
+        ...(hasPin ? { geo: { '@type': 'GeoCoordinates', latitude: event.latitude, longitude: event.longitude } } : {}),
+      };
+  const image = event.image && /^https?:\/\//.test(event.image) ? [event.image] : undefined;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    description: event.description,
+    startDate: `${day}T${event.startTime}`,
+    endDate: `${day}T${event.endTime}`,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: online
+      ? 'https://schema.org/OnlineEventAttendanceMode'
+      : event.format === 'hybrid'
+        ? 'https://schema.org/MixedEventAttendanceMode'
+        : 'https://schema.org/OfflineEventAttendanceMode',
+    location,
+    ...(image ? { image } : {}),
+    organizer: { '@type': event.organizer?.name ? 'Person' : 'Organization', name: event.organizer?.name || 'Presence', url: SITE_URL },
+    offers: {
+      '@type': 'Offer',
+      url: `${SITE_URL}/events/${id}`,
+      price: String(event.price || 0),
+      priceCurrency: 'XAF',
+      availability: event.remaining === 0 ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+    },
+  };
+}
+
+const ICONS = { Technology: Cpu, Community: Users, Academic: Users, Corporate: Briefcase, Workshop: Wrench, Seminar: Presentation, Career: Target, Cultural: Palette };
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -30,16 +73,16 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [joiningMeeting, setJoiningMeeting] = useState(false);
   const [myRegistrationId, setMyRegistrationId] = useState(null);
   const [myWaitlistInfo, setMyWaitlistInfo] = useState(null); // { id, position } | null
   const [showPayment, setShowPayment] = useState(false);
-  const [phone, setPhone] = useState('');
-  // 'idle' | 'awaiting-pin' | 'confirmed' | 'failed'
-  const [paymentState, setPaymentState] = useState('idle');
-  const [pendingRegistrationId, setPendingRegistrationId] = useState(null);
+  const [email, setEmail] = useState('');
+  const [answers, setAnswers] = useState({});
   const [justWaitlisted, setJustWaitlisted] = useState(null); // position number, or null
+  const [redirecting, setRedirecting] = useState(false);
 
-  useSEO(event?.title, event?.description);
+  useSEO(event?.title, event?.description, { path: `/events/${id}`, jsonLd: event ? buildEventJsonLd(event, id) : null });
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +109,21 @@ export default function EventDetail() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [user, id]);
+
+  // IMPORTANT: any hook added to this component (useEffect, useState, etc.)
+  // MUST go up here, above the early `if (loading) return ...` / `if
+  // (notFound) return ...` blocks below — a hook declared after a
+  // conditional return runs on some renders and not others (e.g. skipped
+  // entirely while `loading` is true, then suddenly present once the event
+  // finishes loading), which violates React's Rules of Hooks and throws
+  // "Rendered more hooks than during the previous render." That exact bug
+  // used to crash this page on every single visit, right at the
+  // loading→loaded transition — i.e. exactly when someone clicks into an
+  // event. (The payment-status polling that used to live in this spot
+  // moved to QrPass.jsx — Fapshi's checkout is a real page redirect, not
+  // an in-place phone PIN prompt, so the attendee actually leaves this
+  // page entirely while paying and there's nothing to poll for here
+  // anymore.)
 
   if (loading) {
     return (
@@ -103,37 +161,59 @@ export default function EventDetail() {
   const deadlinePassed = isRegistrationDeadlinePassed(event);
   const full = remaining <= 0;
   const isPaid = (event.price || 0) > 0;
+  const hasQuestions = (event.registrationQuestions || []).length > 0;
+
+  async function handleJoinMeeting() {
+    setJoiningMeeting(true);
+    try {
+      const { meetingUrl } = await eventsApi.meetingLink(event.id);
+      window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      push(err instanceof ApiError ? err.message : 'Could not load the meeting link. Please try again.', 'error');
+    } finally {
+      setJoiningMeeting(false);
+    }
+  }
 
   async function handleRsvp() {
     if (!user) {
       navigate('/login', { state: { from: `/events/${event.id}` } });
       return;
     }
-    if (isPaid && !showPayment) {
-      // First click on a paid event just opens the phone-number panel
-      // instead of charging right away.
+    // A paid event needs the email panel, and/or any event with custom
+    // registration questions needs those answered — both live in the same
+    // "form" panel below, revealed on the first click rather than charging
+    // or submitting immediately.
+    if ((isPaid || hasQuestions) && !showPayment) {
       setShowPayment(true);
       return;
     }
-    if (isPaid && !phone.trim()) {
-      push('Enter the Mobile Money phone number to continue.', 'error');
+    if (isPaid && !email.trim()) {
+      push('Enter an email address to continue to payment.', 'error');
+      return;
+    }
+    const missingRequired = (event.registrationQuestions || []).filter((q) => q.required && !String(answers[q.label] || '').trim());
+    if (missingRequired.length > 0) {
+      push(`Please answer: ${missingRequired.map((q) => q.label).join(', ')}`, 'error');
       return;
     }
     setSubmitting(true);
     try {
-      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, isPaid ? { phone: phone.trim() } : undefined);
+      const body = (isPaid || hasQuestions) ? { ...(isPaid ? { email: email.trim() } : {}), answers } : undefined;
+      const { registration, payment, waitlisted, waitlistPosition } = await eventsApi.rsvp(event.id, body);
       if (waitlisted) {
         setJustWaitlisted(waitlistPosition);
         setMyWaitlistInfo({ id: registration.id });
         setSubmitting(false);
         return;
       }
-      if (isPaid && payment) {
-        // A real PIN-approval prompt is now on the attendee's phone —
-        // don't navigate away yet, poll until CamPay confirms it.
-        setPendingRegistrationId(registration.id);
-        setPaymentState('awaiting-pin');
-        setSubmitting(false);
+      if (isPaid && payment?.link) {
+        // Fapshi's checkout is a real hosted page, not something that
+        // happens in-place — the browser actually leaves this site.
+        // QrPass.jsx (where Fapshi's redirectUrl sends the attendee back
+        // to) picks up polling for the payment result from here.
+        setRedirecting(true);
+        window.location.href = payment.link;
       } else {
         push('Registration confirmed, your pass is ready.', 'success');
         navigate(`/qr-pass/${registration.id}`);
@@ -144,37 +224,6 @@ export default function EventDetail() {
     }
   }
 
-  // Polls the real CamPay-verified payment status every 3s while the
-  // attendee is looking at the "check your phone" screen. Stops on a
-  // definitive outcome or after ~2 minutes (CamPay prompts typically time
-  // out well before that if never approved).
-  useEffect(() => {
-    if (paymentState !== 'awaiting-pin' || !pendingRegistrationId) return;
-    let cancelled = false;
-    let attempts = 0;
-    const interval = setInterval(async () => {
-      attempts += 1;
-      try {
-        const { paymentStatus } = await meApi.paymentStatus(pendingRegistrationId);
-        if (cancelled) return;
-        if (paymentStatus === 'confirmed') {
-          clearInterval(interval);
-          setPaymentState('confirmed');
-          push('Payment confirmed — your pass is ready.', 'success');
-          navigate(`/qr-pass/${pendingRegistrationId}`);
-        } else if (paymentStatus === 'failed') {
-          clearInterval(interval);
-          setPaymentState('failed');
-        } else if (attempts >= 40) {
-          clearInterval(interval);
-          setPaymentState('failed');
-        }
-      } catch {
-        // Transient network error — just try again on the next tick.
-      }
-    }, 3000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [paymentState, pendingRegistrationId, navigate, push]);
 
   const waitlistable = full && !isPaid; // paid waitlist unsupported, see rsvp.controller.js
   let ctaLabel = isPaid ? `Pay & register — ${event.price} FCFA` : t('event_rsvp');
@@ -193,8 +242,9 @@ export default function EventDetail() {
       <PublicNav />
 
       <div className="relative h-64 sm:h-80 flex items-end overflow-hidden">
-        <img src={getSmartEventPhoto(event, '1600/900')} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={getSmartEventPhoto(event, '1600/900')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
+        <LogoChip size={36} className="top-4 right-4" />
         <div className="max-w-5xl mx-auto px-5 sm:px-8 w-full pb-8 relative z-10">
           <Link to="/events" className="inline-flex items-center gap-1.5 text-white/85 text-sm font-medium mb-4 hover:text-white">
             <ArrowLeft size={15} /> {t('event_back')}
@@ -214,12 +264,20 @@ export default function EventDetail() {
           <h2 className="font-display text-lg font-semibold mb-3">{t('event_details')}</h2>
           <div className="grid sm:grid-cols-2 gap-4 mb-8">
             <DetailRow icon={Calendar} label={t('event_date')} value={formatDateLong(event.date)} />
-            <DetailRow icon={Clock} label={t('event_time')} value={`${formatTime(event.startTime)} – ${formatTime(event.endTime)}`} />
+            <DetailRow icon={Clock} label={t('event_time')} value={`${formatTime(event.startTime, event.timezone, event.date)} – ${formatTime(event.endTime, event.timezone, event.date)}`} />
             <DetailRow icon={MapPin} label={t('event_venue')} value={event.venue} />
+            {event.format && event.format !== 'in-person' && (
+              <DetailRow icon={Video} label="Format" value={event.format === 'online' ? 'Online' : 'Hybrid (in-person + online)'} />
+            )}
             <DetailRow icon={Users} label={t('event_capacity')} value={`${event.capacity} ${t('event_attendees_suffix')}`} />
             <DetailRow icon={Mail} label={t('event_organizer')} value={event.organizer?.name || 'Presence'} />
             {event.contact && <DetailRow icon={Mail} label={t('event_contact')} value={event.contact} />}
           </div>
+          {event.format !== 'online' && event.venue && (
+            <div className="mb-8">
+              <EventMap venue={event.venue} latitude={event.latitude} longitude={event.longitude} height={240} />
+            </div>
+          )}
         </div>
 
         <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
@@ -238,6 +296,20 @@ export default function EventDetail() {
             </div>
           )}
 
+          {myRegistrationId && event.format && event.format !== 'in-person' && (
+            <button
+              onClick={handleJoinMeeting}
+              disabled={joiningMeeting}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl mb-3 disabled:opacity-60"
+              style={{ background: 'rgba(139,124,246,0.14)', color: '#8B7CF6', border: '1px solid rgba(139,124,246,0.3)' }}
+            >
+              {joiningMeeting
+                ? <span className="w-4 h-4 rounded-full border-2 border-[#8B7CF6]/30 border-t-[#8B7CF6] animate-spin" />
+                : <Video size={16} />}
+              {joiningMeeting ? 'Loading link…' : 'Join online meeting'}
+            </button>
+          )}
+
           {(myWaitlistInfo || justWaitlisted) && !myRegistrationId && (
             <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(139,124,246,0.35)', background: 'rgba(139,124,246,0.08)' }}>
               <p className="text-sm font-semibold mb-1" style={{ color: '#8B7CF6' }}>
@@ -249,63 +321,61 @@ export default function EventDetail() {
             </div>
           )}
 
-          {isPaid && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && paymentState === 'idle' && (
+          {isPaid && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && (
             <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(245,166,35,0.35)', background: 'rgba(245,166,35,0.08)' }}>
               <p className="text-xs font-semibold flex items-center gap-1.5 mb-2" style={{ color: '#F5A623' }}>
                 <Wallet size={14} /> Pay with Mobile Money
               </p>
               <p className="text-xs text-[var(--text-dim)] leading-relaxed mb-2">
-                You'll pay <strong className="text-[var(--text)]">{event.price} FCFA</strong> via MTN or Orange Money. Enter your number below — you'll get a prompt on your phone to approve with your PIN.
+                You'll pay <strong className="text-[var(--text)]">{event.price} FCFA</strong> via a secure Fapshi checkout page (MTN or Orange Money). Enter your email below — your receipt and pass link go there too.
               </p>
               <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                type="tel"
-                inputMode="tel"
-                placeholder="e.g. 677 12 34 56"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                inputMode="email"
+                placeholder="you@example.com"
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
                 style={{ borderColor: 'var(--line-12)', background: 'var(--bg)' }}
               />
               <p className="text-[11px] text-[var(--text-dim)] mt-1.5">
-                Your pass unlocks the moment the payment is confirmed — usually within a few seconds of approving on your phone.
+                You'll be redirected to Fapshi to complete payment, then brought straight back here — your pass unlocks automatically the moment it's confirmed.
               </p>
             </div>
           )}
 
-          {isPaid && paymentState === 'awaiting-pin' && (
-            <div className="rounded-xl border p-4 mb-3 text-center" style={{ borderColor: 'rgba(34,211,166,0.35)', background: 'rgba(var(--accent-rgb),0.08)' }}>
-              <span className="w-8 h-8 mx-auto rounded-full border-2 border-t-transparent animate-spin mb-3" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
-              <p className="text-sm font-semibold mb-1">Check your phone</p>
-              <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-                Approve the payment prompt on <span className="font-mono text-[var(--text)]">{phone}</span> with your Mobile Money PIN. This updates automatically once confirmed.
-              </p>
-            </div>
-          )}
-
-          {isPaid && paymentState === 'failed' && (
-            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'rgba(255,92,119,0.35)', background: 'rgba(255,92,119,0.08)' }}>
-              <p className="text-sm font-semibold mb-1" style={{ color: '#FF5C77' }}>Payment didn't go through</p>
-              <p className="text-xs text-[var(--text-dim)] mb-3">It may have timed out or been declined. You can try again.</p>
-              <button
-                type="button"
-                onClick={() => { setPaymentState('idle'); setPendingRegistrationId(null); }}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
-              >
-                Try again
-              </button>
+          {hasQuestions && !myRegistrationId && !past && !deadlinePassed && !full && showPayment && (
+            <div className="rounded-xl border p-4 mb-3" style={{ borderColor: 'var(--line-12)', background: 'var(--line-04)' }}>
+              <p className="text-xs font-semibold mb-3 text-[var(--text)]">A few quick questions from the organizer</p>
+              <div className="flex flex-col gap-3">
+                {event.registrationQuestions.map((q) => (
+                  <label key={q.label} className="block">
+                    <span className="block text-xs text-[var(--text-dim)] mb-1">
+                      {q.label} {q.required && <span style={{ color: '#FF5C77' }}>*</span>}
+                    </span>
+                    <input
+                      value={answers[q.label] || ''}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [q.label]: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                      style={{ borderColor: 'var(--line-12)', background: 'var(--bg)' }}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
           <button
             onClick={myRegistrationId ? () => navigate(`/qr-pass/${myRegistrationId}`) : handleRsvp}
-            disabled={myRegistrationId ? false : (ctaDisabled || submitting || paymentState === 'awaiting-pin')}
+            disabled={myRegistrationId ? false : (ctaDisabled || submitting || redirecting)}
             className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
             style={ctaDisabled && !myRegistrationId
               ? { background: 'var(--line-08)', color: 'var(--text-dim)' }
               : { background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}
           >
-            {submitting ? <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" /> : (myRegistrationId ? t('event_view_pass') : ctaLabel)}
+            {submitting || redirecting
+              ? <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+              : (myRegistrationId ? t('event_view_pass') : ctaLabel)}
           </button>
         </aside>
       </div>

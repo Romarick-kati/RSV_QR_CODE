@@ -9,10 +9,10 @@ import { useSEO } from '../../lib/useSEO';
 import { compressImageFile, ImageError } from '../../lib/imageUtils';
 
 export default function Profile() {
-  useSEO('Profile', undefined, { noindex: true });
   const { user, updateProfile, updateAvatar, applyForOrganizer } = useAuth();
   const { push } = useToast();
   const { t } = useLanguage();
+  useSEO(t('profile_title'), undefined, { noindex: true });
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone || '');
   const [saving, setSaving] = useState(false);

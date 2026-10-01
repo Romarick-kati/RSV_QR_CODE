@@ -146,6 +146,81 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
 @keyframes softFloat{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-3px); } }
 .animate-softFloat{ animation: softFloat 3.4s ease-in-out infinite; }
 
+/* --- Ask Presence assistant: gradient sparkle trigger + thinking dots --- */
+
+/* Soft blurred halo behind the nav trigger, on the app's own accent pair
+   (teal → violet) rather than a generic glow — breathes slowly at rest so
+   the button reads as "alive" without demanding attention, brightens and
+   tightens on hover/focus as the one direct response to the person's cursor. */
+.assistant-trigger-glow{
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  filter: blur(7px);
+  opacity: 0.4;
+  animation: assistantGlowBreathe 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.assistant-trigger:hover .assistant-trigger-glow,
+.assistant-trigger:focus-visible .assistant-trigger-glow{
+  opacity: 0.5;
+  filter: blur(9px);
+}
+.assistant-trigger{ transition: transform .18s var(--ease); }
+.assistant-trigger:hover{ transform: scale(1.06); }
+.assistant-trigger:active{ transform: scale(0.96); transition-duration: .1s; }
+@keyframes assistantGlowBreathe{
+  0%,100%{ opacity: 0.32; }
+  50%{ opacity: 0.6; }
+}
+
+/* The header badge used to animate its own opacity, which dimmed the sparkle
+   itself to ~20% and made it look washed out. Now the badge stays fully
+   opaque and only its glow (box-shadow) breathes. */
+.assistant-header-badge{
+  background: linear-gradient(135deg, rgba(34,211,166,0.28), rgba(139,124,246,0.28));
+  box-shadow: 0 0 10px 1px rgba(34,211,166,0.45), 0 0 18px 2px rgba(139,124,246,0.30);
+  animation: assistantBadgeGlow 3s ease-in-out infinite;
+}
+@keyframes assistantBadgeGlow{
+  0%,100%{ box-shadow: 0 0 8px 1px rgba(34,211,166,0.35), 0 0 14px 1px rgba(139,124,246,0.22); }
+  50%{ box-shadow: 0 0 14px 3px rgba(34,211,166,0.65), 0 0 24px 4px rgba(139,124,246,0.45); }
+}
+
+.assistant-dot{
+  width: 6px; height: 6px; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  animation: assistantDotBounce 1s ease-in-out infinite;
+}
+@keyframes assistantDotBounce{
+  0%,60%,100%{ transform: translateY(0); opacity: 0.5; }
+  30%{ transform: translateY(-3px); opacity: 1; }
+}
+
+/* --- QR pass: a thin light sweeping across the code, echoing the scan
+   reticle on the organizer's scanner screen — the two ends of the same
+   handshake get the same visual language. Fades at top/bottom via a mask
+   instead of hard-cutting, and only runs while the pass hasn't been
+   scanned yet (see QrPass.jsx) — once checked in, the "waiting to be
+   scanned" motion no longer means anything, so it stops. */
+.qr-scan-sweep{
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 8px 1px rgba(var(--accent-rgb), 0.55);
+  animation: qrScanSweep 2.6s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes qrScanSweep{
+  0%{ top: 4%; opacity: 0; }
+  10%{ opacity: 1; }
+  90%{ opacity: 1; }
+  100%{ top: 92%; opacity: 0; }
+}
+
 /* Subtle continuous sheen sweeping across an element — used on the hero
    logo/badge for a bit of "alive" polish without looping too fast. */
 @keyframes sheen{ 0%{ background-position: -150% 0; } 100%{ background-position: 250% 0; } }
@@ -172,3 +247,21 @@ h1,h2,h3,.font-display{ font-family:'Fraunces',serif; letter-spacing:-0.01em; }
 .input::placeholder{ color: var(--text-dim); }
 .input:focus{ border-color:var(--accent); }
 .input:disabled{ opacity:0.6; cursor:not-allowed; }
+
+/* ---- Marquee strip, orbit rings, footer motion ---- */
+@keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes orbitSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes orbitSpinRev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+@keyframes footerGlow { 0%,100% { opacity: .35; transform: scale(1); } 50% { opacity: .6; transform: scale(1.08); } }
+.marquee-track { display: flex; width: max-content; animation: marqueeScroll 38s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.orbit-ring { position: absolute; inset: 0; border-radius: 9999px; animation: orbitSpin var(--orbit-speed, 24s) linear infinite; }
+.orbit-ring.rev { animation-name: orbitSpinRev; }
+.footer-glow { animation: footerGlow 7s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .orbit-ring, .footer-glow { animation: none; }
+}
+@keyframes marqueeUp { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+.marquee-col { display: flex; flex-direction: column; gap: 1rem; animation: marqueeUp var(--col-speed, 40s) linear infinite; }
+.marquee-wall:hover .marquee-col { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .marquee-col { animation: none; } }

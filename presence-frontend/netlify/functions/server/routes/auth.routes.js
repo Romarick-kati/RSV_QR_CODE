@@ -8,6 +8,8 @@ const router = Router();
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/google', authLimiter, authController.googleAuth);
+router.post('/email-code', authLimiter, authController.requestEmailCode);
+router.post('/email-code/verify', authLimiter, authController.verifyEmailCode);
 router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.me);
 router.patch('/me', requireAuth, authController.updateMe);

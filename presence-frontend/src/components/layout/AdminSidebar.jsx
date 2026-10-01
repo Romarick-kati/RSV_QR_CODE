@@ -11,15 +11,22 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const LINKS = [
-    { to: '/admin', label: t('admin_dashboard'), icon: LayoutDashboard, end: true },
-    { to: '/admin/events', label: t('admin_events'), icon: CalendarDays },
-    { to: '/admin/reports', label: t('admin_reports'), icon: FileBarChart },
-    // User management touches accounts and roles directly, so it's kept to
-    // ADMIN only — an organizer managing events shouldn't also be able to
-    // change who has admin access.
-    ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', label: t('admin_users'), icon: Users }] : []),
-  ];
+  // A self-serve ATTENDEE who created their own event gets a trimmed-down
+  // sidebar — just their event, not the full organizer console (dashboard
+  // totals, cross-event reports, and user management are scoped to
+  // ADMIN/ORGANIZER and would otherwise be dead links for them here).
+  const isSelfServeHost = user?.role === 'ATTENDEE';
+  const LINKS = isSelfServeHost
+    ? []
+    : [
+        { to: '/admin', label: t('admin_dashboard'), icon: LayoutDashboard, end: true },
+        { to: '/admin/events', label: t('admin_events'), icon: CalendarDays },
+        { to: '/admin/reports', label: t('admin_reports'), icon: FileBarChart },
+        // User management touches accounts and roles directly, so it's kept to
+        // ADMIN only — an organizer managing events shouldn't also be able to
+        // change who has admin access.
+        ...(user?.role === 'ADMIN' ? [{ to: '/admin/users', label: t('admin_users'), icon: Users }] : []),
+      ];
 
   const content = (
     <div className="flex flex-col h-full">
@@ -34,7 +41,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
       </div>
 
       <nav className="flex-1 px-3 py-5 flex flex-col gap-1.5">
-        <span className="px-3.5 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-bold mb-1.5">{t('nav_organizer_console')}</span>
+        <span className="px-3.5 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-bold mb-1.5">{isSelfServeHost ? 'Your event' : t('nav_organizer_console')}</span>
         {LINKS.map((l, i) => (
           <motion.div
             key={l.to}
@@ -68,6 +75,11 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
         ))}
 
         <div className="mt-6 px-3.5 text-[11px] uppercase tracking-wide text-[var(--text-dim)] font-bold mb-1.5">Shortcuts</div>
+        {isSelfServeHost && (
+          <Link to="/dashboard" className="hover-lift flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
+            <LayoutDashboard size={18} /> {t('nav_my_dashboard')}
+          </Link>
+        )}
         <Link to="/events" className="hover-lift flex items-center gap-3 px-3.5 py-3 rounded-lg text-[15px] font-semibold text-[var(--text-dim)] hover:text-[var(--text)] hover:bg-white/5">
           <Globe size={18} /> {t('nav_view_public_site')}
         </Link>

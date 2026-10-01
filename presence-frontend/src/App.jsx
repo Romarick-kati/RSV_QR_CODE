@@ -6,6 +6,8 @@ import { ToastProvider } from './lib/ToastContext';
 import { ThemeProvider } from './lib/ThemeContext';
 import { AccentProvider } from './lib/AccentContext';
 import { LanguageProvider } from './lib/LanguageContext';
+import { AssistantProvider } from './lib/AssistantContext';
+import AssistantPanel from './components/assistant/AssistantPanel';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PresenceLoader from './components/ui/PresenceLoader';
 import WhatsAppFloat from './components/ui/WhatsAppFloat';
@@ -50,6 +52,7 @@ const Events = lazyWithRetry(() => import('./pages/public/Events'));
 const Discover = lazyWithRetry(() => import('./pages/public/Discover'));
 const EventDetail = lazyWithRetry(() => import('./pages/public/EventDetail'));
 const About = lazyWithRetry(() => import('./pages/public/About'));
+const Founder = lazyWithRetry(() => import('./pages/public/Founder'));
 const FAQ = lazyWithRetry(() => import('./pages/public/FAQ'));
 const AuthPage = lazyWithRetry(() => import('./pages/public/AuthPage'));
 const CheckinLanding = lazyWithRetry(() => import('./pages/public/CheckinLanding'));
@@ -67,9 +70,12 @@ const AdminEventDetail = lazyWithRetry(() => import('./pages/admin/AdminEventDet
 const AdminEventAttendees = lazyWithRetry(() => import('./pages/admin/AdminEventAttendees'));
 const AdminScanner = lazyWithRetry(() => import('./pages/admin/AdminScanner'));
 const AdminEventAnalytics = lazyWithRetry(() => import('./pages/admin/AdminEventAnalytics'));
+const AdminEventLive = lazyWithRetry(() => import('./pages/admin/AdminEventLive'));
 const AdminReports = lazyWithRetry(() => import('./pages/admin/AdminReports'));
 const AdminUsers = lazyWithRetry(() => import('./pages/admin/AdminUsers'));
 
+const Privacy = lazyWithRetry(() => import('./pages/public/Legal').then((m) => ({ default: m.Privacy })));
+const Terms = lazyWithRetry(() => import('./pages/public/Legal').then((m) => ({ default: m.Terms })));
 const NotFound = lazyWithRetry(() => import('./pages/public/NotFound'));
 
 const pageVariants = {
@@ -134,7 +140,10 @@ function AnimatedRoutes() {
             <Route path="/discover" element={<Suspense fallback={<PresenceLoader />}><Discover /></Suspense>} />
             <Route path="/events/:id" element={<Suspense fallback={<PresenceLoader />}><EventDetail /></Suspense>} />
             <Route path="/about" element={<Suspense fallback={<PresenceLoader />}><About /></Suspense>} />
+            <Route path="/founder" element={<Suspense fallback={<PresenceLoader />}><Founder /></Suspense>} />
             <Route path="/faq" element={<Suspense fallback={<PresenceLoader />}><FAQ /></Suspense>} />
+            <Route path="/privacy" element={<Suspense fallback={<PresenceLoader />}><Privacy /></Suspense>} />
+            <Route path="/terms" element={<Suspense fallback={<PresenceLoader />}><Terms /></Suspense>} />
             <Route path="/login" element={<Suspense fallback={<PresenceLoader />}><AuthPage mode="login" /></Suspense>} />
             <Route path="/register" element={<Suspense fallback={<PresenceLoader />}><AuthPage mode="register" /></Suspense>} />
             <Route path="/checkin/:token" element={<Suspense fallback={<PresenceLoader />}><CheckinLanding /></Suspense>} />
@@ -147,14 +156,22 @@ function AnimatedRoutes() {
             <Route path="/qr-pass/:id" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><QrPass /></Suspense></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Suspense fallback={<PresenceLoader />}><Settings /></Suspense></ProtectedRoute>} />
 
-            {/* Organizer / Admin (protected + role gated) */}
+            {/* Organizer / Admin (protected + role gated). Event-scoped
+                pages (create/manage/attendees/scanner/analytics) also
+                allow ATTENDEE — any signed-in user can self-serve-create
+                a free event, Luma-style; ownership checks on the backend
+                (isEventOwner in utils/authz.js) keep them scoped to only
+                their own event. The console-wide pages (dashboard, full
+                event list, cross-event reports, user management) stay
+                ADMIN/ORGANIZER-only. */}
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminDashboard /></Suspense></ProtectedRoute>} />
             <Route path="/admin/events" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminEvents /></Suspense></ProtectedRoute>} />
-            <Route path="/admin/events/create" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminEventCreate /></Suspense></ProtectedRoute>} />
-            <Route path="/admin/events/:id" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminEventDetail /></Suspense></ProtectedRoute>} />
-            <Route path="/admin/events/:id/attendees" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminEventAttendees /></Suspense></ProtectedRoute>} />
-            <Route path="/admin/events/:id/scanner" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminScanner /></Suspense></ProtectedRoute>} />
-            <Route path="/admin/events/:id/analytics" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminEventAnalytics /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/create" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminEventCreate /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/:id" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminEventDetail /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/:id/attendees" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminEventAttendees /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/:id/scanner" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminScanner /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/:id/analytics" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminEventAnalytics /></Suspense></ProtectedRoute>} />
+            <Route path="/admin/events/:id/live" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER', 'ATTENDEE']}><Suspense fallback={<PresenceLoader />}><AdminEventLive /></Suspense></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={['ADMIN', 'ORGANIZER']}><Suspense fallback={<PresenceLoader />}><AdminReports /></Suspense></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><Suspense fallback={<PresenceLoader />}><AdminUsers /></Suspense></ProtectedRoute>} />
 
@@ -181,10 +198,13 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <ToastProvider>
-              <BrowserRouter>
-                <AnimatedRoutes />
-                <WhatsAppFloat />
-              </BrowserRouter>
+              <AssistantProvider>
+                <BrowserRouter>
+                  <AnimatedRoutes />
+                  <WhatsAppFloat />
+                  <AssistantPanel />
+                </BrowserRouter>
+              </AssistantProvider>
             </ToastProvider>
           </AuthProvider>
         </LanguageProvider>

@@ -2,11 +2,12 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
+import LoginCode from '../models/LoginCode.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { authValidators } from '../validators/validators.js';
 import { signToken, publicUser } from '../services/token.service.js';
-import { notifyNewUser } from '../services/notification.service.js';
+import { notifyNewUser, sendLoginCodeEmail } from '../services/notification.service.js';
 import { config } from '../config/env.js';
 
 const SALT_ROUNDS = 12;
@@ -41,6 +42,64 @@ export const login = asyncHandler(async (req, res) => {
 
   const token = signToken(user);
   res.json({ token, user: publicUser(user) });
+});
+
+// ---- Passwordless sign-in with an emailed 6-digit code ----------------------
+// Existing accounts only (new people use Register). The reply to "send me a
+// code" is identical whether or not the email has an account, so it can't be
+// used to find out who is registered.
+const CODE_TTL_MS = 10 * 60 * 1000;
+const CODE_RESEND_GAP_MS = 60 * 1000;
+const MAX_CODE_ATTEMPTS = 5;
+const hashCode = (email, code) => crypto.createHmac('sha256', config.jwtSecret).update(`${email}:${code}`).digest('hex');
+
+export const requestEmailCode = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw ApiError.badRequest('Enter a valid email address.');
+  if (!config.resendApiKey) throw ApiError.badRequest('Email sign-in is not available yet. Please sign in with your password or Google.');
+
+  const generic = { message: 'If that email has a Presence account, a code is on its way.' };
+  const user = await User.findOne({ email });
+  if (!user) return res.json(generic);
+
+  const existing = await LoginCode.findOne({ email });
+  if (existing && Date.now() - existing.createdAt.getTime() < CODE_RESEND_GAP_MS) return res.json(generic);
+
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  await LoginCode.findOneAndUpdate(
+    { email },
+    { codeHash: hashCode(email, code), attempts: 0, createdAt: new Date(), expiresAt: new Date(Date.now() + CODE_TTL_MS) },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+  const sent = await sendLoginCodeEmail(email, code);
+  if (!sent) {
+    await LoginCode.deleteOne({ email });
+    throw ApiError.badRequest('We could not send the email right now. Please try again, or use your password.');
+  }
+  res.json(generic);
+});
+
+export const verifyEmailCode = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const code = String(req.body.code || '').replace(/\s/g, '');
+  const bad = () => ApiError.badRequest('That code is incorrect or has expired.');
+  if (!email || !/^\d{6}$/.test(code)) throw bad();
+
+  const row = await LoginCode.findOne({ email });
+  if (!row || row.expiresAt.getTime() < Date.now()) throw bad();
+  if (row.attempts >= MAX_CODE_ATTEMPTS) { await LoginCode.deleteOne({ email }); throw bad(); }
+
+  const a = Buffer.from(hashCode(email, code));
+  const b = Buffer.from(row.codeHash);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    row.attempts += 1;
+    await row.save();
+    throw bad();
+  }
+  await LoginCode.deleteOne({ email });
+  const user = await User.findOne({ email });
+  if (!user) throw bad();
+  res.json({ token: signToken(user), user: publicUser(user) });
 });
 
 export const logout = asyncHandler(async (req, res) => {

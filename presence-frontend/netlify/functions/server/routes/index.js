@@ -5,6 +5,9 @@ import userRoutes from './user.routes.js';
 import attendanceRoutes from './attendance.routes.js';
 import adminRoutes from './admin.routes.js';
 import paymentRoutes from './payment.routes.js';
+import notificationRoutes from './notification.routes.js';
+import assistantRoutes from './assistant.routes.js';
+import { sitemap } from '../controllers/sitemap.controller.js';
 
 const router = Router();
 
@@ -14,6 +17,12 @@ router.use('/users', userRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/admin', adminRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/assistant', assistantRoutes);
+
+// Served to search engines at https://presencescan.site/sitemap.xml via the
+// redirect in netlify.toml.
+router.get('/sitemap.xml', sitemap);
 
 router.get('/', (req, res) => res.json({ name: 'Presence API', status: 'ok' }));
 

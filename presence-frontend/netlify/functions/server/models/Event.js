@@ -14,19 +14,59 @@ const eventSchema = new Schema(
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
     venue: { type: String, required: true },
+    // Optional exact map pin. When set, maps show this precise point instead
+    // of guessing from the venue text. Both or neither (enforced in
+    // controllers/event.controller.js).
+    // When true, confirmed attendees can OPT IN (from their own pass) to share
+    // their live position with this event's organizer. Off by default.
+    liveTracking: { type: Boolean, default: false },
+    latitude: { type: Number, default: null, min: -90, max: 90 },
+    longitude: { type: Number, default: null, min: -180, max: 180 },
     capacity: { type: Number, required: true },
     registrationDeadline: { type: Date, required: true },
     status: { type: String, enum: ['draft', 'published', 'cancelled', 'completed'], default: 'draft' },
     contact: { type: String, default: null },
     organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     // 0 (or unset) = free event, no payment step at RSVP. > 0 = a paid
-    // event using the manual Mobile Money confirmation flow below — there's
-    // no live MTN/Orange Money API integration yet (that needs a merchant
-    // account this template can't provision for you), so the attendee pays
-    // out-of-band and submits a transaction reference, which the organizer
-    // confirms from the attendee list before the pass will scan.
+    // event verified through Fapshi (Mobile Money) — see
+    // controllers/rsvp.controller.js and utils/fapshi.js. The attendee is
+    // redirected to a Fapshi-hosted checkout page to pay, and the seat
+    // only becomes usable once Fapshi itself confirms the transaction,
+    // not on anyone's say-so.
     price: { type: Number, default: 0, min: 0 },
     momoNumber: { type: String, default: null },
+    // IANA zone the event's own start/end times are in (e.g.
+    // "Africa/Douala", "Europe/London"). Previously the whole app assumed
+    // every event was in WAT (Cameroon), so an event hosted anywhere else
+    // showed/enforced the wrong clock time. Defaults to WAT so existing
+    // events keep behaving exactly as before.
+    timezone: { type: String, default: 'Africa/Douala' },
+    // Custom fields an organizer wants collected at RSVP time (e.g. "What's
+    // your major?", "Dietary restrictions?") — Luma calls these
+    // "registration questions". Free-text answers only for now (no
+    // multiple-choice/dropdown question types yet) since that covers the
+    // large majority of real use without a much bigger form-builder UI.
+    registrationQuestions: {
+      type: [{ label: { type: String, required: true }, required: { type: Boolean, default: false } }],
+      default: [],
+    },
+    // 'in-person' (default) needs a real venue and QR check-in as before.
+    // 'online' replaces the physical door entirely with a video meeting —
+    // venue is still required (kept as a simple label like "Zoom/Jitsi
+    // call" for display consistency) but QR scanning doesn't apply.
+    // 'hybrid' offers both at once.
+    format: { type: String, enum: ['in-person', 'online', 'hybrid'], default: 'in-person' },
+    // Auto-generated (never entered by the organizer — see
+    // controllers/event.controller.js) the moment an event's format is set
+    // to 'online' or 'hybrid'. Deliberately NEVER included in the public
+    // GET /events or GET /events/:id response — see withRemaining() in
+    // event.controller.js — the same way a QR pass only exists for a
+    // confirmed registration, the actual join link only exists for
+    // confirmed registrants too, via the gated GET
+    // /events/:id/meeting-link endpoint. Otherwise "registration" for an
+    // online event would be meaningless — anyone could join without
+    // ever RSVPing.
+    meetingUrl: { type: String, default: null },
   },
   { timestamps: true }
 );

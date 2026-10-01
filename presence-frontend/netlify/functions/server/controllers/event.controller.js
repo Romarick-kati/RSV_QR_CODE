@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { eventValidators } from '../validators/validators.js';
 import { escapeRegex } from '../utils/regex.js';
 import { assertEventAccess } from '../utils/authz.js';
+import { notifyEventPublished } from '../services/notification.service.js';
 
 // Public: only published events, with computed remaining-capacity so the
 // frontend never has to trust a client-side capacity count.
@@ -16,7 +17,7 @@ export const listPublicEvents = asyncHandler(async (req, res) => {
   if (q) filter.title = { $regex: escapeRegex(q), $options: 'i' };
 
   const events = await Event.find(filter).sort({ date: 1 });
-  res.json({ events: await Promise.all(events.map(withRemaining)) });
+  res.json({ events: await Promise.all(events.map((e) => withRemaining(e))) });
 });
 
 // Admin/organizer: every event regardless of status — but an ORGANIZER
@@ -34,7 +35,7 @@ export const listAdminEvents = asyncHandler(async (req, res) => {
   const checkInMap = Object.fromEntries(checkIns.map((c) => [c._id.toString(), c.count]));
 
   const withCounts = await Promise.all(
-    events.map(async (e) => ({ ...(await withRemaining(e)), checkedIn: checkInMap[e.id] || 0 }))
+    events.map(async (e) => ({ ...(await withRemaining(e, { includePrivate: true })), checkedIn: checkInMap[e.id] || 0 }))
   );
   res.json({ events: withCounts });
 });
@@ -45,10 +46,49 @@ export const getEvent = asyncHandler(async (req, res) => {
   res.json({ event: await withRemaining(event) });
 });
 
+// Gated the same way a QR pass is: only someone who's actually confirmed
+// for this event (or the organizer who owns it) gets the real join link.
+// Unlike QR check-in, there's no server-side proof someone actually
+// entered the meeting — Jitsi doesn't report that back to us — so this is
+// intentionally presented in the UI as "opened the link", not "checked
+// in", to avoid claiming a stronger guarantee than what's actually true.
+export const getMeetingLink = asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) throw ApiError.notFound('Event not found.');
+  if (event.format === 'in-person') throw ApiError.badRequest('This event does not have an online meeting.');
+
+  const isOwner = event.organizer.toString() === req.user.id || req.user.role === 'ADMIN';
+  if (!isOwner) {
+    const registration = await Registration.findOne({ event: event.id, user: req.user.id, status: 'confirmed' });
+    if (!registration) throw ApiError.forbidden('You need a confirmed registration for this event to get the meeting link.');
+  }
+
+  res.json({ meetingUrl: event.meetingUrl, format: event.format });
+});
+
 export const createEvent = asyncHandler(async (req, res) => {
   eventValidators.upsert(req.body);
+  // Anyone can self-serve a free event (Luma-style — no approval needed).
+  // A *paid* event moves real Mobile Money through Fapshi, so that
+  // specific case still requires being an approved ORGANIZER/ADMIN —
+  // reusing the existing organizer-request vetting flow (see
+  // requestOrganizerAccess in auth.controller.js) rather than letting any
+  // brand-new account immediately start collecting payments.
+  const price = Number(req.body.price) || 0;
+  if (price > 0 && !['ADMIN', 'ORGANIZER'].includes(req.user.role)) {
+    throw ApiError.forbidden('Creating a paid event requires an approved organizer account. Apply for organizer access from your profile — it only takes a moment.');
+  }
   const data = pickEventFields(req.body);
   const event = await Event.create({ ...data, organizer: req.user.id });
+  if (event.format !== 'in-person' && !event.meetingUrl) {
+    event.meetingUrl = generateMeetingUrl(event.id);
+    await event.save();
+  }
+  // A brand-new event can be created already-published (no separate
+  // "publish" step required) — that's still the moment attendees first
+  // find out it exists, same as flipping a draft live later (see
+  // updateEvent below).
+  if (event.status === 'published') notifyEventPublished(event).catch(() => {}); // never let a notification failure break event creation
   res.status(201).json({ event });
 });
 
@@ -57,9 +97,26 @@ export const updateEvent = asyncHandler(async (req, res) => {
   if (!existing) throw ApiError.notFound('Event not found.');
   assertEventAccess(req.user, existing);
   eventValidators.upsert({ ...existing.toJSON(), ...req.body });
+  const price = Number(req.body.price ?? existing.price) || 0;
+  if (price > 0 && !['ADMIN', 'ORGANIZER'].includes(req.user.role)) {
+    throw ApiError.forbidden('Turning this into a paid event requires an approved organizer account. Apply for organizer access from your profile.');
+  }
+  const wasPublished = existing.status === 'published';
   const data = pickEventFields(req.body, true);
   Object.assign(existing, data);
+  // Switching an event from in-person to online/hybrid (whether at
+  // creation or later) needs a real room — generate one the first time
+  // it's needed, and keep reusing the same one after that rather than
+  // regenerating a fresh link on every subsequent edit (which would
+  // silently break the link anyone already shared or bookmarked).
+  if (existing.format !== 'in-person' && !existing.meetingUrl) {
+    existing.meetingUrl = generateMeetingUrl(existing.id);
+  }
   const event = await existing.save();
+  // Only fires on the actual draft-to-published transition, never on a
+  // routine edit to an event that was already live — otherwise fixing a
+  // typo in the description would re-notify every attendee all over again.
+  if (!wasPublished && event.status === 'published') notifyEventPublished(event).catch(() => {}); // never let a notification failure break the edit
   res.json({ event });
 });
 
@@ -92,15 +149,40 @@ export const eventStatistics = asyncHandler(async (req, res) => {
   });
 });
 
-async function withRemaining(event) {
+async function withRemaining(event, { includePrivate = false } = {}) {
   const confirmed = await Registration.countDocuments({ event: event._id, status: 'confirmed' });
-  return { ...event.toJSON(), registered: confirmed, remaining: Math.max(event.capacity - confirmed, 0) };
+  const json = event.toJSON();
+  if (!includePrivate) {
+    // The real join link is only ever handed out via getMeetingLink()
+    // above, to people who've actually confirmed a registration — leaving
+    // it in the general public event payload would let anyone browsing
+    // the events list join an "online" event without ever registering,
+    // making registration meaningless for that event type. Whether the
+    // event HAS an online component is still fine to show publicly (see
+    // `format` below, left in json) — just not the link itself.
+    delete json.meetingUrl;
+  }
+  return { ...json, registered: confirmed, remaining: Math.max(event.capacity - confirmed, 0) };
+}
+
+// Jitsi Meet needs no account, no API key, and no setup — any room name
+// becomes a real, working meeting the instant someone opens the URL, and
+// stays free with no time/participant limits on their public server. The
+// event's own Mongo id is already a globally unique, hard-to-guess 24-char
+// string, so it doubles as a perfectly good room name with no extra
+// randomness needed.
+function generateMeetingUrl(eventId) {
+  return `https://meet.jit.si/Presence-${eventId}`;
 }
 
 function pickEventFields(body, partial = false) {
   const fields = [
     'title', 'description', 'longDescription', 'image', 'category', 'date', 'startTime',
     'endTime', 'venue', 'capacity', 'registrationDeadline', 'status', 'contact', 'price', 'momoNumber',
+    'timezone', 'registrationQuestions', 'format', 'latitude', 'longitude', 'liveTracking',
+    // Deliberately NOT 'meetingUrl' — always server-generated (see
+    // generateMeetingUrl above), never settable by the client, so nobody
+    // can point an event's "official" meeting link at somewhere else.
   ];
   const data = {};
   for (const f of fields) {
@@ -110,9 +192,32 @@ function pickEventFields(body, partial = false) {
       data[f] = body[f];
     }
   }
+  // Map pin: accept numbers (or numeric strings), drop anything invalid or
+  // out of range, and keep latitude/longitude paired — half a coordinate is
+  // useless and would place the pin somewhere wrong.
+  if (data.latitude !== undefined || data.longitude !== undefined) {
+    const toNum = (v) => (v === null || v === '' || v === undefined ? null : Number(v));
+    let lat = toNum(data.latitude);
+    let lng = toNum(data.longitude);
+    const ok = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    if (!ok) { lat = null; lng = null; }
+    data.latitude = lat;
+    data.longitude = lng;
+  }
   if (data.capacity !== undefined) data.capacity = Number(data.capacity);
   if (data.price !== undefined) data.price = Number(data.price) || 0;
   if (data.date) data.date = new Date(data.date);
   if (data.registrationDeadline) data.registrationDeadline = new Date(data.registrationDeadline);
+  if (data.registrationQuestions !== undefined) {
+    // Defensive sanitation rather than a full validator entry (see
+    // validators.js — it only supports flat fields, not nested arrays):
+    // drop anything without a real label, coerce `required` to a real
+    // boolean, and cap the count so an organizer can't accidentally (or
+    // maliciously) balloon every future registration's payload.
+    data.registrationQuestions = (Array.isArray(data.registrationQuestions) ? data.registrationQuestions : [])
+      .filter((q) => q && typeof q.label === 'string' && q.label.trim())
+      .slice(0, 10)
+      .map((q) => ({ label: q.label.trim().slice(0, 200), required: Boolean(q.required) }));
+  }
   return data;
 }

@@ -1,14 +1,19 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGithub, faLinkedin } from '@fortawesome/free-brands-svg-icons';
-import { faGlobe, faCloudSun, faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons';
+import { Globe, CloudSun, ArrowUpRight } from 'lucide-react';
+import { GithubIcon, LinkedinIcon } from '../ui/BrandIcons';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../lib/LanguageContext';
 
+// lucide-react rather than FontAwesome deliberately — this section renders
+// on the homepage (not lazy-loaded), so importing FontAwesome here pulled
+// its ~36KB gzipped runtime into every visitor's very first page load, for
+// icons lucide (already a dependency, used everywhere else) covers just as
+// well. GitHub/LinkedIn are brand logos lucide doesn't include — see
+// BrandIcons.jsx for why those two are small hand-written SVGs instead.
 const LINKS = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/', icon: faLinkedin },
-  { label: 'GitHub', href: 'https://github.com/Romarick-Kati', icon: faGithub },
-  { label: 'Portfolio', href: 'https://kati-guidotti.netlify.app', icon: faGlobe },
-  { label: 'Skyline weather app', href: 'https://kati-skyline.netlify.app', icon: faCloudSun },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/', icon: LinkedinIcon },
+  { label: 'GitHub', href: 'https://github.com/Romarick-Kati', icon: GithubIcon },
+  { label: 'Portfolio', href: 'https://kati-guidotti.netlify.app', icon: Globe },
+  { label: 'Skyline weather app', href: 'https://kati-skyline.netlify.app', icon: CloudSun },
 ];
 
 export default function CreatorSection() {
@@ -45,7 +50,7 @@ export default function CreatorSection() {
             <p className="text-sm leading-relaxed max-w-xl mb-5" itemProp="description" style={{ color: 'var(--pass-text-dim)' }}>
               A full-stack developer working across the MERN stack: MongoDB, Express, React and Node.js.
               Presence was built end-to-end — from the React frontend through to the Express and
-              PostgreSQL backend.
+              MongoDB backend.
             </p>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2.5">
               {LINKS.map((l, i) => (
@@ -63,7 +68,7 @@ export default function CreatorSection() {
                   className="flex items-center gap-2 text-[13px] font-medium px-3.5 py-2 rounded-lg border hover:border-[#22D3A6] hover:text-[#22D3A6] transition-colors"
                   style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'var(--pass-text-dim)' }}
                 >
-                  <FontAwesomeIcon icon={l.icon} /> {l.label} <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="opacity-60 text-[10px]" />
+                  <l.icon size={14} /> {l.label} <ArrowUpRight size={11} className="opacity-60" />
                 </motion.a>
               ))}
             </div>
