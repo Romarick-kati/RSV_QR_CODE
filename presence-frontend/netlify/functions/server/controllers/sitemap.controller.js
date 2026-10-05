@@ -8,7 +8,7 @@ const SITE_URL = 'https://presencescan.site';
 // fails, the static pages are still returned rather than an error, so
 // Google never sees a broken sitemap.
 const STATIC_PAGES = [
-  { path: '/', priority: '1.0', images: ['/icon-512.png', '/og-image.png', '/paper-sign-in-sheet.jpg'] },
+  { path: '/', priority: '1.0', images: ['/icon-512.png', '/og-image.png', '/paper-sign-in-sheet.svg'] },
   { path: '/events', priority: '0.9' },
   { path: '/discover', priority: '0.7' },
   { path: '/about', priority: '0.7', images: ['/icon-512.png'] },

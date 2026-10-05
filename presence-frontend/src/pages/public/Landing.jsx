@@ -23,25 +23,10 @@ import Globe from '../../components/ui/Globe';
 import { useAuth } from '../../lib/AuthContext';
 import { useSEO } from '../../lib/useSEO';
 
-const STEPS = [
-  { icon: ClipboardList, title: 'Organizer publishes the event', copy: 'Set the date, venue, and capacity. The event goes live on the public site instantly.' },
-  { icon: CalendarCheck, title: 'Attendee RSVPs in seconds', copy: 'A short registration form checks capacity and deadlines automatically, no back-and-forth emails.' },
-  { icon: QrCode, title: 'A digital pass is issued', copy: 'A unique, non-guessable token is generated and rendered as a QR code on the attendee\u2019s pass.' },
-  { icon: ScanLine, title: 'One scan at the door', copy: 'Staff scan the pass with any device camera. The server verifies the token and records the check-in.' },
-];
-
-const FEATURES = [
-  { icon: ShieldCheck, title: 'Server-verified check-in', copy: 'The QR code only carries a token, so the backend stays the source of truth for validity and duplicates.' },
-  { icon: BarChart3, title: 'Live attendance analytics', copy: 'Registrations, check-ins, and capacity utilization update in real time as people arrive.' },
-  { icon: Smartphone, title: 'Built for the door', copy: 'The scanner interface is optimized for a phone camera in one hand and a queue in front of you.' },
-  { icon: Zap, title: 'No paper sign-in sheets', copy: 'Replace clipboards and spreadsheets with one verified, searchable record per event.' },
-];
-
-const FAQS = [
-  { q: 'Do attendees need to install an app?', a: 'No. Registration, the digital pass, and QR code all work in the browser, with nothing to install.' },
-  { q: 'What happens if a QR code is scanned twice?', a: 'The second scan is rejected with "Already checked in" and no duplicate attendance record is created.' },
-  { q: 'Can I export attendance data?', a: 'Yes. Organizers can export a full attendance report per event as CSV from the reports page.' },
-];
+// Icons only here — titles/copy are translated inside the component via
+// t('step1_title') etc. so the language toggle actually reaches this content.
+const STEP_ICONS = [ClipboardList, CalendarCheck, QrCode, ScanLine];
+const FEATURE_ICONS = [ShieldCheck, BarChart3, Smartphone, Zap];
 
 export default function Landing() {
   const [events, setEvents] = useState([]);
@@ -49,6 +34,9 @@ export default function Landing() {
   const [openFaq, setOpenFaq] = useState(0);
   const { t } = useLanguage();
   const { user } = useAuth();
+  const STEPS = STEP_ICONS.map((icon, i) => ({ icon, title: t(`step${i + 1}_title`), copy: t(`step${i + 1}_copy`) }));
+  const FEATURES = FEATURE_ICONS.map((icon, i) => ({ icon, title: t(`feature${i + 1}_title`), copy: t(`feature${i + 1}_copy`) }));
+  const FAQS = [1, 2, 3].map((i) => ({ q: t(`faq${i}_q`), a: t(`faq${i}_a`) }));
   useSEO(null, 'Presence Scan is a free QR event registration app. RSVP to conferences, workshops and community events online, get a digital QR pass, pay with Mobile Money, and check in with one scan — no paper sign-in sheets.', {
     path: '/',
     jsonLd: {
@@ -151,7 +139,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide mb-1" style={{ color: 'var(--pass-text-dim)' }}>Reference</p>
+                  <p className="text-[11px] uppercase tracking-wide mb-1" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_reference')}</p>
                   <p className="font-mono text-sm" style={{ color: 'var(--pass-text)' }}>PRES-2026-00001</p>
                   <p className="text-[11px] uppercase tracking-wide mt-3 mb-1" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_attendee')}</p>
                   <p className="text-sm" style={{ color: 'var(--pass-text)' }}>Aisha Bello</p>
@@ -169,7 +157,7 @@ export default function Landing() {
 
       {/* HOW IT WORKS */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
-        <Reveal><SectionHeading eyebrow="How it works" title="From RSVP to verified check-in" /></Reveal>
+        <Reveal><SectionHeading eyebrow={t('footer_how_it_works')} title={t('landing_how_it_works_title')} /></Reveal>
         <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
           {STEPS.map((s, i) => (
             <RevealItem key={s.title} className="relative rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
@@ -186,7 +174,7 @@ export default function Landing() {
 
       {/* FEATURES */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
-        <Reveal><SectionHeading eyebrow="Why Presence" title="Built for the door, not just the spreadsheet" /></Reveal>
+        <Reveal><SectionHeading eyebrow={t('landing_why_eyebrow')} title={t('landing_why_title')} /></Reveal>
         <RevealGroup className="grid sm:grid-cols-2 gap-5 mt-12">
           {FEATURES.map((f, i) => (
             <RevealItem key={f.title} direction={i % 2 === 0 ? 'left' : 'right'} className="flex gap-4 rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
@@ -229,9 +217,9 @@ export default function Landing() {
                 transition={{ duration: 0.5 }}
                 className="max-w-md"
               >
-                <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>On the ground</span>
-                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white mt-2 mb-3">Built for the actual door, not a demo</h2>
-                <p className="text-sm text-white/75 leading-relaxed">Every screen in Presence was designed around one moment: someone arriving at an event and needing to get in fast.</p>
+                <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>{t('landing_ground_eyebrow')}</span>
+                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white mt-2 mb-3">{t('landing_ground_title')}</h2>
+                <p className="text-sm text-white/75 leading-relaxed">{t('landing_ground_quote')}</p>
               </motion.div>
             </div>
           </div>
@@ -241,29 +229,39 @@ export default function Landing() {
       {/* EVENT DISCOVERY PREVIEW */}
       <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
         <Reveal className="flex items-end justify-between flex-wrap gap-4 mb-10">
-          <SectionHeading eyebrow="Discover" title="Upcoming events" />
+          <SectionHeading eyebrow={t('landing_discover_eyebrow')} title={t('landing_upcoming_events')} />
           <Link to="/events" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-            View all events <ArrowRight size={14} />
+            {t('landing_view_all_events')} <ArrowRight size={14} />
           </Link>
         </Reveal>
-        <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((e, i) => <RevealItem key={e.id}><EventCard event={e} index={i} /></RevealItem>)}
-        </RevealGroup>
+        {events.length > 0 ? (
+          <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((e, i) => <RevealItem key={e.id}><EventCard event={e} index={i} /></RevealItem>)}
+          </RevealGroup>
+        ) : (
+          <Reveal className="rounded-2xl border flex flex-col items-center text-center px-6 py-16" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+            <span className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--line-05)' }}>
+              <CalendarCheck size={24} style={{ color: 'var(--accent)' }} />
+            </span>
+            <p className="font-display text-lg font-semibold mb-1.5">{t('landing_events_empty_title')}</p>
+            <p className="text-sm text-[var(--text-dim)] max-w-sm">{t('landing_events_empty_copy')}</p>
+          </Reveal>
+        )}
       </section>
 
       {/* STATS BAND */}
       <section className="border-y" style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}>
         <RevealGroup className="max-w-7xl mx-auto px-5 sm:px-8 py-14 grid grid-cols-2 sm:grid-cols-4 gap-8">
-          <RevealItem><BigStat icon={CalendarCheck} label="Events managed" value={stats.totalEvents} /></RevealItem>
+          <RevealItem><BigStat icon={CalendarCheck} label={t('landing_events_managed')} value={stats.totalEvents} /></RevealItem>
           <RevealItem><BigStat icon={Users} label={t('stat_registrations')} value={stats.totalRegistrations} /></RevealItem>
           <RevealItem><BigStat icon={ScanLine} label={t('stat_seats')} value={stats.totalCapacity} /></RevealItem>
-          <RevealItem><BigStat icon={BarChart3} label="Live QR check-in" value="Enabled" /></RevealItem>
+          <RevealItem><BigStat icon={BarChart3} label={t('landing_live_checkin')} value={t('landing_live_checkin_val')} /></RevealItem>
         </RevealGroup>
       </section>
 
       {/* FAQ */}
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
-        <Reveal><SectionHeading eyebrow="FAQ" title="Common questions" center /></Reveal>
+        <Reveal><SectionHeading eyebrow={t('landing_faq_eyebrow')} title={t('faq_title')} center /></Reveal>
         <RevealGroup className="mt-10 flex flex-col gap-3">
           {FAQS.map((f, i) => (
             <RevealItem key={f.q} className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
@@ -301,13 +299,13 @@ export default function Landing() {
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-24">
         <Reveal className="rounded-[28px] border p-12 text-center relative overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb),0.14), transparent 60%)' }} />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-40 pointer-events-none" aria-hidden="true"><Globe size={460} /></div>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-80 pointer-events-none" aria-hidden="true"><Globe size={500} /></div>
           <div className="relative z-10">
-            <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>Ready to replace the sign-in sheet?</h2>
-            <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>Create an account, RSVP to an event, and see your digital pass generate in seconds.</p>
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>{t('landing_cta_title')}</h2>
+            <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>{t('landing_cta_sub')}</p>
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="inline-block">
               <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
-                Get started <ArrowRight size={16} />
+                {t('landing_cta_btn')} <ArrowRight size={16} />
               </Link>
             </motion.div>
           </div>

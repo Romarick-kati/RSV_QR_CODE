@@ -15,7 +15,6 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { eventsApi, meApi, ApiError } from '../../lib/api';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
-import { LogoChip } from '../../components/ui/EventLogo';
 import { formatDateLong, formatTime, isEventPast, isRegistrationDeadlinePassed } from '../../lib/utils';
 import { useSEO, SITE_URL } from '../../lib/useSEO';
 
@@ -244,7 +243,6 @@ export default function EventDetail() {
       <div className="relative h-64 sm:h-80 flex items-end overflow-hidden">
         <img src={getSmartEventPhoto(event, '1600/900')} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
-        <LogoChip size={36} className="top-4 right-4" />
         <div className="max-w-5xl mx-auto px-5 sm:px-8 w-full pb-8 relative z-10">
           <Link to="/events" className="inline-flex items-center gap-1.5 text-white/85 text-sm font-medium mb-4 hover:text-white">
             <ArrowLeft size={15} /> {t('event_back')}
@@ -280,8 +278,11 @@ export default function EventDetail() {
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-          <div className="flex items-center justify-between mb-4">
+        <aside className="relative lg:sticky lg:top-24 h-fit rounded-2xl border p-6 overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+          {/* faint brand watermark, tucked in the corner so it never competes
+              with the actual registration controls below it */}
+          <img src="/icon-512.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-28 h-28 opacity-[0.06] pointer-events-none select-none" />
+          <div className="relative flex items-center justify-between mb-4">
             <Badge status={past ? 'completed' : 'published'} />
             <span className="text-sm text-[var(--text-dim)]">{full ? t('event_fully_booked') : t('event_spots_of', { remaining, capacity: event.capacity })}</span>
           </div>

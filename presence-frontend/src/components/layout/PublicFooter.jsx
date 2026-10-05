@@ -63,7 +63,12 @@ const SOCIAL_LINKS = [
   { label: 'Facebook', icon: FacebookIcon, href: 'https://www.facebook.com/ndiromarick.kati.1', color: '#1877F2' },
   { label: 'Instagram', icon: InstagramIcon, href: 'https://www.instagram.com/ndiromarick?igsi=MWJicHgybXQ1eXY5aQ==', color: '#E1306C' },
   { label: 'LinkedIn', icon: LinkedInIcon, href: 'https://www.linkedin.com/in/ndi-romarick-kati-0421a1320?utm_source=share_via&utm_content=profile&utm_medium=member_android', color: '#0A66C2' },
-  { label: 'X (Twitter)', icon: XIcon, href: 'https://x.com/Romarick-Kati', color: '#e7e9ea' },
+  // X's real brand mark is just black (or white on a dark surface) — not a
+  // saturated color like the others — so it uses the app's own theme-aware
+  // text color instead of a fixed hex. The fixed near-white grey this held
+  // before made the icon nearly invisible against a light background, and
+  // would have gone fully invisible on hover (white-on-white).
+  { label: 'X (Twitter)', icon: XIcon, href: 'https://x.com/Romarick-Kati', color: 'var(--text)', hoverColor: 'var(--bg)' },
   { label: 'YouTube', icon: YouTubeIcon, href: 'https://youtube.com/@Romarick-Kati', color: '#FF0000' },
 ];
 
@@ -77,8 +82,22 @@ export default function PublicFooter() {
     <footer className="relative mt-24 border-t overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--bg)' }}>
       {/* soft breathing glow + a slowly turning globe fill the empty space */}
       <div className="footer-glow absolute -bottom-40 left-1/2 -translate-x-1/2 w-[720px] h-[320px] rounded-full blur-[110px] pointer-events-none" style={{ background: 'var(--accent)', opacity: 0.35 }} aria-hidden="true" />
-      <div className="hidden lg:block absolute -right-24 -bottom-32 opacity-40 pointer-events-none" aria-hidden="true">
+      {/* The footer has overflow-hidden (so the big blurred glow above can't
+          cause horizontal scroll), which silently clipped this globe away
+          completely when it sat outside the footer's box on negative
+          offsets. Anchoring its centre exactly on the corner instead keeps
+          the visible quarter inside the clipped area. z-10 is also needed:
+          the content wrapper just below this is itself `position: relative`
+          and comes later in the DOM, so without an explicit z-index it
+          silently painted on top of this globe and hid it completely —
+          pointer-events-none keeps it from blocking clicks on that content. */}
+      <div className="hidden lg:block absolute -right-10 -bottom-10 opacity-50 pointer-events-none z-10" aria-hidden="true">
         <Globe size={420} />
+      </div>
+      {/* smaller version so phones still get the globe, just scaled down and
+          tucked out of the way of the column text */}
+      <div className="lg:hidden absolute -right-8 -bottom-8 opacity-60 pointer-events-none z-10" aria-hidden="true">
+        <Globe size={200} />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-8 pt-14">
@@ -139,13 +158,13 @@ export default function PublicFooter() {
             </ul>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text)] mb-3">{t('footer_follow')}</h4>
             <div className="flex flex-wrap gap-2">
-              {SOCIAL_LINKS.map(({ label, icon: Icon, href, color }) => (
+              {SOCIAL_LINKS.map(({ label, icon: Icon, href, color, hoverColor = '#fff' }) => (
                 <motion.a
                   key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
                   whileHover={{ y: -4, scale: 1.08 }} whileTap={{ scale: 0.94 }}
                   className="w-10 h-10 rounded-xl flex items-center justify-center border transition-colors"
                   style={{ '--brand': color, color, background: `color-mix(in srgb, ${color} 14%, transparent)`, borderColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = color; e.currentTarget.style.color = '#fff'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = color; e.currentTarget.style.color = hoverColor; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = `color-mix(in srgb, ${color} 14%, transparent)`; e.currentTarget.style.color = color; }}
                 >
                   <Icon size={17} />

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EventThumb } from '../../components/ui/EventLogo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarX, QrCode, X } from 'lucide-react';
 import AttendeeShell from '../../components/layout/AttendeeShell';
@@ -105,8 +104,7 @@ export default function MyEvents() {
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4"
                   style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}
                 >
-                  <EventThumb event={r.event} />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <p className="font-medium text-[var(--text)]">{r.event.title}</p>
                     <p className="text-sm text-[var(--text-dim)]">{formatDate(r.event.date)} &middot; {formatTime(r.event.startTime, r.event.timezone, r.event.date)} &middot; {r.event.venue}</p>
                     <p className="text-xs text-[var(--text-dim)] font-mono mt-1">{r.registrationReference}</p>

@@ -1,4 +1,3 @@
-import { EventThumb } from '../../components/ui/EventLogo';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, CalendarX, Users, ScanLine, BarChart3, Pencil, Trash2 } from 'lucide-react';
@@ -79,7 +78,6 @@ export default function AdminEvents() {
         <div className="grid gap-3">
           {filtered.map((e) => (
             <div key={e.id} className="rounded-2xl border p-5 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
-              <EventThumb event={e} size={64} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   <Link to={`/admin/events/${e.id}`} className="font-display font-semibold text-[var(--text)] hover:text-[#22D3A6] transition-colors">{e.title}</Link>

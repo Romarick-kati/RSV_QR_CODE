@@ -74,19 +74,34 @@ const DOTS = buildDots();
 
 export default function Globe({ size = 320, speed = 0.0004, tilt = 0.4, className = '', land = '#22D3A6', sea = 'rgba(148,163,184,0.22)', glow = 'rgba(34,211,166,0.35)' }) {
   const ref = useRef(null);
+  const wrapRef = useRef(null);
 
   useEffect(() => {
     const canvas = ref.current;
-    if (!canvas) return undefined;
+    const wrap = wrapRef.current;
+    if (!canvas || !wrap) return undefined;
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
+    // The wrapper is a square that shrinks to fit a narrow phone screen
+    // (see the returned markup below); read its actual rendered size here
+    // instead of trusting the `size` prop verbatim, otherwise a globe drawn
+    // at a fixed pixel size but CSS-capped by max-width on a narrow phone
+    // keeps its fixed pixel height while only its width shrinks, squashing
+    // a perfect circle into an oval. Re-measuring on resize keeps it round
+    // at every viewport width instead of only at the width it was built for.
+    let drawSize = size;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
-    const R = size * 0.42;
-    const cx = size / 2;
-    const cy = size / 2;
+    function resize() {
+      drawSize = wrap.clientWidth || size;
+      canvas.width = drawSize * dpr;
+      canvas.height = drawSize * dpr;
+      canvas.style.width = `${drawSize}px`;
+      canvas.style.height = `${drawSize}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(wrap);
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     let raf = 0;
     let visible = true;
@@ -97,19 +112,22 @@ export default function Globe({ size = 320, speed = 0.0004, tilt = 0.4, classNam
       const dt = Math.min(now - last, 64);
       last = now;
       if (!reduce) rot += dt * speed * 6;
-      ctx.clearRect(0, 0, size, size);
+      const R = drawSize * 0.42;
+      const cx = drawSize / 2;
+      const cy = drawSize / 2;
+      ctx.clearRect(0, 0, drawSize, drawSize);
 
       // Glow only outside the sphere's edge (transparent inside, so the
       // dots stay readable), plus a faint disc to give the globe body.
-      const halo = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.3);
+      const halo = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.35);
       halo.addColorStop(0, 'rgba(0,0,0,0)');
-      halo.addColorStop(0.25, glow);
+      halo.addColorStop(0.3, glow);
       halo.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = halo;
       ctx.beginPath();
-      ctx.arc(cx, cy, R * 1.3, 0, Math.PI * 2);
+      ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(148,163,184,0.07)';
+      ctx.fillStyle = 'rgba(148,163,184,0.09)';
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
       ctx.fill();
@@ -125,11 +143,24 @@ export default function Globe({ size = 320, speed = 0.0004, tilt = 0.4, classNam
         const y = y0 * cosT - z0 * sinT;
         const z = y0 * sinT + z0 * cosT;
         if (z <= 0) continue; // far side
-        ctx.globalAlpha = 0.25 + z * 0.75;
+        const px = cx + x * R;
+        const py = cy - y * R;
+        const dotR = d.land ? 1.7 + z * 1.1 : 1.05;
+        // A tiny lit core + soft glow on every dot — this is what makes the
+        // globe read as "lighting up" rather than a flat scatter of dots,
+        // especially at the lower opacity a decorative background needs.
+        ctx.globalAlpha = 0.35 + z * 0.65;
         ctx.fillStyle = d.land ? land : sea;
         ctx.beginPath();
-        ctx.arc(cx + x * R, cy - y * R, d.land ? 1.5 + z * 0.9 : 0.9, 0, Math.PI * 2);
+        ctx.arc(px, py, dotR, 0, Math.PI * 2);
         ctx.fill();
+        if (d.land) {
+          ctx.globalAlpha = (0.12 + z * 0.18);
+          ctx.fillStyle = land;
+          ctx.beginPath();
+          ctx.arc(px, py, dotR * 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       ctx.globalAlpha = 1;
       if (visible && !reduce) raf = requestAnimationFrame(draw);
@@ -142,8 +173,17 @@ export default function Globe({ size = 320, speed = 0.0004, tilt = 0.4, classNam
       if (visible) { last = performance.now(); raf = requestAnimationFrame(draw); }
     });
     io.observe(canvas);
-    return () => { cancelAnimationFrame(raf); io.disconnect(); };
+    return () => { cancelAnimationFrame(raf); io.disconnect(); ro.disconnect(); };
   }, [size, speed, tilt, land, sea, glow]);
 
-  return <canvas ref={ref} className={className} style={{ width: size, height: size, maxWidth: '100%' }} aria-hidden="true" />;
+  // The wrapper is the square that actually controls rendered size: it caps
+  // out at `size` px on a screen with room, but shrinks with the viewport
+  // on a narrow phone via `width: min(100%, Xpx)` + `aspect-ratio: 1`, so
+  // the globe is always a circle, never an oval squeezed by a maxWidth-only
+  // cap on just one axis.
+  return (
+    <div ref={wrapRef} className={className} style={{ width: `min(100%, ${size}px)`, aspectRatio: '1 / 1' }}>
+      <canvas ref={ref} style={{ display: 'block', width: '100%', height: '100%' }} aria-hidden="true" />
+    </div>
+  );
 }

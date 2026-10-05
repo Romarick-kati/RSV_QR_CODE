@@ -6,12 +6,12 @@ import BrandMark from '../../components/ui/BrandMark';
 import GoogleSignInButton from '../../components/ui/GoogleSignInButton';
 import PresenceLoader from '../../components/ui/PresenceLoader';
 import Globe from '../../components/ui/Globe';
-import { authApi } from '../../lib/api';
 import { useAuth } from '../../lib/AuthContext';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useSEO } from '../../lib/useSEO';
 import { compressImageFile, ImageError } from '../../lib/imageUtils';
+import { authApi } from '../../lib/api';
 
 export default function AuthPage({ mode = 'login' }) {
   const isLoginRoute = mode === 'login';
@@ -177,14 +177,28 @@ export default function AuthPage({ mode = 'login' }) {
 
   return (
     <div className="min-h-screen flex flex-col sm:flex-row items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
-      {/* ambient background, echoes the brand's scan-target motif */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* ambient background, echoes the brand's scan-target motif. `fixed`
+          (not `absolute`) is deliberate: this page's content can be taller
+          than the viewport on a short phone screen, and an absolutely
+          positioned wrapper stretches to match that full content height —
+          which put anything centered with top-1/2 well below the fold, off
+          whatever is actually visible. `fixed inset-0` always tracks the
+          viewport itself instead. */}
+      <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 grain opacity-20" />
         <div className="absolute w-[420px] h-[420px] rounded-full blur-[90px] opacity-[0.14] -top-24 -left-24" style={{ background: '#22D3A6' }} />
         <div className="absolute w-[380px] h-[380px] rounded-full blur-[90px] opacity-[0.12] -bottom-24 -right-16" style={{ background: '#8B7CF6' }} />
         <div className="absolute w-[260px] h-[260px] rounded-full blur-[90px] opacity-[0.08] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ background: '#F5A623' }} />
         <div className="hidden lg:block absolute -right-16 top-1/2 -translate-y-1/2 opacity-80"><Globe size={520} /></div>
         <div className="hidden lg:block absolute -left-24 bottom-[-120px] opacity-40"><Globe size={360} tilt={-0.3} speed={0.0003} land="#8B7CF6" glow="rgba(139,124,246,0.3)" /></div>
+        {/* smaller globe kept visible on phones too, instead of the decorative
+            animation disappearing entirely below the lg breakpoint. Corner-
+            anchored rather than centered: the sign-in card below is solid,
+            opaque white and fills almost the whole screen on a phone, so a
+            globe centered behind it would be entirely covered — only a
+            corner, peeking out past the card's edge into the open margin,
+            actually ends up visible. */}
+        <div className="lg:hidden absolute -top-16 -right-16 opacity-60"><Globe size={280} /></div>
       </div>
 
       <Link to="/" className="relative sm:fixed sm:top-6 sm:left-6 z-20 flex items-center gap-2.5 mb-5 sm:mb-0 opacity-0 animate-fadeUp" style={{ animationDelay: '80ms' }}>
@@ -222,7 +236,7 @@ export default function AuthPage({ mode = 'login' }) {
               <div className="sm:w-[54%] order-2 sm:order-2 p-6 sm:p-9 flex flex-col justify-center min-w-0" style={{ background: 'var(--panel)' }}>
                 <div className="sm:hidden flex items-center gap-2.5 mb-5 -mt-2">
                   <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(150deg,#22D3A6,#8B7CF6)' }}><ScanLine size={17} color="#0B0F22" /></span>
-                  <span className="text-sm text-[var(--text-dim)]">Welcome back, sign in to continue.</span>
+                  <span className="text-sm text-[var(--text-dim)]">{t('auth_welcome_back')}</span>
                 </div>
                 <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_sign_in')}</h3>
                 <p className="text-sm text-[var(--text-dim)] mb-6">{t('auth_sign_in_sub')}</p>
@@ -244,29 +258,29 @@ export default function AuthPage({ mode = 'login' }) {
                         value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
                       <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
                         value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
-                      <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label="Sign in" />
+                      <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label={t('auth_sign_in')} />
                     </form>
                     <button type="button" onClick={() => { setCodeStep('email'); setCodeEmail(loginForm.email); setCodeError(''); }} className="w-full text-center text-sm font-semibold mt-4" style={{ color: '#22D3A6' }}>
-                      Email me a sign-in code instead
+                      {t('auth_email_code_instead')}
                     </button>
                   </>
                 )}
                 {codeStep === 'email' && (
                   <form onSubmit={handleSendCode} className="flex flex-col gap-4" noValidate>
                     {codeError && <FormError message={codeError} />}
-                    <p className="text-sm text-[var(--text-dim)]">We will email you a 6-digit code. No password needed.</p>
+                    <p className="text-sm text-[var(--text-dim)]">{t('auth_code_intro')}</p>
                     <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail} value={codeEmail} onChange={setCodeEmail} />
-                    <SubmitButton loading={codeBusy} icon={<Mail size={16} />} label="Send code" />
-                    <button type="button" onClick={() => setCodeStep(null)} className="text-sm text-[var(--text-dim)]">Back to password sign-in</button>
+                    <SubmitButton loading={codeBusy} icon={<Mail size={16} />} label={t('auth_send_code')} />
+                    <button type="button" onClick={() => setCodeStep(null)} className="text-sm text-[var(--text-dim)]">{t('auth_back_to_password')}</button>
                   </form>
                 )}
                 {codeStep === 'verify' && (
                   <form onSubmit={handleVerifyCode} className="flex flex-col gap-4" noValidate>
                     {codeError && <FormError message={codeError} />}
-                    <p className="text-sm text-[var(--text-dim)]">If <strong>{codeEmail}</strong> has an account, a code is on its way. It expires in 10 minutes.</p>
-                    <Field label="6-digit code" type="text" autoComplete="one-time-code" placeholder="123456" icon={Lock} value={codeValue} onChange={(v) => setCodeValue(v.replace(/\D/g, '').slice(0, 6))} />
-                    <SubmitButton loading={codeBusy} icon={<LogIn size={16} />} label="Sign in" />
-                    <button type="button" onClick={() => { setCodeStep('email'); setCodeValue(''); setCodeError(''); }} className="text-sm text-[var(--text-dim)]">Send a new code</button>
+                    <p className="text-sm text-[var(--text-dim)]">{t('auth_code_sent_intro', { email: codeEmail })}</p>
+                    <Field label={t('auth_code_label')} type="text" autoComplete="one-time-code" placeholder="123456" icon={Lock} value={codeValue} onChange={(v) => setCodeValue(v.replace(/\D/g, '').slice(0, 6))} />
+                    <SubmitButton loading={codeBusy} icon={<LogIn size={16} />} label={t('auth_sign_in')} />
+                    <button type="button" onClick={() => { setCodeStep('email'); setCodeValue(''); setCodeError(''); }} className="text-sm text-[var(--text-dim)]">{t('auth_send_new_code')}</button>
                   </form>
                 )}
 
@@ -375,7 +389,7 @@ export default function AuthPage({ mode = 'login' }) {
                     value={regForm.email} onChange={(v) => setRegForm((f) => ({ ...f, email: v }))} />
                   <Field label={t('auth_password')} type="password" autoComplete="new-password" placeholder="At least 6 characters" icon={Lock}
                     value={regForm.password} onChange={(v) => setRegForm((f) => ({ ...f, password: v }))} />
-                  <SubmitButton loading={regLoading} icon={<UserPlus size={16} />} label="Create account" />
+                  <SubmitButton loading={regLoading} icon={<UserPlus size={16} />} label={t('auth_create_account')} />
                 </form>
 
                 <p className="text-center text-sm text-[var(--text-dim)] mt-5">

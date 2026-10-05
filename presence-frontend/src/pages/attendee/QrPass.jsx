@@ -8,7 +8,6 @@ import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import BrandMark from '../../components/ui/BrandMark';
 import LiveLocationShare from '../../components/ui/LiveLocationShare';
-import { LogoWatermark } from '../../components/ui/EventLogo';
 import EventMap from '../../components/ui/EventMap';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useToast } from '../../lib/ToastContext';
@@ -155,8 +154,15 @@ export default function QrPass() {
               badge — its text uses fixed --pass-text tokens rather than the
               themed --text tokens, so it stays legible in light mode too. */}
           <div id="pass-card" className="relative isolate rounded-[26px] border shadow-2xl overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
-            {/* Large Presence watermark, behind the pass content. */}
-            <LogoWatermark />
+            {/* Large Presence watermark: logo with slowly turning rings, behind the pass content. */}
+            <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none" aria-hidden="true">
+              <div className="relative w-[420px] h-[420px] shrink-0">
+                <span className="orbit-ring border-2 border-dashed" style={{ borderColor: 'rgba(34,211,166,0.22)', '--orbit-speed': '40s' }} />
+                <span className="orbit-ring rev border" style={{ inset: '44px', borderColor: 'rgba(139,124,246,0.28)', '--orbit-speed': '28s' }} />
+                <span className="orbit-ring border-2 border-dotted" style={{ inset: '92px', borderColor: 'rgba(34,211,166,0.25)', '--orbit-speed': '18s' }} />
+                <img src="/icon-512.png" alt="" className="absolute inset-[120px] w-[180px] h-[180px] opacity-[0.2]" />
+              </div>
+            </div>
             <div className="p-7 pb-0 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BrandMark size={28} />

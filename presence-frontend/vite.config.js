@@ -20,9 +20,19 @@ export default defineConfig({
         // cached across deploys even when only app code changes.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/') || id.includes('react-router')) return 'vendor-react';
           if (id.includes('framer-motion')) return 'vendor-motion';
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-          if (id.includes('react-router') || id.includes('/react/') || id.includes('/react-dom/')) return 'vendor-react';
+          // recharts is deliberately NOT forced into a manual chunk here.
+          // recharts v3's own dependency tree (react-redux, @reduxjs/toolkit,
+          // immer, victory-vendor's d3) is massive (~400KB) and is only ever
+          // imported by the two admin analytics pages, both already behind
+          // lazyWithRetry(() => import(...)). Giving recharts its own named
+          // vendor chunk previously forced the bundler to eagerly
+          // modulepreload all ~400KB of it on every single page load,
+          // including the public landing page — exactly backwards from the
+          // intent. Leaving it unassigned lets the bundler fold it into the
+          // two lazy page chunks that actually need it, so it is only ever
+          // fetched by someone who opens an admin analytics page.
         },
       },
     },

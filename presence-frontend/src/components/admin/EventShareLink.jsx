@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link2, Copy, Check, ExternalLink } from 'lucide-react';
+import BrandMark from '../ui/BrandMark';
 
 // Every event gets a public link the moment it's created — this just makes
 // that link impossible to miss and one click to copy. Sharing it is fully
@@ -32,7 +33,9 @@ export default function EventShareLink({ eventId }) {
         <Link2 size={18} style={{ color: '#22D3A6' }} />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[var(--text)] mb-1">Your event's shareable link</p>
+        <p className="text-sm font-semibold text-[var(--text)] mb-1 flex items-center gap-2">
+          <BrandMark size={16} /> Your event's shareable link
+        </p>
         <p className="text-xs text-[var(--text-dim)] mb-2.5">Copy this and send it to attendees — WhatsApp, email, flyers, anywhere. Sharing is entirely up to you.</p>
         <div className="flex gap-2">
           <input

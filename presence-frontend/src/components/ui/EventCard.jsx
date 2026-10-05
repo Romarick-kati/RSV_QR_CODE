@@ -6,7 +6,6 @@ import { formatDate, formatTime, isEventPast } from '../../lib/utils';
 import { EVENT_TINTS } from '../../lib/constants';
 import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { useLanguage } from '../../lib/LanguageContext';
-import { LogoChip } from './EventLogo';
 
 // lucide-react rather than FontAwesome deliberately — lucide is already a
 // dependency used everywhere else in the app, so reusing it here adds zero
@@ -56,7 +55,7 @@ export default function EventCard({ event, index = 0 }) {
           whileHover={{ scale: 1.06 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         />
-        <LogoChip />
+        <img src="/icon-192.png" width="24" height="24" alt="" aria-hidden="true" className="absolute bottom-2 left-2 w-6 h-6 rounded-full shadow-md pointer-events-none" />
         <div className="absolute inset-0" style={{ background: EVENT_TINTS[event.category] }} />
         <div className="absolute inset-0 flex items-start justify-between p-4">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-sm text-white">

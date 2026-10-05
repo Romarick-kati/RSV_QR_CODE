@@ -5,7 +5,6 @@ import AdminShell from '../../components/layout/AdminShell';
 import { useSEO } from '../../lib/useSEO';
 import { useVisibilityPolling } from '../../lib/useVisibilityPolling';
 import { eventsApi } from '../../lib/api';
-import { LogoWatermark } from '../../components/ui/EventLogo';
 
 function ago(iso) {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -76,8 +75,6 @@ export default function AdminEventLive() {
           Live location is off for this event. Open <Link to={`/admin/events/${id}`} className="underline font-semibold">event settings</Link>, tick "Allow attendees to share live location", and save. Attendees still choose for themselves whether to share.
         </div>
       )}
-      <div className="relative isolate">
-      <LogoWatermark />
       <div className="flex flex-wrap gap-3 mb-6 text-sm">
         <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ borderColor: 'var(--line-12)' }}><Radio size={14} style={{ color: '#22D3A6' }} /> {people.length} sharing now</span>
         <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ borderColor: 'var(--line-12)' }}><Users size={14} /> {data?.registered ?? 0} registered</span>
@@ -102,7 +99,6 @@ export default function AdminEventLive() {
             </div>
           ))}
         </div>
-      </div>
       </div>
     </AdminShell>
   );
