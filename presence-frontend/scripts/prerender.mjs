@@ -6,7 +6,7 @@
 // the correct info is there from the very first byte. Netlify serves an
 // existing file before the SPA fallback rule, and React still takes over in
 // the browser exactly as before.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -87,8 +87,11 @@ for (const page of pages) {
   html = setTag(html, /<meta name="twitter:description" content="[^"]*"\s*\/>/, `<meta name="twitter:description" content="${esc(page.description)}" />`);
   html = setTag(html, /<h1>[\s\S]*?<\/h1>\s*<p>[\s\S]*?<\/p>/, `<h1>${esc(page.h1)}</h1>\n        <p>${esc(page.p)}</p>`);
 
-  const dir = join(dist, page.path);
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'index.html'), html);
+  // Write /about as dist/about.html, NOT dist/about/index.html. Netlify
+  // answers a folder URL like /about with a 301 redirect to /about/, while
+  // our canonical links and sitemap use /about with no slash. That mismatch
+  // is what Search Console reported as "Page with redirect". A plain
+  // about.html is served directly at /about with a 200 and no redirect.
+  writeFileSync(join(dist, `${page.path.replace(/^\//, '')}.html`), html);
   console.log(`prerendered ${page.path}`);
 }

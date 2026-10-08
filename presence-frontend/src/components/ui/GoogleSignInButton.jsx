@@ -36,12 +36,17 @@ export default function GoogleSignInButton({ onCredential, onError }) {
           client_id: GOOGLE_CLIENT_ID,
           callback: (response) => onCredential(response.credential),
         });
+        // Google draws the button at a fixed pixel width, so measure the
+        // space the card actually gives it (200-400px is Google's allowed
+        // range). A hard-coded 320 spilled out of the card on narrow layouts.
+        const available = Math.floor(containerRef.current.parentElement?.clientWidth || 280);
         window.google.accounts.id.renderButton(containerRef.current, {
-          theme: 'filled_black',
+          theme: 'outline',
           size: 'large',
           shape: 'pill',
-          width: 320,
+          width: Math.max(200, Math.min(400, available)),
           text: 'continue_with',
+          logo_alignment: 'center',
         });
         setReady(true);
       })
@@ -53,7 +58,7 @@ export default function GoogleSignInButton({ onCredential, onError }) {
   if (!GOOGLE_CLIENT_ID) return null;
 
   return (
-    <div className="flex justify-center">
+    <div className="w-full flex justify-center overflow-hidden">
       <div ref={containerRef} style={{ minHeight: ready ? undefined : 44 }} />
     </div>
   );

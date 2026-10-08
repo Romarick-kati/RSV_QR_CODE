@@ -281,7 +281,7 @@ export default function EventDetail() {
         <aside className="relative lg:sticky lg:top-24 h-fit rounded-2xl border p-6 overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
           {/* faint brand watermark, tucked in the corner so it never competes
               with the actual registration controls below it */}
-          <img src="/icon-512.png" alt="" aria-hidden="true" className="absolute -top-8 -right-8 w-28 h-28 opacity-[0.06] pointer-events-none select-none" />
+          <img src="/icon-512.png" alt="" aria-hidden="true" className="absolute -top-10 -right-10 w-40 h-40 opacity-[0.12] pointer-events-none select-none" />
           <div className="relative flex items-center justify-between mb-4">
             <Badge status={past ? 'completed' : 'published'} />
             <span className="text-sm text-[var(--text-dim)]">{full ? t('event_fully_booked') : t('event_spots_of', { remaining, capacity: event.capacity })}</span>
