@@ -8,6 +8,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { eventsApi } from '../../lib/api';
 import { formatDate } from '../../lib/utils';
+import { getSmartEventPhoto } from '../../lib/eventPhoto';
 import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
 
@@ -78,6 +79,21 @@ export default function AdminEvents() {
         <div className="grid gap-3">
           {filtered.map((e) => (
             <div key={e.id} className="rounded-2xl border p-5 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+              <Link to={`/admin/events/${e.id}`} className="relative shrink-0 w-full h-32 sm:w-28 sm:h-20 lg:w-24 lg:h-[72px] rounded-xl overflow-hidden" tabIndex={-1} aria-hidden="true">
+                <img
+                  src={getSmartEventPhoto(e, '300/200')}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  onError={(ev) => {
+                    // dead uploaded link: fall back to the built-in themed placeholder
+                    const fallback = getSmartEventPhoto({ ...e, image: null }, '300/200');
+                    if (ev.currentTarget.src !== fallback) ev.currentTarget.src = fallback;
+                  }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <img src="/icon-192.png" width="18" height="18" alt="" className="absolute bottom-1 left-1 w-[18px] h-[18px] rounded-full shadow pointer-events-none" />
+              </Link>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   <Link to={`/admin/events/${e.id}`} className="font-display font-semibold text-[var(--text)] hover:text-[#22D3A6] transition-colors">{e.title}</Link>

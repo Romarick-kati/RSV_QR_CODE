@@ -11,7 +11,6 @@ import { useToast } from '../../lib/ToastContext';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useSEO } from '../../lib/useSEO';
 import { compressImageFile, ImageError } from '../../lib/imageUtils';
-import { authApi } from '../../lib/api';
 
 export default function AuthPage({ mode = 'login' }) {
   const isLoginRoute = mode === 'login';
@@ -21,7 +20,7 @@ export default function AuthPage({ mode = 'login' }) {
   // Page the person was trying to open before being sent to sign in (set by
   // ProtectedRoute). After signing in they land there, not somewhere random.
   const cameFrom = typeof location.state?.from === 'string' && !['/login', '/register'].includes(location.state.from) ? location.state.from : null;
-  const { login, register, loginWithGoogle, loginWithCode, updateAvatar, user } = useAuth();
+  const { login, register, loginWithGoogle, updateAvatar, user } = useAuth();
   const { push } = useToast();
   const { t } = useLanguage();
   useSEO(
@@ -116,42 +115,6 @@ export default function AuthPage({ mode = 'login' }) {
     }
   }
 
-  // ---- "Email me a code" sign-in ----
-  const [codeStep, setCodeStep] = useState(null); // null | 'email' | 'verify'
-  const [codeEmail, setCodeEmail] = useState('');
-  const [codeValue, setCodeValue] = useState('');
-  const [codeError, setCodeError] = useState('');
-  const [codeBusy, setCodeBusy] = useState(false);
-
-  async function handleSendCode(e) {
-    e.preventDefault();
-    setCodeError('');
-    setCodeBusy(true);
-    try {
-      await authApi.requestCode(codeEmail.trim());
-      setCodeStep('verify');
-    } catch (err) {
-      setCodeError(err.message);
-    } finally {
-      setCodeBusy(false);
-    }
-  }
-
-  async function handleVerifyCode(e) {
-    e.preventDefault();
-    setCodeError('');
-    setCodeBusy(true);
-    try {
-      const { user: u } = await loginWithCode({ email: codeEmail.trim(), code: codeValue });
-      push(`Welcome back, ${u.name.split(' ')[0]}.`, 'success');
-      const dest = cameFrom || (u.role === 'ADMIN' || u.role === 'ORGANIZER' ? '/admin' : '/dashboard');
-      setPostAuth({ dest, messages: ['Verifying your code…', 'Setting up your dashboard…', 'Almost there…'] });
-    } catch (err) {
-      setCodeError(err.message);
-      setCodeBusy(false);
-    }
-  }
-
   async function handleRegister(e) {
     e.preventDefault();
     setRegError('');
@@ -228,7 +191,7 @@ export default function AuthPage({ mode = 'login' }) {
               <InfoPanel
                 icon={<ScanLine size={26} />}
                 heading={<>Welcome<br />back.</>}
-                copy="Sign in to view your registered events, reopen your QR pass, and check your attendance history."
+                copy=""
                 gradient="linear-gradient(150deg, #22D3A6 0%, #8B7CF6 100%)"
                 onClick={goRegister}
                 order="order-1 sm:order-1"
@@ -239,7 +202,7 @@ export default function AuthPage({ mode = 'login' }) {
                   <span className="text-sm text-[var(--text-dim)]">{t('auth_welcome_back')}</span>
                 </div>
                 <h3 className="font-display text-2xl font-semibold mb-1">{t('auth_sign_in')}</h3>
-                <p className="text-sm text-[var(--text-dim)] mb-6">{t('auth_sign_in_sub')}</p>
+                <div className="mb-6" />
 
                 {loginError && <FormError message={loginError} />}
 
@@ -251,38 +214,13 @@ export default function AuthPage({ mode = 'login' }) {
 
                 <Divider />
 
-                {codeStep === null && (
-                  <>
-                    <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
-                      <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
-                        value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
-                      <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
-                        value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
-                      <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label={t('auth_sign_in')} />
-                    </form>
-                    <button type="button" onClick={() => { setCodeStep('email'); setCodeEmail(loginForm.email); setCodeError(''); }} className="w-full text-center text-sm font-semibold mt-4" style={{ color: '#22D3A6' }}>
-                      {t('auth_email_code_instead')}
-                    </button>
-                  </>
-                )}
-                {codeStep === 'email' && (
-                  <form onSubmit={handleSendCode} className="flex flex-col gap-4" noValidate>
-                    {codeError && <FormError message={codeError} />}
-                    <p className="text-sm text-[var(--text-dim)]">{t('auth_code_intro')}</p>
-                    <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail} value={codeEmail} onChange={setCodeEmail} />
-                    <SubmitButton loading={codeBusy} icon={<Mail size={16} />} label={t('auth_send_code')} />
-                    <button type="button" onClick={() => setCodeStep(null)} className="text-sm text-[var(--text-dim)]">{t('auth_back_to_password')}</button>
-                  </form>
-                )}
-                {codeStep === 'verify' && (
-                  <form onSubmit={handleVerifyCode} className="flex flex-col gap-4" noValidate>
-                    {codeError && <FormError message={codeError} />}
-                    <p className="text-sm text-[var(--text-dim)]">{t('auth_code_sent_intro', { email: codeEmail })}</p>
-                    <Field label={t('auth_code_label')} type="text" autoComplete="one-time-code" placeholder="123456" icon={Lock} value={codeValue} onChange={(v) => setCodeValue(v.replace(/\D/g, '').slice(0, 6))} />
-                    <SubmitButton loading={codeBusy} icon={<LogIn size={16} />} label={t('auth_sign_in')} />
-                    <button type="button" onClick={() => { setCodeStep('email'); setCodeValue(''); setCodeError(''); }} className="text-sm text-[var(--text-dim)]">{t('auth_send_new_code')}</button>
-                  </form>
-                )}
+                <form onSubmit={handleLogin} className="flex flex-col gap-4" noValidate>
+                  <Field label={t('auth_email')} type="email" autoComplete="email" placeholder="you@example.com" icon={Mail}
+                    value={loginForm.email} onChange={(v) => setLoginForm((f) => ({ ...f, email: v }))} />
+                  <Field label={t('auth_password')} type="password" autoComplete="current-password" placeholder="Enter your password" icon={Lock}
+                    value={loginForm.password} onChange={(v) => setLoginForm((f) => ({ ...f, password: v }))} />
+                  <SubmitButton loading={loginLoading} icon={<LogIn size={16} />} label={t('auth_sign_in')} />
+                </form>
 
                 <p className="text-center text-sm text-[var(--text-dim)] mt-5">
                   {t('auth_new_here')}{' '}
@@ -402,7 +340,7 @@ export default function AuthPage({ mode = 'login' }) {
               <InfoPanel
                 icon={<Sparkles size={26} />}
                 heading={<>Join<br />Presence</>}
-                copy="Create an account to RSVP to events, generate your digital pass, and check in in seconds at the door."
+                copy=""
                 gradient="linear-gradient(150deg, #F5A623 0%, #FF5C77 100%)"
                 onClick={goLogin}
                 order="order-1 sm:order-2"
@@ -431,7 +369,7 @@ function InfoPanel({ icon, heading, copy, gradient, onClick, order }) {
       <div className="relative z-10 text-[#0B0F22]">
         <span className="inline-flex mb-3.5 opacity-85">{icon}</span>
         <h2 className="font-display text-[1.7rem] font-extrabold leading-[1.15] mb-3">{heading}</h2>
-        <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,15,34,0.82)' }}>{copy}</p>
+        {copy && <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,15,34,0.82)' }}>{copy}</p>}
       </div>
     </button>
   );

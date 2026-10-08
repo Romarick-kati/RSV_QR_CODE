@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { config } from './config/env.js';
 import apiRoutes from './routes/index.js';
+import { sitemap } from './controllers/sitemap.controller.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -84,6 +85,13 @@ export function createApp() {
   app.use('/api', apiLimiter);
 
   app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+  // Served at the site root for search engines. Netlify rewrites
+  // /sitemap.xml to this function but can hand it the ORIGINAL path
+  // (/sitemap.xml) instead of the function path, and the router below only
+  // knew /api/sitemap.xml, so the request fell through to the 404 handler.
+  // Registering the root path here makes it work whichever path arrives.
+  app.get('/sitemap.xml', sitemap);
   app.use('/api', apiRoutes);
 
   app.use(notFoundHandler);
