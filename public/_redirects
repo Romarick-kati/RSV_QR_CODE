@@ -1,0 +1,4 @@
+/api/*        /.netlify/functions/api/:splat          200
+/sitemap.xml  /.netlify/functions/api/sitemap.xml     200
+/events/:id   /.netlify/functions/event-page?id=:id  200
+/*            /index.html                             200

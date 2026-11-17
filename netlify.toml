@@ -1,0 +1,83 @@
+[build]
+  # --include=dev forces devDependencies (vite, tailwind, postcss — all
+  # needed to actually build the site) to install even though Netlify's
+  # production build context sets NODE_ENV=production, which makes a plain
+  # `npm install` skip devDependencies entirely. Without this flag the
+  # build fails with "vite: not found" even though vite is correctly
+  # listed in package.json — npm just never installed it.
+  command = "npm install --include=dev && npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Order matters — redirects are matched top to bottom, first match wins.
+
+# The backend API, wrapped as a Netlify Function (see netlify/functions/api.js).
+# Requests to /api/* on this same site are routed to that function instead
+# of a separate backend host — this is what avoids CORS entirely and needs
+# no other deployment.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Search-engine sitemap, generated live from the database (static pages +
+# every published event). Must come before the SPA fallback below.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/api/sitemap.xml"
+  status = 200
+
+# Event pages: served with their own title, description, share image and
+# schema.org data already in the HTML (see netlify/functions/event-page.js),
+# so Google and WhatsApp can read a new event straight away.
+[[redirects]]
+  from = "/events/:id"
+  to = "/.netlify/functions/event-page?id=:id"
+  status = 200
+
+# SPA fallback — without this, refreshing (or sharing a link to) any route
+# other than "/" — e.g. /events/abc123 or /dashboard — returns Netlify's own
+# 404 page, because Netlify looks for a physical file at that path by
+# default. This tells it to always serve index.html and let React Router
+# take over client-side. Must stay AFTER the /api/* rule above.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  NODE_VERSION = "20"
+
+
+# Vite fingerprints everything in /assets (the file name changes whenever its
+# content does), so browsers can keep those files for a year and never ask
+# again. Return visits then load almost instantly.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Images and icons keep stable names, so cache them for a day and let the
+# browser refresh them quietly in the background after that.
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"

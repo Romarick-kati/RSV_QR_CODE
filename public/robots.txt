@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /my-events
+Disallow: /profile
+Disallow: /qr-pass
+Disallow: /settings
+Disallow: /api/
+
+Sitemap: https://presencescan.site/sitemap.xml

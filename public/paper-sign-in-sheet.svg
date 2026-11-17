@@ -1,0 +1,119 @@
+<svg viewBox="0 0 890 384" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pss-title">
+  <title id="pss-title">Illustration of a hand signing a paper attendance sheet on a reception desk</title>
+  <defs>
+    <linearGradient id="pss-bg" x1="0" y1="0" x2="890" y2="384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E1424"/>
+      <stop offset="1" stop-color="#161B2E"/>
+    </linearGradient>
+    <linearGradient id="pss-desk" x1="0" y1="220" x2="0" y2="384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C9A876"/>
+      <stop offset="1" stop-color="#A9895F"/>
+    </linearGradient>
+    <linearGradient id="pss-sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EDEFF4"/>
+    </linearGradient>
+    <radialGradient id="pss-glow" cx="72%" cy="30%" r="60%">
+      <stop offset="0" stop-color="#22D3A6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#22D3A6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="890" height="384" fill="url(#pss-bg)"/>
+  <rect width="890" height="384" fill="url(#pss-glow)"/>
+
+  <!-- blurred background figures, kept abstract/faceless -->
+  <g opacity="0.35">
+    <circle cx="90" cy="150" r="20" fill="#3A4260"/>
+    <rect x="72" y="170" width="36" height="60" rx="12" fill="#3A4260"/>
+    <circle cx="210" cy="140" r="18" fill="#333B58"/>
+    <rect x="194" y="158" width="32" height="66" rx="12" fill="#333B58"/>
+    <circle cx="760" cy="130" r="19" fill="#333B58"/>
+    <rect x="742" y="149" width="34" height="70" rx="12" fill="#333B58"/>
+  </g>
+
+  <!-- a plant for warmth -->
+  <g opacity="0.9">
+    <rect x="55" y="205" width="34" height="30" rx="4" fill="#8B6A4A"/>
+    <path d="M72 205 C58 175 60 150 72 132 C84 150 86 175 72 205 Z" fill="#2E7D5B"/>
+    <path d="M72 205 C60 182 62 160 50 145 C68 156 74 178 72 205 Z" fill="#379268"/>
+    <path d="M72 205 C84 182 82 160 94 145 C76 156 70 178 72 205 Z" fill="#379268"/>
+  </g>
+
+  <!-- welcome sign -->
+  <g>
+    <rect x="742" y="40" width="118" height="86" rx="10" fill="#F4F1EA" opacity="0.95"/>
+    <rect x="742" y="40" width="118" height="86" rx="10" fill="none" stroke="#22D3A6" stroke-opacity="0.4" stroke-width="2"/>
+    <text x="801" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1B2033">BIENVENUE</text>
+    <text x="801" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#4A5170">WELCOME</text>
+  </g>
+
+  <!-- desk surface -->
+  <rect x="0" y="236" width="890" height="148" fill="url(#pss-desk)"/>
+  <rect x="0" y="236" width="890" height="6" fill="#00000022"/>
+
+  <!-- pen cup -->
+  <g>
+    <path d="M598 178 h44 l-6 48 h-32 z" fill="#D7DCE6" opacity="0.85"/>
+    <rect x="596" y="172" width="48" height="10" rx="4" fill="#C3C9D6"/>
+    <line x1="608" y1="140" x2="600" y2="178" stroke="#2255CC" stroke-width="4" stroke-linecap="round"/>
+    <line x1="620" y1="132" x2="614" y2="178" stroke="#22D3A6" stroke-width="4" stroke-linecap="round"/>
+    <line x1="634" y1="140" x2="628" y2="178" stroke="#8B7CF6" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <!-- hand sanitizer -->
+  <g opacity="0.9">
+    <rect x="660" y="150" width="26" height="52" rx="6" fill="#DCE7F0"/>
+    <rect x="666" y="140" width="14" height="14" rx="3" fill="#B7C6D6"/>
+  </g>
+
+  <!-- the paper sheet -->
+  <g>
+    <rect x="150" y="196" width="360" height="150" rx="6" fill="url(#pss-sheet)" stroke="#D6D9E2" stroke-width="1.5" transform="rotate(-2 330 271)"/>
+    <g transform="rotate(-2 330 271)" font-family="Arial, sans-serif">
+      <text x="170" y="222" font-size="13" font-weight="700" letter-spacing="0.5" fill="#1B2033">FEUILLE DE PRÉSENCE — RÉUNION DU COMITÉ</text>
+      <text x="170" y="238" font-size="10" fill="#6B7280">12/10/2025</text>
+      <line x1="164" y1="248" x2="496" y2="248" stroke="#C7CBD6" stroke-width="1"/>
+      <text x="170" y="262" font-size="10" font-weight="700" fill="#4A5170">NOM</text>
+      <text x="300" y="262" font-size="10" font-weight="700" fill="#4A5170">SIGNATURE</text>
+      <text x="420" y="262" font-size="10" font-weight="700" fill="#4A5170">HEURE</text>
+      <line x1="164" y1="270" x2="496" y2="270" stroke="#E4E6EC" stroke-width="1"/>
+
+      <text x="170" y="286" font-size="11" fill="#22242E">Amadou Diop</text>
+      <path d="M296 289 q10 -12 20 0 t20 -2" stroke="#2255CC" stroke-width="1.6" fill="none"/>
+      <text x="420" y="286" font-size="10" fill="#6B7280">08:42</text>
+      <line x1="164" y1="294" x2="496" y2="294" stroke="#EEF0F4" stroke-width="1"/>
+
+      <text x="170" y="308" font-size="11" fill="#22242E">Fatoumata Traoré</text>
+      <path d="M296 311 q8 -10 18 0 t22 -3" stroke="#2255CC" stroke-width="1.6" fill="none"/>
+      <text x="420" y="308" font-size="10" fill="#6B7280">08:47</text>
+      <line x1="164" y1="316" x2="496" y2="316" stroke="#EEF0F4" stroke-width="1"/>
+
+      <text x="170" y="330" font-size="11" fill="#22242E">Moussa Konaté</text>
+      <path d="M296 333 q9 -11 19 0 t21 -2" stroke="#2255CC" stroke-width="1.6" fill="none"/>
+      <text x="420" y="330" font-size="10" fill="#6B7280">08:51</text>
+      <line x1="164" y1="338" x2="496" y2="338" stroke="#EEF0F4" stroke-width="1"/>
+
+      <text x="170" y="352" font-size="11" fill="#c9ccd4">Awa Cissé</text>
+    </g>
+    <!-- coffee ring stain, purely decorative realism -->
+    <ellipse cx="470" cy="330" rx="14" ry="10" fill="none" stroke="#B08968" stroke-opacity="0.35" stroke-width="2" transform="rotate(-2 330 271)"/>
+  </g>
+
+  <!-- sleeved forearm reaching in from the lower right toward the sheet -->
+  <path d="M760 384 L672 318 C658 307 638 305 622 314 L556 351 C548 355 548 366 556 371 L610 384 Z" fill="#22242E"/>
+  <!-- hand + wrist -->
+  <path d="M556 371 L556 351 C556 351 536 344 518 340 C500 336 486 322 486 306 C486 292 498 282 512 283 C524 284 532 293 534 304 L556 340 Z" fill="#8A5636"/>
+  <ellipse cx="510" cy="300" rx="22" ry="17" fill="#8A5636"/>
+  <!-- fingers curled around the pen -->
+  <path d="M498 292 q8 -14 24 -12 M494 302 q10 -14 28 -10 M496 312 q10 -10 26 -6" stroke="#6E4327" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <!-- pen, angled naturally down to the paper -->
+  <g transform="rotate(-34 512 296)">
+    <rect x="478" y="291" width="72" height="9" rx="4.5" fill="#F4F5F7"/>
+    <rect x="478" y="291" width="72" height="9" rx="4.5" fill="none" stroke="#C7CBD6" stroke-width="1"/>
+    <rect x="478" y="291" width="16" height="9" rx="4.5" fill="#2255CC"/>
+    <polygon points="546,291 550,295.5 546,300" fill="#1B2033"/>
+  </g>
+
+  <!-- soft vignette for text legibility on the left where the caption sits -->
+  <rect width="420" height="384" fill="#0A0D18" opacity="0.28"/>
+</svg>

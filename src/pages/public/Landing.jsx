@@ -1,0 +1,356 @@
+import { Link, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowRight, ScanLine, QrCode, CalendarCheck, BarChart3, ShieldCheck, Zap,
+  Smartphone, ClipboardList, Users, ChevronDown,
+} from 'lucide-react';
+import PublicNav from '../../components/layout/PublicNav';
+import PublicFooter from '../../components/layout/PublicFooter';
+import CreatorSection from '../../components/layout/CreatorSection';
+import EventCard from '../../components/ui/EventCard';
+import { Reveal, RevealGroup, RevealItem } from '../../components/ui/Reveal';
+import { eventsApi } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { useLanguage } from '../../lib/LanguageContext';
+import AnimatedNumber from '../../components/ui/AnimatedNumber';
+import Marquee from '../../components/ui/Marquee';
+import WithWithout from '../../components/ui/WithWithout';
+import Testimonials from '../../components/ui/Testimonials';
+import OldWaySection from '../../components/ui/OldWaySection';
+import LocalSeoSection from '../../components/ui/LocalSeoSection';
+import OrbitRings from '../../components/ui/OrbitRings';
+import Globe from '../../components/ui/Globe';
+import { useAuth } from '../../lib/AuthContext';
+import { useSEO } from '../../lib/useSEO';
+
+// Icons only here — titles/copy are translated inside the component via
+// t('step1_title') etc. so the language toggle actually reaches this content.
+const STEP_ICONS = [ClipboardList, CalendarCheck, QrCode, ScanLine];
+const FEATURE_ICONS = [ShieldCheck, BarChart3, Smartphone, Zap];
+
+export default function Landing() {
+  const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState({ totalEvents: 0, totalRegistrations: 0, totalCapacity: 0 });
+  const [openFaq, setOpenFaq] = useState(0);
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const STEPS = STEP_ICONS.map((icon, i) => ({ icon, title: t(`step${i + 1}_title`), copy: t(`step${i + 1}_copy`) }));
+  const FEATURES = FEATURE_ICONS.map((icon, i) => ({ icon, title: t(`feature${i + 1}_title`), copy: t(`feature${i + 1}_copy`) }));
+  const FAQS = [1, 2, 3].map((i) => ({ q: t(`faq${i}_q`), a: t(`faq${i}_a`) }));
+  useSEO(null, 'Presence Scan is a free QR event registration app. RSVP to conferences, workshops and community events online, get a digital QR pass, pay with Mobile Money, and check in with one scan — no paper sign-in sheets.', {
+    path: '/',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    eventsApi.listPublic().then(({ events: all }) => {
+      if (cancelled) return;
+      setEvents(all.slice(0, 3));
+      setStats({
+        totalEvents: all.length,
+        totalRegistrations: all.reduce((sum, e) => sum + (e.registered || 0), 0),
+        totalCapacity: all.reduce((sum, e) => sum + (e.capacity || 0), 0),
+      });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Signed-in people never need the marketing page again: send them
+  // straight to their console.
+  if (user) return <Navigate to={user.role === 'ADMIN' || user.role === 'ORGANIZER' ? '/admin' : '/dashboard'} replace />;
+
+  return (
+    <div style={{ background: 'var(--bg)' }}>
+      <PublicNav />
+
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Ambient color glow only — no photo backdrop. This used to
+              layer a random blurred stock photo under a gradient that
+              faded to a hardcoded dark navy in the middle
+              (rgba(10,13,24,...)), which looked fine in dark mode (where
+              that navy matches the background) but showed up as a muddy
+              grey/brown smear in light mode, since it never adapted to the
+              light theme's white background. Matches the clean
+              blobs-on-var(--bg) treatment already used on the sign-in
+              page, which reads correctly in both themes. */}
+          <div className="absolute inset-0 grain opacity-20" />
+          <div className="absolute w-[520px] h-[520px] rounded-full blur-[110px] opacity-[0.14] -top-40 -left-32" style={{ background: 'var(--accent)' }} />
+          <div className="absolute w-[460px] h-[460px] rounded-full blur-[110px] opacity-[0.11] top-10 right-0" style={{ background: 'var(--accent-2)' }} />
+        </div>
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 pb-24 relative z-10 grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
+          <div>
+            <motion.span
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full mb-6"
+              style={{ background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }}
+            >
+              <ScanLine size={13} /> {t('hero_badge')}
+            </motion.span>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.08 }}
+              className="font-display text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.08] mb-6"
+            >
+              {t('hero_title_1')}<br />{t('hero_title_2')}<br /><span style={{ color: 'var(--accent)' }}>{t('hero_title_3')}</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.16 }}
+              className="text-[var(--text-dim)] text-lg max-w-xl mb-9 leading-relaxed"
+            >
+              {t('hero_subtitle')}
+            </motion.p>
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.24 }} className="flex flex-wrap items-center gap-3">
+              <Link to="/events" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
+                {t('hero_browse')} <ArrowRight size={16} />
+              </Link>
+              <Link to="/register" className="hover-lift inline-flex items-center gap-2 font-semibold text-sm px-5 py-3.5 rounded-xl border hover:bg-white/5 transition-colors" style={{ borderColor: 'var(--line-14)' }}>
+                {t('hero_create_account')}
+              </Link>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.4 }} className="flex flex-wrap gap-x-10 gap-y-4 mt-12">
+              <Stat label={t('stat_events_hosted')} value={stats.totalEvents} />
+              <Stat label={t('stat_registrations')} value={stats.totalRegistrations} />
+              <Stat label={t('stat_seats')} value={stats.totalCapacity} />
+            </motion.div>
+          </div>
+
+          {/* Signature visual: a digital pass card echoing the scan-target brand mark */}
+          <motion.div initial={{ opacity: 0, scale: 0.94, rotate: 2 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }} className="relative mx-auto w-full max-w-sm"><OrbitRings>
+            <div className="rounded-[26px] border shadow-2xl overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
+              <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_title')}</span>
+                  <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(var(--accent-rgb),0.14)', color: 'var(--accent)' }}>{t('badge_confirmed')}</span>
+                </div>
+                <h3 className="font-display text-xl font-semibold leading-snug mb-1" style={{ color: 'var(--pass-text)' }}>Tech &amp; Innovation Summit 2026</h3>
+                <p className="text-sm mb-6" style={{ color: 'var(--pass-text-dim)' }}>Conference Hall &middot; Douala</p>
+              </div>
+              <div className="mx-6 mb-6 rounded-2xl p-5 flex items-center gap-5" style={{ background: '#0A0D18', border: '1px dashed rgba(255,255,255,0.15)' }}>
+                <div className="w-20 h-20 rounded-xl grid grid-cols-5 grid-rows-5 gap-[3px] p-2 shrink-0" style={{ background: '#fff' }}>
+                  {Array.from({ length: 25 }).map((_, i) => (
+                    <span key={i} className="rounded-[1px]" style={{ background: [3,4,6,8,9,11,12,13,16,18,19,21,22].includes(i) ? '#0A0D18' : 'transparent' }} />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide mb-1" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_reference')}</p>
+                  <p className="font-mono text-sm" style={{ color: 'var(--pass-text)' }}>PRES-2026-00001</p>
+                  <p className="text-[11px] uppercase tracking-wide mt-3 mb-1" style={{ color: 'var(--pass-text-dim)' }}>{t('pass_attendee')}</p>
+                  <p className="text-sm" style={{ color: 'var(--pass-text)' }}>Aisha Bello</p>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-4 -right-4 w-14 h-14 rounded-2xl flex items-center justify-center reticle-pulse" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>
+              <ScanLine size={22} color="var(--accent-ink)" />
+            </div>
+          </OrbitRings></motion.div>
+        </div>
+      </section>
+
+      <Marquee />
+
+      {/* HOW IT WORKS */}
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
+        <Reveal><SectionHeading eyebrow={t('footer_how_it_works')} title={t('landing_how_it_works_title')} /></Reveal>
+        <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+          {STEPS.map((s, i) => (
+            <RevealItem key={s.title} className="relative rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+              <span className="font-mono text-xs text-[var(--text-dim)]">0{i + 1}</span>
+              <span className="w-11 h-11 rounded-xl flex items-center justify-center my-4" style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
+                <s.icon size={20} style={{ color: 'var(--accent)' }} />
+              </span>
+              <h3 className="font-display text-base font-semibold mb-2">{s.title}</h3>
+              <p className="text-sm text-[var(--text-dim)] leading-relaxed">{s.copy}</p>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+      </section>
+
+      {/* FEATURES */}
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
+        <Reveal><SectionHeading eyebrow={t('landing_why_eyebrow')} title={t('landing_why_title')} /></Reveal>
+        <RevealGroup className="grid sm:grid-cols-2 gap-5 mt-12">
+          {FEATURES.map((f, i) => (
+            <RevealItem key={f.title} direction={i % 2 === 0 ? 'left' : 'right'} className="flex gap-4 rounded-2xl border p-6" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+              <motion.span
+                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(139,124,246,0.14)' }}
+                whileHover={{ scale: 1.1, rotate: 6 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              >
+                <f.icon size={20} style={{ color: 'var(--accent-2)' }} />
+              </motion.span>
+              <div>
+                <h3 className="font-display text-base font-semibold mb-1.5">{f.title}</h3>
+                <p className="text-sm text-[var(--text-dim)] leading-relaxed">{f.copy}</p>
+              </div>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+      </section>
+
+      {/* PHOTO BANNER */}
+      <section className="border-t" style={{ borderColor: 'var(--line-08)' }}>
+        <div className="relative h-64 sm:h-80 overflow-hidden">
+          <motion.img
+            src="https://picsum.photos/seed/presence-banner/1600/500"
+            alt="Attendees checking in at an event"
+            className="absolute inset-0 w-full h-full object-cover"
+            initial={{ scale: 1.1 }}
+            whileInView={{ scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(10,13,24,0.88), rgba(10,13,24,0.35))' }} />
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-7xl mx-auto px-5 sm:px-8 w-full">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="max-w-md"
+              >
+                <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>{t('landing_ground_eyebrow')}</span>
+                <h2 className="font-display text-2xl sm:text-3xl font-semibold text-white mt-2 mb-3">{t('landing_ground_title')}</h2>
+                <p className="text-sm text-white/75 leading-relaxed">{t('landing_ground_quote')}</p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* EVENT DISCOVERY PREVIEW */}
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-20 border-t" style={{ borderColor: 'var(--line-08)' }}>
+        <Reveal className="flex items-end justify-between flex-wrap gap-4 mb-10">
+          <SectionHeading eyebrow={t('landing_discover_eyebrow')} title={t('landing_upcoming_events')} />
+          <Link to="/events" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+            {t('landing_view_all_events')} <ArrowRight size={14} />
+          </Link>
+        </Reveal>
+        {events.length > 0 ? (
+          <RevealGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.map((e, i) => <RevealItem key={e.id}><EventCard event={e} index={i} /></RevealItem>)}
+          </RevealGroup>
+        ) : (
+          <Reveal className="rounded-2xl border flex flex-col items-center text-center px-6 py-16" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+            <span className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--line-05)' }}>
+              <CalendarCheck size={24} style={{ color: 'var(--accent)' }} />
+            </span>
+            <p className="font-display text-lg font-semibold mb-1.5">{t('landing_events_empty_title')}</p>
+            <p className="text-sm text-[var(--text-dim)] max-w-sm">{t('landing_events_empty_copy')}</p>
+          </Reveal>
+        )}
+      </section>
+
+      {/* STATS BAND */}
+      <section className="border-y" style={{ borderColor: 'var(--line-08)', background: 'var(--panel-2)' }}>
+        <RevealGroup className="max-w-7xl mx-auto px-5 sm:px-8 py-14 grid grid-cols-2 sm:grid-cols-4 gap-8">
+          <RevealItem><BigStat icon={CalendarCheck} label={t('landing_events_managed')} value={stats.totalEvents} /></RevealItem>
+          <RevealItem><BigStat icon={Users} label={t('stat_registrations')} value={stats.totalRegistrations} /></RevealItem>
+          <RevealItem><BigStat icon={ScanLine} label={t('stat_seats')} value={stats.totalCapacity} /></RevealItem>
+          <RevealItem><BigStat icon={BarChart3} label={t('landing_live_checkin')} value={t('landing_live_checkin_val')} /></RevealItem>
+        </RevealGroup>
+      </section>
+
+      {/* FAQ */}
+      <section className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
+        <Reveal><SectionHeading eyebrow={t('landing_faq_eyebrow')} title={t('faq_title')} center /></Reveal>
+        <RevealGroup className="mt-10 flex flex-col gap-3">
+          {FAQS.map((f, i) => (
+            <RevealItem key={f.q} className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--line-08)', background: 'var(--panel)' }}>
+              <button onClick={() => setOpenFaq(openFaq === i ? -1 : i)} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+                <span className="font-medium text-[var(--text)] text-sm">{f.q}</span>
+                <motion.span animate={{ rotate: openFaq === i ? 180 : 0 }} transition={{ duration: 0.25 }} className="shrink-0">
+                  <ChevronDown size={16} className="text-[var(--text-dim)]" />
+                </motion.span>
+              </button>
+              <AnimatePresence initial={false}>
+                {openFaq === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-5 pb-4 text-sm text-[var(--text-dim)] leading-relaxed">{f.a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+      </section>
+
+      <OldWaySection />
+
+      <WithWithout />
+
+      <Testimonials />
+
+      {/* CTA */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-24">
+        <Reveal className="rounded-[28px] border p-12 text-center relative overflow-hidden" style={{ borderColor: 'rgba(255,255,255,0.1)', background: 'linear-gradient(160deg,#151b34,#0d1122)' }}>
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb),0.14), transparent 60%)' }} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-80 pointer-events-none" aria-hidden="true"><Globe size={500} /></div>
+          <div className="relative z-10">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--pass-text)' }}>{t('landing_cta_title')}</h2>
+            <p className="max-w-md mx-auto mb-7" style={{ color: 'var(--pass-text-dim)' }}>{t('landing_cta_sub')}</p>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="inline-block">
+              <Link to="/register" className="btn-pop inline-flex items-center gap-2 font-semibold text-sm px-6 py-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))', color: 'var(--accent-ink)' }}>
+                {t('landing_cta_btn')} <ArrowRight size={16} />
+              </Link>
+            </motion.div>
+          </div>
+        </Reveal>
+      </section>
+
+      <LocalSeoSection />
+
+      <CreatorSection />
+
+      <PublicFooter />
+    </div>
+  );
+}
+
+function SectionHeading({ eyebrow, title, center }) {
+  return (
+    <div className={center ? 'text-center' : ''}>
+      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: '#F5A623' }}>{eyebrow}</span>
+      <h2 className="font-display text-2xl sm:text-3xl font-semibold mt-2">{title}</h2>
+    </div>
+  );
+}
+function Stat({ label, value }) {
+  return (
+    <div>
+      <p className="font-display text-2xl font-semibold text-[var(--text)]">
+        {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
+      </p>
+      <p className="text-xs text-[var(--text-dim)] mt-0.5">{label}</p>
+    </div>
+  );
+}
+function BigStat({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-3.5">
+      <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(var(--accent-rgb),0.12)' }}>
+        <Icon size={18} style={{ color: 'var(--accent)' }} />
+      </span>
+      <div>
+        <p className="font-display text-xl font-semibold text-[var(--text)] leading-tight">
+          {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
+        </p>
+        <p className="text-xs text-[var(--text-dim)]">{label}</p>
+      </div>
+    </div>
+  );
+}

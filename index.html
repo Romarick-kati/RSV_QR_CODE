@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <!-- Google shows a favicon in search results only from a crawlable icon
+         whose size is a multiple of 48px — the 192px PNG satisfies that, and
+         the SVG above still serves modern browsers. -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <!-- SVG favicons aren't used by iOS's "Add to Home Screen" or by most
+         link-preview/social-share crawlers — they need a real PNG. These
+         two, plus the manifest below, are what were missing before: without
+         them, saving this site to a phone's home screen or sharing its link
+         in WhatsApp/LinkedIn showed a blank or default icon instead of the
+         actual logo. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Apply the saved theme before the first paint. The app's default for
+         new visitors is light, but the stylesheet's base colours are dark, so
+         without this the page flashed dark for a moment before React
+         switched it. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('presence_theme');
+          document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+        } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+      })();
+    </script>
+    <link rel="preload" as="image" href="/icon-192.png" />
+    <style id="boot-css">
+      /* Start screen: shown the instant the HTML arrives, before any
+         JavaScript has downloaded, then replaced when the app mounts. */
+      #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #FFFFFF; color: #0B0F22; z-index: 9999; font-family: Georgia, 'Times New Roman', serif; }
+      html[data-theme="dark"] #boot { background: #0A0D18; color: #FFFFFF; }
+      #boot .b-mark { position: relative; width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; }
+      #boot .b-mark img { width: 104px; height: 104px; border-radius: 50%; animation: bootPulse 1.8s ease-in-out infinite; }
+      #boot .b-ring { position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(34,211,166,0.18); border-top-color: #22D3A6; border-right-color: #8B7CF6; animation: bootSpin 1.1s linear infinite; }
+      #boot .b-word { font-size: 30px; font-weight: 700; letter-spacing: 0.01em; }
+      #boot .b-tag { font: 500 13px system-ui, sans-serif; color: #14B88F; margin-top: -8px; }
+      @keyframes bootSpin { to { transform: rotate(360deg); } }
+      @keyframes bootPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @media (prefers-reduced-motion: reduce) { #boot .b-ring, #boot .b-mark img { animation: none; } }
+    </style>
+
+    <!-- Fonts moved here from a CSS @import (see index.css) — an @import
+         can't be discovered by the browser until after it downloads and
+         parses the built stylesheet, adding a full extra round-trip before
+         any text can render. A <link> in <head> lets the browser discover
+         and start fetching these in parallel with everything else, which is
+         a meaningful chunk of the "Performance" score on a text-heavy hero
+         section like this app's Landing page. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" />
+
+    <title>Presence Scan: QR Event Registration &amp; Check-in App</title>
+    <meta name="description" content="Presence is a free event registration and QR attendance platform. RSVP online, get a digital QR pass, pay with Mobile Money, and check in with one verified scan." />
+    <link rel="canonical" href="https://presencescan.site/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Presence Scan" />
+    <meta name="application-name" content="Presence Scan" />
+    <meta property="og:title" content="Presence Scan: QR Event Registration &amp; Check-in App" />
+    <meta property="og:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
+    <meta property="og:image" content="https://presencescan.site/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Presence logo: a check mark in a teal and violet circle, above the words Event Registration and QR Attendance" />
+    <meta property="og:url" content="https://presencescan.site/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Presence Scan: QR Event Registration &amp; Check-in App" />
+    <meta name="twitter:description" content="RSVP to events online, get a digital QR pass, and check in with one verified scan at the door." />
+    <meta name="twitter:image" content="https://presencescan.site/og-image.png" />
+    <meta name="author" content="Ndi Romarick Kati" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://presencescan.site/#organization",
+            "name": "Presence",
+            "alternateName": ["Presence Scan", "Presence QR Event Registration"],
+            "url": "https://presencescan.site/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://presencescan.site/#logo",
+              "url": "https://presencescan.site/icon-512.png",
+              "contentUrl": "https://presencescan.site/icon-512.png",
+              "width": 512,
+              "height": 512,
+              "caption": "Presence logo"
+            },
+            "image": { "@id": "https://presencescan.site/#logo" },
+            "description": "Presence is an event registration and QR-based attendance tracking platform founded by Ndi Romarick Kati.",
+            "founder": { "@id": "https://presencescan.site/founder#person" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://presencescan.site/#website",
+            "name": "Presence Scan",
+            "alternateName": ["Presence", "PresenceScan", "presencescan.site"],
+            "url": "https://presencescan.site/",
+            "description": "Presence is an event registration and QR-based attendance tracking platform.",
+            "publisher": { "@id": "https://presencescan.site/#organization" }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://presencescan.site/#webapp",
+            "name": "Presence",
+            "url": "https://presencescan.site/",
+            "image": { "@id": "https://presencescan.site/#logo" },
+            "applicationCategory": "EventManagementApplication",
+            "operatingSystem": "Any (web-based)",
+            "description": "Presence is an event registration and QR-based attendance tracking platform: attendees RSVP online and receive a digital QR pass, organizers verify check-in with a single scan.",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "creator": { "@id": "https://presencescan.site/founder#person" },
+            "publisher": { "@id": "https://presencescan.site/#organization" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://presencescan.site/founder#person",
+            "name": "Ndi Romarick Kati",
+            "url": "https://presencescan.site/founder",
+            "alternateName": ["Ndi Romarick", "Romarick Kati", "Romarick", "Ndi"],
+            "image": "https://presencescan.site/ndi-romarick-kati.jpg",
+            "jobTitle": "Founder of Presence and Full-Stack Developer",
+            "description": "Ndi Romarick Kati is the founder and builder of Presence, a QR-based event registration and attendance tracking platform.",
+            "worksFor": { "@id": "https://presencescan.site/#organization" },
+            "sameAs": [
+              "https://www.linkedin.com/in/ndi-romarick-kati-0421a1320/",
+              "https://github.com/Romarick-Kati",
+              "https://kati-guidotti.netlify.app",
+              "https://kati-skyline.netlify.app"
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot" role="status" aria-label="Loading Presence">
+        <div class="b-mark">
+          <span class="b-ring"></span>
+          <img src="/icon-192.png" width="104" height="104" alt="Presence logo" fetchpriority="high" decoding="sync" />
+        </div>
+        <div class="b-word">Presence</div>
+        <div class="b-tag">Event check-in, made simple.</div>
+      </div>
+    </div>
+    <noscript>
+      <main style="max-width:640px;margin:48px auto;padding:0 20px;font-family:system-ui,sans-serif;line-height:1.6">
+        <img src="/icon-512.png" width="96" height="96" alt="Presence logo: a check mark in a teal and violet circle" />
+        <h1>Presence Scan: QR Event Registration &amp; Check-in App</h1>
+        <p>Presence is an event registration and QR-based attendance tracking platform. RSVP online, receive a digital QR pass, and check in with a single verified scan.</p>
+        <p>Presence was founded and built by <a href="/founder">Ndi Romarick Kati</a>, a full-stack developer.</p>
+        <p><a href="/events">Browse events</a> · <a href="/about">About Presence</a> · <a href="/faq">FAQ</a></p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
